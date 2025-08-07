@@ -1,0 +1,100 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Kullanıcı verilerine erişim kuralları
+    match /users/{userId} {
+      // Kullanıcı sadece kendi verilerine erişebilir
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Kullanıcı oluşturma sırasında veri doğrulama
+      allow create: if request.auth != null 
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['email', 'createdAt', 'lastLoginAt'])
+        && request.resource.data.uid == userId;
+        
+      // Güncelleme sırasında critical alanları koruma
+      allow update: if request.auth != null 
+        && request.auth.uid == userId
+        && request.resource.data.uid == userId
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+    
+    // Public içerik koleksiyonları (sadece okuma)
+    match /breathing_exercises/{exerciseId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Sadece admin panel üzerinden yönetilecek
+    }
+    
+    match /meditation_journeys/{journeyId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Sadece admin panel üzerinden yönetilecek
+    }
+    
+    match /sounds/{soundId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Sadece admin panel üzerinden yönetilecek
+    }
+    
+    match /stories/{storyId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Sadece admin panel üzerinden yönetilecek
+    }
+    
+    // Kullanıcı gizli verileri (günlük girişleri)
+    match /users/{userId}/journal_entries/{entryId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Kullanıcı uyku verileri
+    match /users/{userId}/sleep_entries/{entryId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Kullanıcı HRV ölçümleri
+    match /users/{userId}/hrv_measurements/{measurementId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Premium özellikleri kontrol fonksiyonu
+    function isActivePremiumUser() {
+      return request.auth != null 
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isPremium == true
+        && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.premiumExpiryDate == null 
+            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.premiumExpiryDate > request.time);
+    }
+    
+    // Premium içerik (sadece premium kullanıcılar)
+    match /premium_content/{contentId} {
+      allow read: if isActivePremiumUser();
+      allow write: if false; // Sadece admin panel üzerinden yönetilecek
+    }
+    
+    // Analytics veriler (sadece anonim istatistikler)
+    match /analytics/{doc=**} {
+      allow read, write: if false; // Sadece server-side erişim
+    }
+    
+    // Diğer tüm belgeler için erişim engelli
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// Veri doğrulama fonksiyonları
+function isValidEmail(emailValue) {
+  return emailValue.matches('.*@.*\\..*');
+}
+
+function isValidTimestamp(timeValue) {
+  return timeValue is timestamp;
+}
+
+function isValidUserData(userData) {
+  return userData.keys().hasAll(['email', 'createdAt', 'lastLoginAt', 'isPremium'])
+    && isValidEmail(userData.email)
+    && isValidTimestamp(userData.createdAt)
+    && isValidTimestamp(userData.lastLoginAt)
+    && userData.isPremium is bool;
+} 

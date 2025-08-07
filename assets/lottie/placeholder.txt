@@ -1,0 +1,11 @@
+# Lottie Animations Placeholder
+
+Bu klasör Lottie animasyon dosyalarını içerir. Gerçek animasyon dosyaları şunlar olacak:
+
+- breathing_circle.json - Nefes egzersizi için daire animasyonu
+- splash_logo.json - Splash screen için logo animasyonu
+- meditation.json - Meditasyon animasyonu
+- sleep_mode.json - Uyku modu animasyonu
+- sound_waves.json - Ses dalgaları animasyonu
+
+Şu anda animasyon dosyaları mevcut değil, bu yüzden basit Flutter animasyonları kullanılacak. 

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "703714068680",
+    "project_id": "breathe-flow-app",
+    "storage_bucket": "breathe-flow-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:703714068680:android:39e181c41ead37ad2c3dfd",
+        "android_client_info": {
+          "package_name": "com.example.breathe_flow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDy6s3IMOWLimfgZ78tHofXkd2Dqs4B_jM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

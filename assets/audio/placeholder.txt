@@ -1,0 +1,16 @@
+# Audio Assets Placeholder
+
+Bu klasör ses dosyalarını içerir. Gerçek ses dosyaları şunlar olacak:
+
+- rain.mp3 - Yağmur sesi
+- ocean.mp3 - Okyanus dalgaları
+- forest.mp3 - Orman sesleri
+- fireplace.mp3 - Şömine sesi
+- whitenoise.mp3 - Beyaz gürültü
+- lofi.mp3 - Lo-fi müzik
+- thunder.mp3 - Gök gürültüsü (Premium)
+- cafe.mp3 - Kafe ortamı (Premium)
+- piano.mp3 - Piyano müziği (Premium)
+- wind.mp3 - Rüzgar sesi (Premium)
+
+Şu anda ses dosyaları mevcut değil, bu yüzden uygulama ses çalmayacak ancak UI tam olarak çalışacak. 

@@ -1,0 +1,29 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "breathe-flow-app",
+          "appId": "1:703714068680:android:39e181c41ead37ad2c3dfd",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "breathe-flow-app",
+          "configurations": {
+            "android": "1:703714068680:android:39e181c41ead37ad2c3dfd",
+            "ios": "1:703714068680:ios:a3dd3f812f6b16eb2c3dfd",
+            "macos": "1:703714068680:ios:a3dd3f812f6b16eb2c3dfd",
+            "web": "1:703714068680:web:924ef65ba12e8b3d2c3dfd",
+            "windows": "1:703714068680:web:aeec7ebbdd611f0e2c3dfd"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

@@ -1,0 +1,10 @@
+# Images Placeholder
+
+Bu klasör resim dosyalarını içerir. Gerçek resim dosyaları şunlar olacak:
+
+- app_logo.png - Uygulama logosu
+- mood_backgrounds/ - Mood kartları için arka plan resimleri
+- onboarding/ - Onboarding ekranları için resimler
+- icons/ - Özel ikonlar
+
+Şu anda resim dosyaları mevcut değil, bu yüzden Material Design ikonları kullanılacak. 
