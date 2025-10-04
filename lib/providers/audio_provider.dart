@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../models/sound_item.dart';
 import '../models/meditation_journey.dart'; // Meditasyon için gerekli
+import '../services/ad_service.dart';
 
 enum PlayerState { playing, paused, stopped }
 
@@ -13,6 +14,11 @@ class AudioProvider with ChangeNotifier {
   final Map<String, double> _volumes = {};
   SoundItem? _exclusiveSound;
   PlayerState _exclusivePlayerState = PlayerState.stopped;
+
+  // --- REKLAM TAKİP SİSTEMİ ---
+  DateTime? _lastSoundStartTime;
+  int _soundSessionCount = 0;
+  static const int _soundSessionsForAd = 3; // 3 ses dinledikten sonra reklam
 
   // --- MEDİTASYON OYNATICI ---
   final AudioPlayer _meditationPlayer = AudioPlayer();
@@ -54,6 +60,9 @@ class AudioProvider with ChangeNotifier {
     await stopAllSounds();
     _exclusiveSound = sound;
     _exclusivePlayerState = PlayerState.playing; // Set state immediately for UI responsiveness
+    
+    // 🎯 Ses dinleme takibi - reklam sistemi için
+    _trackSoundSession();
     
     final player = await _createAndPlay(sound);
     if (player != null) {
@@ -122,9 +131,48 @@ class AudioProvider with ChangeNotifier {
   
   Future<void> _stopExclusiveSound() async {
     if (_exclusiveSound != null) {
+      // 🎯 Ses durdurulduğunda reklam kontrolü yap
+      await _checkAndShowSoundAd();
+      
       await _stopAndRemovePlayer(_exclusiveSound!.id);
       _exclusiveSound = null;
       _exclusivePlayerState = PlayerState.stopped;
+    }
+  }
+
+  /// Ses dinleme oturumunu takip et
+  void _trackSoundSession() {
+    _lastSoundStartTime = DateTime.now();
+    _soundSessionCount++;
+    debugPrint('🎵 Ses oturumu başladı: $_soundSessionCount/$_soundSessionsForAd');
+  }
+
+  /// Ses dinleme sonrası reklam kontrolü
+  Future<void> _checkAndShowSoundAd() async {
+    if (_lastSoundStartTime == null) return;
+    
+    // En az 10 saniye dinlenmişse sayılsın (test için düşürdük)
+    final listeningDuration = DateTime.now().difference(_lastSoundStartTime!);
+    if (listeningDuration.inSeconds < 10) {
+      debugPrint('⏰ Ses çok kısa dinlendi, reklam sayılmaz: ${listeningDuration.inSeconds}s');
+      return;
+    }
+
+    debugPrint('🎯 Ses dinleme tamamlandı: ${listeningDuration.inSeconds}s');
+    debugPrint('📊 Mevcut ses sayacı: $_soundSessionCount/$_soundSessionsForAd');
+    
+    // Belirlenen ses sayısına ulaşıldıysa reklam göster
+    if (_soundSessionCount >= _soundSessionsForAd) {
+      debugPrint('🎬 Ses dinleme reklamı gösteriliyor...');
+      final adShown = await AdService.instance.showInterstitialAd();
+      if (adShown) {
+        _soundSessionCount = 0; // Sayacı sıfırla
+        debugPrint('✅ Ses reklamı gösterildi, sayaç sıfırlandı');
+      } else {
+        debugPrint('❌ Ses reklamı gösterilemedi');
+      }
+    } else {
+      debugPrint('📈 Henüz yeterli ses dinlenmedi: $_soundSessionCount/$_soundSessionsForAd');
     }
   }
 
@@ -135,22 +183,22 @@ class AudioProvider with ChangeNotifier {
       // 🎵 SIMPLIFIED audio setup for Chewie compatibility
       await player.setPlayerMode(PlayerMode.mediaPlayer);
       
-      // 🚀 SAFER audio session - avoid complex configurations that conflict with Chewie
+      // 🚀 MIXER-FRIENDLY audio session - allow multiple sounds to play simultaneously
       try {
       await player.setAudioContext(AudioContext(
         android: AudioContextAndroid(
           contentType: AndroidContentType.music,
           usageType: AndroidUsageType.media,
-            audioFocus: AndroidAudioFocus.gain,
+          audioFocus: AndroidAudioFocus.gainTransientMayDuck, // 🎵 Allow mixing!
         ),
         iOS: AudioContextIOS(
           category: AVAudioSessionCategory.playback,
           options: {
-              AVAudioSessionOptions.mixWithOthers, // CRITICAL for Chewie video mixing
+            AVAudioSessionOptions.mixWithOthers, // 🎵 Allow mixing on iOS
           },
         ),
       ));
-        debugPrint('✅ Audio context set successfully');
+        debugPrint('✅ Audio context set for MIXING');
       } catch (contextError) {
         debugPrint('⚠️ AudioContext failed, using defaults: $contextError');
         // Continue without custom context - use system defaults
@@ -250,9 +298,11 @@ class AudioProvider with ChangeNotifier {
       final player = _audioPlayers.remove(soundId)!;
       try {
         await player.stop();
+        await player.release(); // Release resources first
         await player.dispose();
+        debugPrint('✅ Player stopped and disposed: $soundId');
       } catch (e) {
-        debugPrint('AudioProvider: Oynatıcı durdurulurken hata - $e');
+        debugPrint('❌ Error stopping player $soundId: $e');
       }
     }
   }

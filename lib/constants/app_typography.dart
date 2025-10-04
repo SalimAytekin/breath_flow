@@ -63,6 +63,34 @@ class AppTypography {
     color: AppColors.textPrimary,
     fontFamily: primaryFont,
   );
+
+  // 🏷️ TITLE STYLES
+  static const TextStyle titleLarge = TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.w600,  // SemiBold
+    height: 1.33,                 // Line height: 24px
+    letterSpacing: 0,
+    color: AppColors.textPrimary,
+    fontFamily: primaryFont,
+  );
+
+  static const TextStyle titleMedium = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w500,  // Medium
+    height: 1.5,                  // Line height: 24px
+    letterSpacing: 0,
+    color: AppColors.textPrimary,
+    fontFamily: primaryFont,
+  );
+
+  static const TextStyle titleSmall = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w500,  // Medium
+    height: 1.43,                 // Line height: 20px
+    letterSpacing: 0,
+    color: AppColors.textPrimary,
+    fontFamily: primaryFont,
+  );
   
   // 📝 BODY TEXT
   static const TextStyle bodyLarge = TextStyle(

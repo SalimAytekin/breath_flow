@@ -1,4 +1,6 @@
 import 'package:breathe_flow/models/meditation_journey.dart';
+import 'package:breathe_flow/widgets/global_background.dart';
+import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:breathe_flow/providers/audio_provider.dart';
 import 'package:breathe_flow/widgets/journey_step_tile.dart';
 import 'package:breathe_flow/widgets/professional_button.dart';
@@ -46,83 +48,91 @@ class _JourneyDetailScreenState extends State<JourneyDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 250.0,
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            elevation: 0,
-            pinned: true,
-            stretch: true,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                widget.journey.title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  shadows: [Shadow(blurRadius: 8, color: Colors.black54)],
-                ),
+    return GlobalBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 250.0,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              pinned: true,
+              stretch: true,
+              leading: IconButton(
+                icon: const Icon(FeatherIcons.arrowLeft, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
               ),
-              centerTitle: true,
-              titlePadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-              background: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
+              flexibleSpace: FlexibleSpaceBar(
+                title: Text(
+                  widget.journey.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    shadows: [Shadow(blurRadius: 8, color: Colors.black54)],
+                  ),
                 ),
-                child: Image.asset(
-                  widget.journey.imagePath,
-                  fit: BoxFit.cover,
-                  color: Colors.black.withOpacity(0.3),
-                  colorBlendMode: BlendMode.darken,
+                centerTitle: true,
+                titlePadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                background: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
+                  child: Image.asset(
+                    widget.journey.imagePath,
+                    fit: BoxFit.cover,
+                    color: Colors.black.withOpacity(0.3),
+                    colorBlendMode: BlendMode.darken,
+                  ),
                 ),
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 12.0),
-              child: Text(
-                widget.journey.description,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context)
-                        .textTheme
-                        .bodyLarge
-                        ?.color
-                        ?.withOpacity(0.8)),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 12.0),
+                child: Text(
+                  widget.journey.description,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context)
+                          .textTheme
+                          .bodyLarge
+                          ?.color
+                          ?.withOpacity(0.8)),
+                ),
               ),
             ),
-          ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final step = widget.journey.steps[index];
-                return Consumer<AudioProvider>(
-                  builder: (context, audioProvider, child) {
-                    final isCurrentlyPlaying = audioProvider.currentMeditationId == step.id && audioProvider.isMeditationPlaying;
-                    return JourneyStepTile(
-                      step: step,
-                      isCurrentlyPlaying: isCurrentlyPlaying,
-                      onTap: () {
-                        if (isCurrentlyPlaying) {
-                          _audioProvider.pauseMeditation();
-                        } else {
-                          _audioProvider.playMeditation(step);
-                        }
-                      },
-                      stepIndex: index,
-                      status: _getStepStatus(widget.journey, index),
-                    );
-                  },
-                );
-              },
-              childCount: widget.journey.steps.length,
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final step = widget.journey.steps[index];
+                  return Consumer<AudioProvider>(
+                    builder: (context, audioProvider, child) {
+                      final isCurrentlyPlaying = audioProvider.currentMeditationId == step.id && audioProvider.isMeditationPlaying;
+                      return JourneyStepTile(
+                        step: step,
+                        isCurrentlyPlaying: isCurrentlyPlaying,
+                        onTap: () {
+                          if (isCurrentlyPlaying) {
+                            _audioProvider.pauseMeditation();
+                          } else {
+                            _audioProvider.playMeditation(step);
+                          }
+                        },
+                        stepIndex: index,
+                        status: _getStepStatus(widget.journey, index),
+                      );
+                    },
+                  );
+                },
+                childCount: widget.journey.steps.length,
+              ),
             ),
-          ),
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 50),
-          )
-        ],
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 50),
+            )
+          ],
+        ),
       ),
     );
   }

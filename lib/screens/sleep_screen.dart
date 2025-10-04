@@ -20,31 +20,66 @@ import 'package:breathe_flow/widgets/professional_card.dart';
 import 'package:breathe_flow/constants/app_spacing.dart';
 import 'package:breathe_flow/constants/app_typography.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
+import 'package:breathe_flow/widgets/global_background.dart';
+import '../widgets/professional_app_bar.dart';
 
-class SleepScreen extends StatelessWidget {
+class SleepScreen extends StatefulWidget {
   const SleepScreen({super.key});
 
   @override
+  State<SleepScreen> createState() => _SleepScreenState();
+}
+
+class _SleepScreenState extends State<SleepScreen> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.large),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Uyku Sesleri', style: AppTypography.displaySmall),
-            const SizedBox(height: AppSpacing.small),
-                  Text(
-              'Rahatlatıcı seslerle daha hızlı uykuya dalın.',
-              style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: AppSpacing.large),
-            _buildSoundGrid(context),
-            const SizedBox(height: AppSpacing.xlarge),
-            _buildTimerSection(context),
-            const SizedBox(height: AppSpacing.large),
-            _buildMasterVolumeSection(context),
-          ],
+    return GlobalBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBodyBehindAppBar: true,
+        appBar: ProfessionalAppBar(
+          scrollController: _scrollController,
+          title: 'Uyku Sesleri',
+        ),
+        body: SingleChildScrollView(
+          controller: _scrollController,
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.large, 
+            MediaQuery.of(context).padding.top + kToolbarHeight + AppSpacing.large, 
+            AppSpacing.large, 
+            AppSpacing.large
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Uyku Sesleri', style: AppTypography.displaySmall),
+              const SizedBox(height: AppSpacing.small),
+              Text(
+                'Rahatlatıcı seslerle daha hızlı uykuya dalın.',
+                style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: AppSpacing.large),
+              _buildSoundGrid(context),
+              const SizedBox(height: AppSpacing.xlarge),
+              _buildTimerSection(context),
+              const SizedBox(height: AppSpacing.large),
+              _buildMasterVolumeSection(context),
+            ],
+          ),
         ),
       ),
     );
@@ -54,7 +89,7 @@ class SleepScreen extends StatelessWidget {
     final audioProvider = Provider.of<AudioProvider>(context);
 
     return ProfessionalCard(
-          child: Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(

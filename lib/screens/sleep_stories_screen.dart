@@ -4,6 +4,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 
 import '../constants/app_colors.dart';
+import '../widgets/global_background.dart';
 import '../constants/app_spacing.dart';
 import '../constants/app_typography.dart';
 import '../models/story_series.dart';
@@ -12,7 +13,7 @@ import '../widgets/professional_card.dart';
 import '../widgets/story_series_card.dart';
 import '../screens/story_series_detail_screen.dart';
 
-/// 🌙 Uyku Hikayeleri Ana Liste Sayfası
+/// Uyku Hikayeleri Ana Liste Sayfası
 /// Tüm uyku hikayelerini kategorilere göre listeler
 class SleepStoriesScreen extends StatefulWidget {
   const SleepStoriesScreen({super.key});
@@ -52,35 +53,37 @@ class _SleepStoriesScreenState extends State<SleepStoriesScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Consumer<StoryProvider>(
-        builder: (context, storyProvider, child) {
-          return CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              // 🌟 Professional App Bar
-              _buildSliverAppBar(context),
-              
-              // 🔍 Arama Çubuğu
-              _buildSearchSection(),
-              
-              // 📊 İstatistikler Kartı
-              _buildStatsSection(storyProvider),
-              
-              // 🏷️ Kategori Filtreleri
-              _buildCategoryFilters(),
-              
-              // 📚 Hikaye Kategorileri
-              _buildStorySections(storyProvider),
-              
-              // Alt boşluk
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
-              ),
-            ],
-          );
-        },
+    return GlobalBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Consumer<StoryProvider>(
+          builder: (context, storyProvider, child) {
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // Professional App Bar
+                _buildSliverAppBar(context),
+                
+                // Arama Çubuğu
+                _buildSearchSection(),
+                
+                // İstatistikler Kartı
+                _buildStatsSection(storyProvider),
+                
+                // Kategori Filtreleri
+                _buildCategoryFilters(),
+                
+                // Hikaye Kategorileri
+                _buildStorySections(storyProvider),
+                
+                // Alt boşluk
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 100),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -92,14 +95,16 @@ class _SleepStoriesScreenState extends State<SleepStoriesScreen>
       pinned: true,
       elevation: 0,
       backgroundColor: Colors.transparent,
+      leading: IconButton(
+        icon: const Icon(FeatherIcons.arrowLeft, color: Colors.white),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           'Uyku Hikayeleri',
           style: AppTypography.headlineMedium.copyWith(
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).brightness == Brightness.dark 
-                ? Colors.white 
-                : Colors.black,
+            color: Colors.white,
           ),
         ),
         centerTitle: true,
@@ -114,18 +119,11 @@ class _SleepStoriesScreenState extends State<SleepStoriesScreen>
               ],
             ),
           ),
-          child: Center(
-            child: Icon(
-              FeatherIcons.moon,
-              size: 80,
-              color: AppColors.sleep.withOpacity(0.2),
-            ),
-          ),
         ),
       ),
       actions: [
         IconButton(
-          icon: const Icon(FeatherIcons.filter),
+          icon: const Icon(FeatherIcons.filter, color: Colors.white),
           onPressed: _showFilterBottomSheet,
         ),
       ],

@@ -34,6 +34,9 @@ class AppColors {
   static const Color glassStrong = Color(0x1FF8F9FD);         // rgba(248, 249, 253, 0.12)
   static const Color glassBorder = Color(0x26F8F9FD);         // rgba(248, 249, 253, 0.15)
   
+  // AppBar Rengi
+  static const Color premiumBlack = Color(0xFF1A1A1E);
+  
   // 🌫️ SHADOW COLORS
   static const Color shadowLight = Color(0x4D000000);         // rgba(0, 0, 0, 0.3)
   static const Color shadowMedium = Color(0x66000000);        // rgba(0, 0, 0, 0.4)
@@ -202,8 +205,8 @@ class LightAppColors {
   static const Color glassLight = Color(0xFFF9FAFB);
   static const Color glassMedium = Color(0xFFE5E7EB);
   static const Color glassDark = Color(0xFFD1D5DB);
-  static const Color glassBorder = Color(0xFFE5E7EB);
-  
+  static const Color glassBorder = Color(0xFF4A4A52);
+
   // Utility Colors - Light
   static const Color border = Color(0xFFE5E7EB);
   static const Color cardBackground = Color(0xFFFFFFFF);

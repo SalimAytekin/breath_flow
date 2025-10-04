@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
+import '../widgets/professional_app_bar.dart';
 import '../constants/app_strings.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_theme.dart';
@@ -13,17 +14,76 @@ import 'dart:ui';
 import '../widgets/mixer_panel.dart';
 import '../widgets/sound_card.dart';
 import '../constants/app_spacing.dart';
+import '../widgets/global_background.dart';
 import '../constants/app_typography.dart';
 
 class SoundsScreen extends StatefulWidget {
-  const SoundsScreen({Key? key}) : super(key: key);
+  final String? customTitle;
+  final List<String>? filterTags;
+
+  const SoundsScreen({
+    Key? key,
+    this.customTitle,
+    this.filterTags,
+  }) : super(key: key);
 
   @override
   _SoundsScreenState createState() => _SoundsScreenState();
 }
 
 class _SoundsScreenState extends State<SoundsScreen> {
-  final List<SoundCategory> categories = SoundItem.allCategories;
+  late final ScrollController _scrollController;
+  late final List<SoundCategory> categories;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    
+    // Filtreleme varsa uygula
+    if (widget.filterTags != null && widget.filterTags!.isNotEmpty) {
+      final filteredSounds = SoundItem.getSoundsByTags(widget.filterTags!);
+      // Filtrelenmiş sesleri kategorilere göre grupla
+      categories = _groupSoundsByCategory(filteredSounds);
+    } else {
+      categories = SoundItem.allCategories;
+    }
+  }
+  
+  /// Sesleri kategorilere göre gruplar
+  List<SoundCategory> _groupSoundsByCategory(List<SoundItem> sounds) {
+    final Map<String, List<SoundItem>> categoryMap = {};
+    
+    for (var sound in sounds) {
+      // Her sesin hangi kategoriye ait olduğunu bul
+      for (var category in SoundItem.allCategories) {
+        if (category.sounds.any((s) => s.id == sound.id)) {
+          if (!categoryMap.containsKey(category.id)) {
+            categoryMap[category.id] = [];
+          }
+          categoryMap[category.id]!.add(sound);
+          break;
+        }
+      }
+    }
+    
+    // Kategorileri oluştur
+    return SoundItem.allCategories
+        .where((cat) => categoryMap.containsKey(cat.id))
+        .map((cat) => SoundCategory(
+              id: cat.id,
+              name: cat.name,
+              icon: cat.icon,
+              sounds: categoryMap[cat.id]!,
+            ))
+        .toList();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   void _onSoundTapped(SoundItem sound) {
     final audioProvider = Provider.of<AudioProvider>(context, listen: false);
@@ -32,45 +92,45 @@ class _SoundsScreenState extends State<SoundsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.primaryBackground,
-      appBar: AppBar(
-        title: const Text('Keşfet'),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(FeatherIcons.search),
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          ListView.builder(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(
-              top: AppSpacing.medium, 
-              bottom: 120,
+    final topPadding = MediaQuery.of(context).padding.top;
+
+    return GlobalBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBodyBehindAppBar: true,
+        appBar: ProfessionalAppBar(
+          scrollController: _scrollController,
+          title: widget.customTitle ?? 'Ses Dünyası',
+        ),
+        body: Stack(
+          children: [
+            ListView.builder(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.only(
+                top: topPadding + kToolbarHeight + AppSpacing.medium,
+                bottom: 120,
+                left: 0,
+                right: 0,
+              ),
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                final category = categories[index];
+                if (category.sounds.isEmpty) return const SizedBox.shrink();
+                return _CategorySection(
+                  category: category,
+                  onSoundTap: _onSoundTapped,
+                );
+              },
+            ),
+            const Positioned(
+              bottom: 0,
               left: 0,
               right: 0,
+              child: MixerPanel(),
             ),
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              final category = categories[index];
-              if (category.sounds.isEmpty) return const SizedBox.shrink();
-              return _CategorySection(
-                category: category,
-                onSoundTap: _onSoundTapped,
-              );
-            },
-          ),
-          const Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: MixerPanel(),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -96,7 +156,7 @@ class _CategorySection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _CategoryHeader(title: category.name, onSeeAllTap: () {}),
+          _CategoryHeader(title: category.name),
           const SizedBox(height: AppSpacing.small),
           SizedBox(
             height: cardHeight,
@@ -131,35 +191,18 @@ class _CategorySection extends StatelessWidget {
 
 class _CategoryHeader extends StatelessWidget {
   final String title;
-  final VoidCallback onSeeAllTap;
 
-  const _CategoryHeader({required this.title, required this.onSeeAllTap});
+  const _CategoryHeader({required this.title});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.medium),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            title,
-            style: AppTypography.headlineSmall.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          TextButton(
-            onPressed: onSeeAllTap,
-            child: Text(
-              'Tümünü gör',
-              style: AppTypography.labelLarge.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
+      child: Text(
+        title,
+        style: AppTypography.headlineSmall.copyWith(
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

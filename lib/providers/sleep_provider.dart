@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:fl_chart/fl_chart.dart';
 import '../models/sleep_entry.dart';
 
 class SleepProvider extends ChangeNotifier {
@@ -84,26 +85,40 @@ class SleepProvider extends ChangeNotifier {
     ).firstOrNull;
   }
   
-  /// Son 7 günün uyku borcu toplamı
+  /// Son 7 günün uyku borcu toplamı (sadece veri girilen günler)
   Duration get weeklyDebt {
     final now = DateTime.now();
-    final weekAgo = now.subtract(const Duration(days: 7));
-    
     Duration totalDebt = Duration.zero;
     
     for (int i = 0; i < 7; i++) {
       final date = now.subtract(Duration(days: i));
       final entry = getSleepEntryForDate(date);
       
-      if (entry != null) {
+      // Sadece veri girilen günleri hesapla
+      if (entry != null && entry.actualSleep > Duration.zero) {
         totalDebt += entry.sleepDebt;
-      } else {
-        // Veri yoksa hedef uyku kadar borç ekle
-        totalDebt -= Duration(hours: _defaultTargetHours);
       }
+      // Veri girilmeyen günleri hesaplamaya dahil etme
     }
     
     return totalDebt;
+  }
+
+  /// Veri girilen gün sayısı (son 7 gün)
+  int get daysWithDataCount {
+    final now = DateTime.now();
+    int count = 0;
+    
+    for (int i = 0; i < 7; i++) {
+      final date = now.subtract(Duration(days: i));
+      final entry = getSleepEntryForDate(date);
+      
+      if (entry != null && entry.actualSleep > Duration.zero) {
+        count++;
+      }
+    }
+    
+    return count;
   }
   
   /// Son 7 günün ortalama uyku süresi
@@ -128,38 +143,35 @@ class SleepProvider extends ChangeNotifier {
     return Duration(minutes: averageMinutes);
   }
   
-  /// Son 30 günün uyku kalitesi skoru (0-100)
+  /// Ortalama uyku kalitesi skoru (0-100).
+  /// Bu skor, hedeflenen uyku süresine ne kadar yaklaşıldığına göre hesaplanır.
   int get sleepQualityScore {
-    final now = DateTime.now();
-    int totalScore = 0;
-    int daysWithData = 0;
-    
-    for (int i = 0; i < 30; i++) {
-      final date = now.subtract(Duration(days: i));
-      final entry = getSleepEntryForDate(date);
+    if (sleepEntries.isEmpty) return 0;
+
+    // Sadece veri olan günleri al
+    final entriesWithData = weeklyEntries.where((e) => e.actualSleep > Duration.zero).toList();
+    if (entriesWithData.isEmpty) return 0;
+
+    double totalScore = 0;
+    for (var entry in entriesWithData) {
+      final targetMinutes = entry.targetSleep.inMinutes;
+      final actualMinutes = entry.actualSleep.inMinutes;
       
-      if (entry != null) {
-        // Uyku kalitesi = hedefe ne kadar yakın olduğu (100 = mükemmel)
-        final target = entry.targetSleep.inMinutes;
-        final actual = entry.actualSleep.inMinutes;
-        final difference = (actual - target).abs();
-        
-        // 0-60 dk fark = 100 puan, 60+ dk fark = azalan puan
-        int dayScore = 100;
-        if (difference > 60) {
-          dayScore = (100 - (difference - 60) * 2).clamp(0, 100);
-        } else if (difference > 30) {
-          dayScore = 90 - difference;
-        }
-        
-        totalScore += dayScore;
-        daysWithData++;
-      }
+      if (targetMinutes == 0) continue; // Hedef yoksa puanlama yapma
+
+      // Hedefe olan uzaklık (dakika cinsinden)
+      final difference = (targetMinutes - actualMinutes).abs();
+
+      // Skoru hesapla: 30 dakikaya kadar olan sapmalar tam puan (100) alır.
+      // Sonraki her 15 dakikalık sapma için 10 puan düşülür.
+      double score = 100.0 - ((difference - 30) / 15) * 10;
+
+      // Skorun 0'ın altına düşmesini ve 100'ü aşmasını engelle
+      totalScore += score.clamp(0, 100);
     }
-    
-    if (daysWithData == 0) return 0;
-    
-    return totalScore ~/ daysWithData;
+
+    // Ortalamayı al ve tam sayıya yuvarla
+    return (totalScore / entriesWithData.length).round();
   }
   
   /// Haftalık uyku verileri (grafik için)
@@ -171,22 +183,47 @@ class SleepProvider extends ChangeNotifier {
       final date = DateTime(now.year, now.month, now.day - i);
       final entry = getSleepEntryForDate(date);
       
-      if (entry != null) {
-        entries.add(entry);
-      } else {
-        // Veri yoksa varsayılan entry oluştur
-        entries.add(SleepEntry(
-          date: date,
-          bedTime: date.add(const Duration(hours: 23)),
-          wakeTime: date.add(const Duration(hours: 7)),
-          targetHours: _defaultTargetHours,
-        ));
-      }
+      // Grafik için veri olmasa bile günü temsil eden bir entry ekle
+      entries.add(entry ?? SleepEntry(
+        date: date,
+        bedTime: date, // Uyunmamış gün için sıfır süreli
+        wakeTime: date,
+        targetHours: _defaultTargetHours,
+      ));
     }
     
     return entries;
   }
-  
+
+  /// Haftalık grafik için maksimum Y ekseni değerini hesaplar.
+  double get maxSleepForChart {
+    final entries = weeklyEntries;
+    if (entries.isEmpty) return (_defaultTargetHours + 2).toDouble();
+
+    double maxHours = _defaultTargetHours.toDouble();
+    for (var entry in entries) {
+      if (entry.actualSleep.inHours > maxHours) {
+        maxHours = entry.actualSleep.inHours.toDouble();
+      }
+    }
+    // Grafiğin üstünde biraz boşluk bırakmak için 2 saat ekle
+    return (maxHours.ceil() + 2).toDouble();
+  }
+
+  /// Haftalık grafik verileri
+  List<FlSpot> get weeklyChartData {
+    final entries = weeklyEntries;
+    final chartData = <FlSpot>[];
+
+    for (int i = 0; i < entries.length; i++) {
+      final entry = entries[i];
+      final hours = entry.actualSleep.inHours.toDouble();
+      chartData.add(FlSpot(i.toDouble(), hours));
+    }
+
+    return chartData;
+  }
+
   /// Uyku borcunu formatla
   String formatSleepDebt(Duration debt) {
     if (debt.isNegative) {

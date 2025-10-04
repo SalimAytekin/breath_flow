@@ -5,10 +5,12 @@ import '../constants/app_strings.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
 import '../providers/theme_provider.dart';
+import '../widgets/simple_banner_ad.dart';
 import 'home_screen.dart';
 import 'explore_screen.dart';
 import 'profile_screen.dart';
 import 'dart:ui';
+import '../widgets/global_background.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -73,133 +75,31 @@ Widget build(BuildContext context) {
   return Scaffold(
     extendBody: true,
     backgroundColor: Colors.transparent,
-    body: Stack(
+    body: GlobalBackground(
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: PageView(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+          children: _widgetOptions,
+        ),
+      ),
+    ),
+    bottomNavigationBar: Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Base deep night gradient
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              stops: [0.0, 0.4, 0.8, 1.0],
-              colors: [
-                Color(0xFF0B0B1A),
-                Color(0xFF1A1A2E),
-                Color(0xFF16213E),
-                Color(0xFF0F0F1E),
-              ],
-            ),
-          ),
+        // Banner reklam - Navbar üstünde
+        const SimpleBannerAd(
+          placement: 'main_navigation',
+          margin: EdgeInsets.symmetric(horizontal: 0, vertical: 4),
         ),
-        
-        // Floating aurora-like orbs
-        Positioned(
-          top: -50,
-          left: -100,
-          child: Container(
-            width: 300,
-            height: 300,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFF4A5568).withOpacity(0.15),
-                  const Color(0xFF4A5568).withOpacity(0.05),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-        
-        Positioned(
-          bottom: -80,
-          right: -80,
-          child: Container(
-            width: 250,
-            height: 250,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFF6B46C1).withOpacity(0.12),
-                  const Color(0xFF6B46C1).withOpacity(0.04),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-        
-        Positioned(
-          top: 200,
-          right: 50,
-          child: Container(
-            width: 180,
-            height: 180,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFF4C6EF5).withOpacity(0.08),
-                  const Color(0xFF4C6EF5).withOpacity(0.02),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-        
-        // Subtle animated shimmer overlay
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withOpacity(0.02),
-                Colors.transparent,
-                Colors.white.withOpacity(0.01),
-                Colors.transparent,
-              ],
-            ),
-          ),
-        ),
-        
-        // Gentle blur layer for depth
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.02),
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.03),
-                ],
-              ),
-            ),
-          ),
-        ),
-        
-        // Content layer
-        FadeTransition(
-          opacity: _fadeAnimation,
-          child: PageView(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-            children: _widgetOptions,
-          ),
-        ),
+        _buildBottomNavBar(Theme.of(context).brightness == Brightness.dark),
       ],
     ),
-    bottomNavigationBar: _buildBottomNavBar(Theme.of(context).brightness == Brightness.dark),
   );
 }
 

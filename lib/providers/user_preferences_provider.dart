@@ -78,6 +78,25 @@ class UserPreferencesProvider extends ChangeNotifier {
     final lastSessionString = prefs.getString('last_session_date');
     if (lastSessionString != null) {
       _lastSessionDate = DateTime.tryParse(lastSessionString);
+      
+      // Streak kontrolü - Eğer son seans 1 günden fazla önceyse streak'i sıfırla
+      if (_lastSessionDate != null && _currentStreak > 0) {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final lastSessionDay = DateTime(
+          _lastSessionDate!.year,
+          _lastSessionDate!.month,
+          _lastSessionDate!.day,
+        );
+        
+        final daysDifference = today.difference(lastSessionDay).inDays;
+        
+        if (daysDifference > 1) {
+          // Streak kırılmış, sıfırla
+          _currentStreak = 0;
+          await prefs.setInt('current_streak', 0);
+        }
+      }
     }
     
     // --- FAZ 1: Yeni Verileri Yükleme ---
@@ -261,6 +280,22 @@ class UserPreferencesProvider extends ChangeNotifier {
   // Eksik getter ve methodlar
   int get longestStreak => _currentStreak; // Basit implementasyon
   int get dailyGoal => _dailyGoalMinutes;
+  
+  int get weeklyGoal => 7; // Haftada 7 seans hedefi
+  
+  int get completedSessionsThisWeek {
+    if (_lastSessionDate == null) return 0;
+    
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final startOfWeekDay = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+    
+    // Basit implementasyon - gerçek uygulamada haftalık kayıtlar tutulmalı
+    if (_lastSessionDate!.isAfter(startOfWeekDay)) {
+      return _currentStreak.clamp(0, 7);
+    }
+    return 0;
+  }
   
   Future<void> setDailyGoal(int minutes) async {
     await setDailyGoalMinutes(minutes);

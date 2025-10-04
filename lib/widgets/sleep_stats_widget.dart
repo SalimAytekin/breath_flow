@@ -5,6 +5,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_theme.dart';
 import '../providers/sleep_provider.dart';
 import '../screens/sleep_input_screen.dart';
+import '../screens/sleep_analytics_screen.dart';
 
 class SleepStatsWidget extends StatelessWidget {
   final bool isCompact;
@@ -114,23 +115,26 @@ class SleepStatsWidget extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Uyku Analizi',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                child: GestureDetector(
+                  onTap: () => _navigateToSleepAnalytics(context),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Uyku Analizi',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Son 7 günlük uyku verilerin',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
+                      const SizedBox(height: 4),
+                      Text(
+                        'Son 7 günlük uyku verilerin',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               IconButton(
@@ -449,6 +453,14 @@ class SleepStatsWidget extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const SleepInputScreen(),
+      ),
+    );
+  }
+
+  void _navigateToSleepAnalytics(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const SleepAnalyticsScreen(),
       ),
     );
   }

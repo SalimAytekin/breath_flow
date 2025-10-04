@@ -14,6 +14,7 @@ class SoundItem {
   final IconData icon;
   final Color color;
   final bool isPremium;
+  final List<String> tags; // Kullanım senaryosu etiketleri
 
   SoundItem({
     required this.id,
@@ -25,6 +26,7 @@ class SoundItem {
     required this.icon,
     required this.color,
     this.isPremium = false,
+    this.tags = const [], // Varsayılan boş liste
   });
 
   // --- KATEGORİZE EDİLMİŞ SES LİSTELERİ ---
@@ -45,6 +47,7 @@ class SoundItem {
           videoPath: AssetManager.videoRainDrop,
           icon: FeatherIcons.umbrella,
       color: AppColors.relaxation,
+      tags: ['sleep', 'relaxation'],
     ),
     SoundItem(
           id: 'light_rain',
@@ -55,6 +58,7 @@ class SoundItem {
           videoPath: AssetManager.videoLightRain,
           icon: FeatherIcons.cloudDrizzle,
           color: AppColors.info,
+          tags: ['sleep', 'relaxation', 'focus'],
         ),
         SoundItem(
           id: 'heavy_rain',
@@ -66,6 +70,7 @@ class SoundItem {
           icon: FeatherIcons.cloudRain,
           color: AppColors.info,
           isPremium: true,
+          tags: ['sleep', 'focus'],
     ),
     SoundItem(
       id: 'ocean',
@@ -76,6 +81,7 @@ class SoundItem {
           videoPath: AssetManager.videoOceanWaves,
           icon: FeatherIcons.voicemail, // wave icon
       color: AppColors.info,
+      tags: ['sleep', 'meditation', 'relaxation'],
     ),
     SoundItem(
       id: 'forest',
@@ -86,6 +92,7 @@ class SoundItem {
           videoPath: AssetManager.videoForest,
           icon: FeatherIcons.wind,
       color: AppColors.success,
+      tags: ['meditation', 'relaxation', 'focus'],
     ),
     SoundItem(
       id: 'thunder',
@@ -97,6 +104,7 @@ class SoundItem {
       icon: FeatherIcons.cloudLightning,
       color: AppColors.primary,
       isPremium: true,
+      tags: ['sleep', 'relaxation'],
     ),
     SoundItem(
           id: 'campfire',
@@ -107,6 +115,7 @@ class SoundItem {
           videoPath: AssetManager.videoCampfire,
           icon: FeatherIcons.zap, // fire icon
           color: AppColors.warning,
+          tags: ['sleep', 'relaxation'],
         ),
         SoundItem(
           id: 'river',
@@ -117,6 +126,7 @@ class SoundItem {
           videoPath: AssetManager.videoRiver,
           icon: FeatherIcons.gitPullRequest, // represents flow
           color: AppColors.info,
+          tags: ['meditation', 'relaxation', 'focus'],
         ),
       ],
     ),
@@ -136,6 +146,7 @@ class SoundItem {
           videoPath: AssetManager.videoWhiteNoise,
           icon: FeatherIcons.activity,
       color: AppColors.textSecondary,
+      tags: ['sleep', 'focus'],
     ),
         SoundItem(
           id: 'rainy_car_ride',
@@ -146,6 +157,7 @@ class SoundItem {
           videoPath: AssetManager.videoRainyCarRide,
           icon: FeatherIcons.truck,
           color: AppColors.info,
+          tags: ['sleep', 'relaxation'],
         ),
         SoundItem(
           id: 'bus_ride',
@@ -156,6 +168,7 @@ class SoundItem {
           videoPath: AssetManager.videoBusRide,
           icon: FeatherIcons.navigation,
           color: AppColors.primary,
+          tags: ['sleep', 'relaxation'],
         ),
         SoundItem(
           id: 'library',
@@ -166,36 +179,39 @@ class SoundItem {
           videoPath: null,
           icon: FeatherIcons.book,
           color: AppColors.focus,
+          tags: ['focus'],
         ),
         SoundItem(
           id: 'cafe',
-          name: 'Kafe Ambiyansı',
+          name: 'Kafe Ambiyanşı',
           description: 'Bardak tıkırtısı, kahve makinesi ve arka plan sohbetler',
           assetPath: AssetManager.ambientCafe,
           imagePath: AssetManager.coverCafe,
           videoPath: AssetManager.videoCafe,
           icon: FeatherIcons.coffee,
           color: Colors.brown,
+          tags: ['focus'],
         ),
         SoundItem(
           id: 'train',
           name: 'Tren Yolculuğu',
-          description: 'Rayların ritmik sesi ve yolculuk ambiyansı',
+          description: 'Rayların ritmik sesi ve yolculuk ambiyanşı',
           assetPath: AssetManager.ambientTrain,
           imagePath: AssetManager.coverTrain,
           videoPath: AssetManager.videoTrain,
           icon: FeatherIcons.truck,
           color: AppColors.textSecondary,
           isPremium: true,
+          tags: ['sleep', 'relaxation'],
         ),
       ],
     ),
     
-    // 3. Meditasyon Odaklı
+    // 3. Müzik & Enstrümanlar
     SoundCategory(
       id: 'meditation',
-      name: 'Meditasyon Odaklı',
-      icon: FeatherIcons.award,
+      name: 'Müzik & Enstrümanlar',
+      icon: FeatherIcons.music,
       sounds: [
     SoundItem(
       id: 'meditation_bell',
@@ -206,6 +222,7 @@ class SoundItem {
       videoPath: AssetManager.videoMeditationBell,
       icon: FeatherIcons.bell,
       color: AppColors.sleep,
+      tags: ['meditation', 'relaxation'],
     ),
         SoundItem(
           id: 'tibetan_bowls',
@@ -217,6 +234,7 @@ class SoundItem {
           icon: FeatherIcons.disc,
           color: AppColors.focus,
           isPremium: true,
+          tags: ['meditation', 'relaxation'],
         ),
         SoundItem(
           id: 'lofi',
@@ -228,6 +246,7 @@ class SoundItem {
           icon: FeatherIcons.music,
           color: AppColors.focus,
           isPremium: true,
+          tags: ['focus'],
         ),
     SoundItem(
       id: 'piano',
@@ -239,6 +258,7 @@ class SoundItem {
       icon: FeatherIcons.music,
           color: AppColors.primary,
           isPremium: true,
+          tags: ['meditation', 'relaxation'],
         ),
         SoundItem(
           id: 'binaural_focus',
@@ -250,6 +270,7 @@ class SoundItem {
           icon: FeatherIcons.target,
       color: AppColors.focus,
       isPremium: true,
+      tags: ['focus', 'meditation'],
     ),
       ],
     ),
@@ -269,6 +290,7 @@ class SoundItem {
           videoPath: AssetManager.videoNightCrickets,
           icon: FeatherIcons.moon,
           color: AppColors.info,
+          tags: ['sleep', 'relaxation'],
         ),
       ],
     ),
@@ -291,4 +313,12 @@ class SoundItem {
 
   static List<SoundItem> get premiumSounds => 
       allSounds.where((sound) => sound.isPremium).toList();
+
+  /// Tag'lere göre sesleri filtreler
+  static List<SoundItem> getSoundsByTags(List<String> tags) {
+    if (tags.isEmpty) return allSounds;
+    return allSounds.where((sound) {
+      return tags.any((tag) => sound.tags.contains(tag));
+    }).toList();
+  }
 }

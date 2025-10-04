@@ -227,17 +227,19 @@ class _ProfessionalCardState extends State<ProfessionalCard> with SingleTickerPr
           },
         ),
         
-        // 2. Readability Scrim
+        // 2. Readability Scrim - ENHANCED
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.black.withOpacity(0.0),
-                Colors.black.withOpacity(0.8),
+                Colors.transparent,
+                Colors.black.withOpacity(0.3),
+                Colors.black.withOpacity(0.7),
+                Colors.black.withOpacity(0.95),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              stops: const [0.4, 1.0],
+              stops: const [0.0, 0.4, 0.7, 1.0],
             ),
           ),
         ),
@@ -485,6 +487,7 @@ class FeatureCard extends StatelessWidget {
 class StatsCard extends StatelessWidget {
   final String title;
   final String value;
+  final String? subtitle;
   final String? change;
   final IconData? icon;
   final Color? iconColor;
@@ -494,6 +497,7 @@ class StatsCard extends StatelessWidget {
     Key? key,
     required this.title,
     required this.value,
+    this.subtitle,
     this.change,
     this.icon,
     this.iconColor,
@@ -543,6 +547,17 @@ class StatsCard extends StatelessWidget {
               ],
             ],
           ),
+          if (subtitle != null) ...[
+            const SizedBox(height: AppSpacing.tiny),
+            Text(
+              subtitle!,
+              style: AppTypography.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
           if (chart != null) ...[
             const SizedBox(height: AppSpacing.medium),
             Expanded(child: chart!),
@@ -551,4 +566,4 @@ class StatsCard extends StatelessWidget {
       ),
     );
   }
-} 
+}

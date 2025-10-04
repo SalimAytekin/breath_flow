@@ -1,9 +1,12 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import '../constants/app_colors.dart';
+import '../widgets/professional_app_bar.dart';
+import '../widgets/global_background.dart';
 import '../providers/hrv_provider.dart';
 import '../models/hrv_measurement.dart';
 import '../widgets/hrv_results_widget.dart';
@@ -18,63 +21,90 @@ class HRVAnalyticsScreen extends StatefulWidget {
 class _HRVAnalyticsScreenState extends State<HRVAnalyticsScreen>
     with TickerProviderStateMixin {
   
-  late TabController _tabController;
+  late final TabController _tabController;
+  late final ScrollController _scrollController;
+  late final ProfessionalAppBar _appBar;
   String _selectedPeriod = 'Hafta';
   
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _scrollController = ScrollController();
   }
   
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
+    return GlobalBackground(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(FeatherIcons.arrowLeft),
-          onPressed: () => Navigator.of(context).pop(),
+        body: Consumer<HRVProvider>(
+          builder: (context, hrvProvider, child) {
+            if (hrvProvider.measurements.isEmpty) {
+              return Scaffold(
+                backgroundColor: Colors.transparent,
+                appBar: AppBar(
+                  title: const Text('HRV Analitiği'),
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                ),
+                body: _buildEmptyState(),
+              );
+            }
+            return NestedScrollView(
+              controller: _scrollController,
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return <Widget>[
+                  SliverOverlapAbsorber(
+                    handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                    sliver: SliverAppBar(
+                      title: const Text('HRV Analitiği'),
+                      pinned: true,
+                      floating: true,
+                      snap: true,
+                      forceElevated: innerBoxIsScrolled,
+                      backgroundColor: AppColors.premiumBlack.withOpacity(innerBoxIsScrolled ? 0.75 : 0),
+                      flexibleSpace: innerBoxIsScrolled
+                          ? ClipRect(
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                child: Container(color: Colors.transparent),
+                              ),
+                            )
+                          : null,
+                      bottom: TabBar(
+                        controller: _tabController,
+                        tabs: const [
+                          Tab(text: 'Genel Bakış'),
+                          Tab(text: 'Trend'),
+                          Tab(text: 'Detaylar'),
+                        ],
+                        indicatorColor: AppColors.primaryAccent,
+                        labelColor: AppColors.textPrimary,
+                        unselectedLabelColor: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ];
+              },
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildOverviewTab(hrvProvider),
+                  _buildTrendTab(hrvProvider),
+                  _buildDetailsTab(hrvProvider),
+                ],
+              ),
+            );
+          },
         ),
-        title: Text(
-          'HRV Analitiği',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Genel Bakış'),
-            Tab(text: 'Trend'),
-            Tab(text: 'Detaylar'),
-          ],
-        ),
-      ),
-      body: Consumer<HRVProvider>(
-        builder: (context, hrvProvider, child) {
-          if (hrvProvider.measurements.isEmpty) {
-            return _buildEmptyState();
-          }
-          
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              _buildOverviewTab(hrvProvider),
-              _buildTrendTab(hrvProvider),
-              _buildDetailsTab(hrvProvider),
-            ],
-          );
-        },
       ),
     );
   }

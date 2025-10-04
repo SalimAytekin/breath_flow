@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
-import 'package:intl/intl.dart';
 import '../constants/app_colors.dart';
 import '../models/journal_entry.dart';
 
@@ -17,6 +16,12 @@ class JournalEntryCard extends StatelessWidget {
     this.onEdit,
     this.onDelete,
   });
+
+  String _formatTime(DateTime timestamp) {
+    final hour = timestamp.hour.toString().padLeft(2, '0');
+    final minute = timestamp.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +74,7 @@ class JournalEntryCard extends StatelessWidget {
                   const Spacer(),
                   // Zaman damgası
                   Text(
-                    DateFormat('HH:mm').format(entry.timestamp),
+                    _formatTime(entry.timestamp),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
                     ),

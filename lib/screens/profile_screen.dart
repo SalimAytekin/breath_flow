@@ -106,18 +106,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(FeatherIcons.logIn, size: 60, color: AppColors.primaryAccent),
+              Icon(FeatherIcons.user, size: 60, color: AppColors.primaryAccent),
               const SizedBox(height: 20),
               Text(
-                'Tüm özelliklere erişmek için giriş yapın.',
+                'Profil Oluştur',
                 textAlign: TextAlign.center,
                 style: AppTypography.headlineSmall,
               ),
               const SizedBox(height: 12),
               Text(
-                'İlerlemenizi kaydedin, istatistiklerinizi görün ve daha fazlası.',
+                'Giriş yaparak profil fotoğrafı ekleyebilir ve verilerinizi gelecekte senkronize edebilirsiniz.',
                 textAlign: TextAlign.center,
-                style: AppTypography.bodyMedium,
+                style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 30),
               ProfessionalButton(
@@ -175,8 +175,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: AppSpacing.tiny),
                 Text(
-                  'İlerlemenizi takip edin',
-                  style: AppTypography.bodyMedium,
+                  'Nefes, uyku ve meditasyon yolculuğunuz',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -195,29 +197,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.tiny),
-              child: Text('İstatistikler', style: AppTypography.headlineMedium),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('İstatistikler', style: AppTypography.headlineMedium),
+                  const SizedBox(height: AppSpacing.tiny),
+                  Text(
+                    'Nefes egzersizleri, uyku takibi ve meditasyon seanslarınız',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: AppSpacing.large),
             ProfessionalCard(
               cardType: CardType.elevated,
-              child: Row(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: StatsCard(
-                      title: 'Toplam Seans',
-                      value: '${userPrefs.totalSessions}',
-                      icon: FeatherIcons.play,
-                      iconColor: AppColors.primaryAccent,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: StatsCard(
+                          title: 'Toplam Seans',
+                          value: '${userPrefs.totalSessions}',
+                          subtitle: 'Nefes, uyku ve meditasyon',
+                          icon: FeatherIcons.play,
+                          iconColor: AppColors.primaryAccent,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.medium),
+                      Expanded(
+                        child: StatsCard(
+                          title: 'Toplam Süre',
+                          value: userPrefs.totalTimeText,
+                          subtitle: 'Tüm seanslarınız',
+                          icon: FeatherIcons.clock,
+                          iconColor: AppColors.focus,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: AppSpacing.medium),
-                  Expanded(
-                    child: StatsCard(
-                      title: 'Toplam Süre',
-                      value: userPrefs.totalTimeText,
-                      icon: FeatherIcons.clock,
-                      iconColor: AppColors.focus,
-                    ),
+                  const SizedBox(height: AppSpacing.medium),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: StatsCard(
+                          title: 'Günlük Seri',
+                          value: '${userPrefs.currentStreak} gün',
+                          subtitle: 'Üst üste kullanım',
+                          icon: FeatherIcons.zap,
+                          iconColor: AppColors.energy,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.medium),
+                      Expanded(
+                        child: StatsCard(
+                          title: 'Günlük Hedef',
+                          value: '${userPrefs.dailyGoalMinutes} dk',
+                          subtitle: 'Meditasyon hedefiniz',
+                          icon: FeatherIcons.target,
+                          iconColor: AppColors.sleep,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -240,13 +284,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: AppSpacing.large),
         ProfessionalCard(
           cardType: CardType.standard,
-          child: Column(
-            children: [
-              _buildThemeSettingItem(context),
-              const Divider(),
-              _buildVideoTestItem(context),
-            ],
-          ),
+          child: _buildThemeSettingItem(context),
         ),
       ],
     );
@@ -335,6 +373,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 class StatsCard extends StatelessWidget {
   final String title;
   final String value;
+  final String? subtitle;
   final IconData icon;
   final Color iconColor;
 
@@ -342,6 +381,7 @@ class StatsCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.value,
+    this.subtitle,
     required this.icon,
     required this.iconColor,
   });
@@ -365,10 +405,19 @@ class StatsCard extends StatelessWidget {
             children: [
               Text(value, style: AppTypography.headlineSmall),
               Text(title, style: AppTypography.bodyMedium),
+              if (subtitle != null) ...[
+                const SizedBox(height: AppSpacing.tiny),
+                Text(
+                  subtitle!,
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       ],
     );
   }
-} 
+}

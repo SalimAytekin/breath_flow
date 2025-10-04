@@ -4,6 +4,8 @@ import 'package:heart_bpm/heart_bpm.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import '../constants/app_colors.dart';
+import '../widgets/global_background.dart';
+import '../widgets/professional_app_bar.dart';
 import '../constants/app_strings.dart';
 import '../providers/hrv_provider.dart';
 import '../models/hrv_measurement.dart';
@@ -23,55 +25,52 @@ class HRVMeasurementScreen extends StatefulWidget {
 }
 
 class _HRVMeasurementScreenState extends State<HRVMeasurementScreen> {
+  late final ScrollController _scrollController;
   bool _showInstructions = true;
   
   @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
+    return GlobalBackground(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(FeatherIcons.arrowLeft),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Stres Seviyesi Ölçümü',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: Consumer<HRVProvider>(
-        builder: (context, hrvProvider, child) {
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  // Durum göstergesi
-                  _buildStatusCard(hrvProvider),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Ana içerik
-                  Expanded(
-                    child: _buildMainContent(hrvProvider),
-                  ),
-                  
-                  // Alt butonlar
-                  if (hrvProvider.state == HRVMeasurementState.idle)
-                    _buildStartButton(hrvProvider),
-                    
-                  if (hrvProvider.state == HRVMeasurementState.measuring)
-                    _buildMeasurementControls(hrvProvider),
-                ],
+        appBar: ProfessionalAppBar(scrollController: _scrollController, title: 'Stres Seviyesi Ölçümü'),
+        body: SingleChildScrollView(
+          controller: _scrollController,
+          child: Consumer<HRVProvider>(
+          builder: (context, hrvProvider, child) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    // Durum göstergesi
+                    _buildStatusCard(hrvProvider),
+                    const SizedBox(height: 24),
+                    // Ana içerik
+                    _buildMainContent(hrvProvider),
+                    // Alt butonlar
+                    if (hrvProvider.state == HRVMeasurementState.idle)
+                      _buildStartButton(hrvProvider),
+                    if (hrvProvider.state == HRVMeasurementState.measuring)
+                      _buildMeasurementControls(hrvProvider),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        )),
       ),
     );
   }
@@ -369,6 +368,8 @@ class _HRVMeasurementScreenState extends State<HRVMeasurementScreen> {
           
           Expanded(
             child: ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               itemCount: provider.measurements.take(5).length,
               itemBuilder: (context, index) {
                 final measurement = provider.measurements[index];

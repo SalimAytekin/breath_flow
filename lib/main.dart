@@ -33,6 +33,7 @@ import 'package:flutter/services.dart';
 import 'package:breathe_flow/firebase_options.dart';
 import 'package:breathe_flow/providers/theme_provider.dart';
 import 'package:breathe_flow/providers/auth_provider.dart';
+import 'package:breathe_flow/services/ad_service.dart';
 import 'models/sound_item.dart';
 import 'utils/performance_utils.dart';
 
@@ -73,6 +74,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // 🎯 AdMob'u başlat - Temiz ve kontrollü sistem
+  await AdService.initialize();
 
   // System UI overlay style
   SystemChrome.setSystemUIOverlayStyle(

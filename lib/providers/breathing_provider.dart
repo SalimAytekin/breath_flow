@@ -7,6 +7,7 @@ class BreathingProvider extends ChangeNotifier {
   // --- Private State Variables ---
   BreathingExercise? _currentExercise;
   bool _isRunning = false;
+  bool _isPaused = false;
   Timer? _timer;
 
   // Step and cycle tracking
@@ -28,6 +29,7 @@ class BreathingProvider extends ChangeNotifier {
   // --- Public Getters for UI ---
   BreathingExercise? get currentExercise => _currentExercise;
   bool get isRunning => _isRunning;
+  bool get isPaused => _isPaused;
   BreathingStep? get currentStep => _currentStep;
   int get countdown => _countdown;
   int get sessionDuration => _sessionDuration;
@@ -41,12 +43,16 @@ class BreathingProvider extends ChangeNotifier {
     _onSessionCompleted = callback;
   }
 
-  void setExercise(BreathingExercise exercise) {
+  void setExercise(BreathingExercise exercise, {int? customCycles}) {
     if (_isRunning) {
       stop(); // Stop any previous session
     }
     _currentExercise = exercise;
-    _calculateTotalCycles();
+    if (customCycles != null) {
+      _totalCycles = customCycles;
+    } else {
+      _calculateTotalCycles();
+    }
     start(); // Automatically start when an exercise is set
   }
 
@@ -56,8 +62,25 @@ class BreathingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void pause() {
+    if (_isRunning && !_isPaused) {
+      _isPaused = true;
+      _timer?.cancel();
+      notifyListeners();
+    }
+  }
+
+  void resume() {
+    if (_isRunning && _isPaused) {
+      _isPaused = false;
+      _startTimer();
+      notifyListeners();
+    }
+  }
+
   void stop() {
     _isRunning = false;
+    _isPaused = false;
     _timer?.cancel();
     _currentExercise = null; // Clear exercise on stop to return to selection screen
     notifyListeners();
@@ -120,7 +143,7 @@ class BreathingProvider extends ChangeNotifier {
   }
 
   void _tick(Timer timer) {
-    if (!_isRunning || _currentStep == null) {
+    if (!_isRunning || _currentStep == null || _isPaused) {
       timer.cancel();
       return;
     }

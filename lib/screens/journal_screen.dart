@@ -1,8 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
-import 'package:intl/intl.dart';
 import '../constants/app_colors.dart';
+import '../widgets/global_background.dart';
 import '../models/journal_entry.dart';
 import '../providers/journal_provider.dart';
 import '../widgets/journal_entry_card.dart';
@@ -17,7 +18,8 @@ class JournalScreen extends StatefulWidget {
 }
 
 class _JournalScreenState extends State<JournalScreen> with TickerProviderStateMixin {
-  late TabController _tabController;
+  late final TabController _tabController;
+  late final ScrollController _scrollController;
   DateTime _selectedDate = DateTime.now();
   JournalEntryType? _filterType;
 
@@ -25,118 +27,140 @@ class _JournalScreenState extends State<JournalScreen> with TickerProviderStateM
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _scrollController = ScrollController();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Günlüğüm',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+    return GlobalBackground(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: _showFilterDialog,
-            icon: Icon(
-              _filterType != null ? FeatherIcons.filter : FeatherIcons.filter,
-              color: _filterType != null ? AppColors.primary : null,
-            ),
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(FeatherIcons.moreVertical),
-            onSelected: (value) {
-              switch (value) {
-                case 'export':
-                  _exportData();
-                  break;
-                case 'insights':
-                  _showInsightsDialog();
-                  break;
-                case 'clear':
-                  _showClearDataDialog();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'insights',
-                child: Row(
-                  children: [
-                    Icon(FeatherIcons.trendingUp, size: 18),
-                    SizedBox(width: 12),
-                    Text('İçgörüler'),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _showAddEntryDialog(),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          icon: const Icon(FeatherIcons.plus),
+          label: const Text('Yeni Kayıt'),
+        ),
+        body: NestedScrollView(
+          controller: _scrollController,
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return <Widget>[
+              SliverOverlapAbsorber(
+                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                sliver: SliverAppBar(
+                  title: const Text('Günlüğüm'),
+                  pinned: true,
+                  floating: true,
+                  snap: true,
+                  forceElevated: innerBoxIsScrolled,
+                  backgroundColor: AppColors.primaryBackground.withOpacity(innerBoxIsScrolled ? 0.85 : 0),
+                  flexibleSpace: innerBoxIsScrolled
+                      ? ClipRect(
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                            child: Container(color: Colors.transparent),
+                          ),
+                        )
+                      : null,
+                  actions: [
+                    IconButton(
+                      onPressed: _showFilterDialog,
+                      icon: Icon(
+                        FeatherIcons.filter,
+                        color: _filterType != null ? AppColors.primaryAccent : Colors.white,
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(FeatherIcons.moreVertical, color: Colors.white),
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'export':
+                            _exportData();
+                            break;
+                          case 'insights':
+                            _showInsightsDialog();
+                            break;
+                          case 'clear':
+                            _showClearDataDialog();
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'insights',
+                          child: Row(
+                            children: [
+                              Icon(FeatherIcons.trendingUp, size: 18),
+                              SizedBox(width: 12),
+                              Text('İçgörüler'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'export',
+                          child: Row(
+                            children: [
+                              Icon(FeatherIcons.download, size: 18),
+                              SizedBox(width: 12),
+                              Text('Dışa Aktar'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem(
+                          value: 'clear',
+                          child: Row(
+                            children: [
+                              Icon(FeatherIcons.trash2, size: 18, color: Colors.red),
+                              SizedBox(width: 12),
+                              Text('Tümünü Sil', style: TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
+                  bottom: TabBar(
+                    controller: _tabController,
+                    labelColor: AppColors.textPrimary,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    indicatorColor: AppColors.primaryAccent,
+                    tabs: const [
+                      Tab(
+                        icon: Icon(FeatherIcons.clock),
+                        text: 'Zaman Tüneli',
+                      ),
+                      Tab(
+                        icon: Icon(FeatherIcons.calendar),
+                        text: 'Takvim',
+                      ),
+                      Tab(
+                        icon: Icon(FeatherIcons.barChart2),
+                        text: 'Analiz',
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const PopupMenuItem(
-                value: 'export',
-                child: Row(
-                  children: [
-                    Icon(FeatherIcons.download, size: 18),
-                    SizedBox(width: 12),
-                    Text('Dışa Aktar'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'clear',
-                child: Row(
-                  children: [
-                    Icon(FeatherIcons.trash2, size: 18, color: Colors.red),
-                    SizedBox(width: 12),
-                    Text('Tümünü Sil', style: TextStyle(color: Colors.red)),
-                  ],
-                ),
-              ),
+            ];
+          },
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildTimelineTab(),
+              _buildCalendarTab(),
+              _buildAnalyticsTab(),
             ],
           ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
-          tabs: const [
-            Tab(
-              icon: Icon(FeatherIcons.clock),
-              text: 'Zaman Tüneli',
-            ),
-            Tab(
-              icon: Icon(FeatherIcons.calendar),
-              text: 'Takvim',
-            ),
-            Tab(
-              icon: Icon(FeatherIcons.barChart2),
-              text: 'Analiz',
-            ),
-          ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddEntryDialog(),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(FeatherIcons.plus),
-        label: const Text('Yeni Kayıt'),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildTimelineTab(),
-          _buildCalendarTab(),
-          _buildAnalyticsTab(),
-        ],
       ),
     );
   }
@@ -280,9 +304,9 @@ class _JournalScreenState extends State<JournalScreen> with TickerProviderStateM
     } else if (entryDay == today.subtract(const Duration(days: 1))) {
       headerText = 'Dün';
     } else if (entryDay.isAfter(today.subtract(const Duration(days: 7)))) {
-      headerText = DateFormat('EEEE', 'tr_TR').format(date);
+      headerText = _formatWeekday(date);
     } else {
-      headerText = DateFormat('d MMMM yyyy', 'tr_TR').format(date);
+      headerText = _formatDate(date);
     }
 
     return Container(
@@ -319,14 +343,14 @@ class _JournalScreenState extends State<JournalScreen> with TickerProviderStateM
       child: Column(
         children: [
           Text(
-            DateFormat('MMMM yyyy', 'tr_TR').format(_selectedDate),
+            _formatMonthYear(_selectedDate),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 16),
           Text(
-            'Seçilen tarih: ${DateFormat('d MMMM yyyy', 'tr_TR').format(_selectedDate)}',
+            'Seçilen tarih: ${_formatDate(_selectedDate)}',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -530,6 +554,37 @@ class _JournalScreenState extends State<JournalScreen> with TickerProviderStateM
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
+  String _formatDate(DateTime date) {
+    const months = [
+      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String _formatMonthYear(DateTime date) {
+    const months = [
+      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    ];
+    return '${months[date.month - 1]} ${date.year}';
+  }
+
+  String _formatWeekday(DateTime date) {
+    const weekdays = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+    return weekdays[date.weekday - 1];
+  }
+
+  String _formatDateTime(DateTime date) {
+    const months = [
+      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    ];
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    return '${date.day} ${months[date.month - 1]} ${date.year}, $hour:$minute';
+  }
+
   void _showFilterDialog() {
     showDialog(
       context: context,
@@ -594,7 +649,7 @@ class _JournalScreenState extends State<JournalScreen> with TickerProviderStateM
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              DateFormat('d MMMM yyyy, HH:mm', 'tr_TR').format(entry.timestamp),
+              _formatDateTime(entry.timestamp),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppColors.textSecondary,
               ),

@@ -55,7 +55,7 @@ class HomeScreen extends StatelessWidget {
         builder: (context, prefsProvider, child) {
           // Akıllı öneri servisini burada, güncel provider ile ilklendir
           final recommendationService = RecommendationService(prefsProvider, context);
-          final recommendation = recommendationService.getSmartRecommendation();
+          final recommendations = recommendationService.getSmartRecommendations();
 
           return CustomScrollView(
             physics: const BouncingScrollPhysics(),
@@ -84,17 +84,24 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
 
-              // Akıllı Öneri Kartı
-              if (recommendation != null)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: AppSpacing.pagePadding.copyWith(top: 0, bottom: AppSpacing.large),
-                    child: FadeInDown(
-                      duration: const Duration(milliseconds: 600),
-                      child: _buildSmartRecommendationCard(context, recommendation),
-                    ),
+              // Akıllı Öneri Kartları Listesi
+              SliverPadding(
+                padding: AppSpacing.pagePadding.copyWith(top: 0, bottom: AppSpacing.large),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.medium),
+                        child: FadeInDown(
+                          duration: Duration(milliseconds: 500 + (index * 100)),
+                          child: _buildSmartRecommendationCard(context, recommendations[index]),
+                        ),
+                      );
+                    },
+                    childCount: recommendations.length,
                   ),
                 ),
+              ),
               
               SliverToBoxAdapter(
                 child: Padding(

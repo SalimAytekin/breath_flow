@@ -375,24 +375,38 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
       child: GestureDetector(
         onTap: _onMixerButtonTap,
         child: Container(
-          width: 36,
-          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(20),
             color: isPlayingInMixer 
                 ? AppColors.secondaryAccent.withOpacity(0.9) 
-                : Colors.black.withOpacity(0.4),
+                : Colors.black.withOpacity(0.5),
             border: Border.all(
               color: isPlayingInMixer
                   ? AppColors.secondaryAccent
-                  : Colors.white.withOpacity(0.2),
+                  : Colors.white.withOpacity(0.3),
               width: 1.5,
             ),
           ),
-          child: Icon(
-            isPlayingInMixer ? FeatherIcons.check : FeatherIcons.plus,
-            color: Colors.white,
-            size: 18,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isPlayingInMixer ? FeatherIcons.check : FeatherIcons.plus,
+                color: Colors.white,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Mix',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -402,7 +416,6 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
   Widget _buildPlayingIndicator() {
     return Positioned(
       bottom: 12,
-      left: 12,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(

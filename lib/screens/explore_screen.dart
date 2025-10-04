@@ -1,21 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
 import '../constants/app_spacing.dart';
 import '../constants/app_typography.dart';
 import '../widgets/quick_action_card.dart';
 import '../widgets/professional_card.dart';
+import '../widgets/global_background.dart';
 import '../services/asset_manager.dart';
+import '../models/breathing_exercise.dart';
+import '../providers/breathing_provider.dart';
 import 'breathing_screen.dart';
 import 'sounds_screen.dart';
 import 'sleep_screen.dart';
-import 'sleep_stories_screen.dart';
-import 'journeys_screen.dart';
-import 'hrv_measurement_screen.dart';
-import 'journal_screen.dart';
 import 'sleep_input_screen.dart';
+import 'sleep_analytics_screen.dart';
+import 'sleep_journal_screen.dart';
+
+// 🚧 V2.0 Features - Temporarily Disabled
+// import 'sleep_stories_screen.dart';
+// import 'journeys_screen.dart';
+// import 'hrv_measurement_screen.dart';
+// import 'journal_screen.dart';
 
 /// 🧭 Professional Explore Screen
 /// Redesigned with Deep Night Serenity theme system
@@ -26,13 +34,14 @@ class ExploreScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: AppSpacing.pagePadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      body: GlobalBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: AppSpacing.pagePadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               // 🧭 Professional Header
               FadeInDown(
                 duration: const Duration(milliseconds: 600),
@@ -41,7 +50,7 @@ class ExploreScreen extends StatelessWidget {
               
               const SizedBox(height: AppSpacing.xxLarge),
               
-              // 🫁 Nefes Egzersizleri
+              // 🫁 Nefes Egzersizleri - Hibrit Yaklaşım
               FadeInUp(
                 duration: const Duration(milliseconds: 600),
                 delay: const Duration(milliseconds: 200),
@@ -51,23 +60,31 @@ class ExploreScreen extends StatelessWidget {
                   title: 'Nefes Egzersizleri',
                   subtitle: 'Stres azaltma ve odaklanma teknikleri',
                   children: [
+                    // Ana kart - Tüm egzersizler
+                    _buildFeatureCard(
+                      title: 'Tüm Egzersizler',
+                      subtitle: 'Kategoriler ve tüm nefes teknikleri',
+                      imageUrl: AssetManager.coverMeditationBell,
+                      onTap: () => _navigateToBreathing(context),
+                    ),
+                    // Popüler egzersizler - Direkt başlatma
                     _buildFeatureCard(
                       title: 'Kutu Nefes',
                       subtitle: '4-4-4-4 ritmi ile sakinleşme',
                       imageUrl: AssetManager.coverOcean,
-                      onTap: () => _navigateToBreathing(context),
+                      onTap: () => _navigateToDirectExercise(context, 'Kutu Nefesi (4-4-4-4)'),
                     ),
                     _buildFeatureCard(
-                      title: '4-7-8 Tekniği',
-                      subtitle: 'Hızlı uyku için güçlü teknik',
-                      imageUrl: AssetManager.coverMeditationBell,
-                      onTap: () => _navigateToBreathing(context),
-                    ),
-                    _buildFeatureCard(
-                      title: 'Derin Nefes',
-                      subtitle: 'Temel rahatlama egzersizi',
+                      title: 'Yavaşlatıcı Nefes',
+                      subtitle: 'Her nefeste ritmi yavaşlat, uykuya hazırlan',
                       imageUrl: AssetManager.coverForest,
-                      onTap: () => _navigateToBreathing(context),
+                      onTap: () => _navigateToDirectExercise(context, 'Yavaşlatıcı Nefes'),
+                    ),
+                    _buildFeatureCard(
+                      title: 'Diyafram Nefesi',
+                      subtitle: 'Karnından nefes al, stresi azalt',
+                      imageUrl: AssetManager.coverRain,
+                      onTap: () => _navigateToDirectExercise(context, 'Diyafram Nefesi'),
                     ),
                   ],
                 ),
@@ -86,22 +103,40 @@ class ExploreScreen extends StatelessWidget {
                   subtitle: 'Rahatlatıcı sesler ve karıştırıcı',
                   children: [
                     _buildFeatureCard(
-                      title: 'Doğa Sesleri',
-                      subtitle: 'Yağmur, okyanus, orman sesleri',
+                      title: 'Tüm Sesler',
+                      subtitle: 'Tüm ses koleksiyonunu keşfet',
+                      imageUrl: AssetManager.coverOcean,
+                      onTap: () => _navigateToSounds(context),
+                    ),
+                    _buildFeatureCard(
+                      title: 'Uyku İçin',
+                      subtitle: 'Derin uykuya dalmanıza yardımcı',
                       imageUrl: AssetManager.coverRain,
-                      onTap: () => _navigateToSounds(context),
+                      onTap: () => _navigateToSoundsFiltered(
+                        context,
+                        title: 'Uyku İçin Sesler',
+                        tags: ['sleep'],
+                      ),
                     ),
                     _buildFeatureCard(
-                      title: 'Ses Karıştırıcı',
-                      subtitle: 'Kendi atmosferini yaratın',
-                      imageUrl: AssetManager.coverWhiteNoise,
-                      onTap: () => _navigateToSounds(context),
+                      title: 'Meditasyon & Rahatlama',
+                      subtitle: 'Huzurlu anlar için sesler',
+                      imageUrl: AssetManager.coverMeditationBell,
+                      onTap: () => _navigateToSoundsFiltered(
+                        context,
+                        title: 'Meditasyon & Rahatlama',
+                        tags: ['meditation', 'relaxation'],
+                      ),
                     ),
                     _buildFeatureCard(
-                      title: 'Lo-Fi Müzik',
-                      subtitle: 'Odaklanma için müzik',
+                      title: 'Odaklanma & Çalışma',
+                      subtitle: 'Konsantrasyonunuzu artırın',
                       imageUrl: AssetManager.coverLofi,
-                      onTap: () => _navigateToSounds(context),
+                      onTap: () => _navigateToSoundsFiltered(
+                        context,
+                        title: 'Odaklanma & Çalışma',
+                        tags: ['focus'],
+                      ),
                     ),
                   ],
                 ),
@@ -109,74 +144,41 @@ class ExploreScreen extends StatelessWidget {
               
               const SizedBox(height: AppSpacing.xxLarge),
               
-              // 🌙 Uyku & Rahatlama
+              // 🌙 Uyku Takibi
               FadeInUp(
                 duration: const Duration(milliseconds: 600),
                 delay: const Duration(milliseconds: 600),
                 child: _buildSection(
                   context,
                   icon: FeatherIcons.moon,
-                  title: 'Uyku & Rahatlama',
-                  subtitle: 'Kaliteli uyku için özel içerikler',
+                  title: 'Uyku Takibi',
+                  subtitle: 'Uyku kalitenizi takip edin ve analiz edin',
                   children: [
                     _buildFeatureCard(
-                      title: 'Uyku Hikayeleri',
-                      subtitle: 'Sürükleyici hikayelerle uykuya dalış',
-                      imageUrl: AssetManager.coverCampfire,
-                      onTap: () => _navigateToSleepStories(context),
-                    ),
-                    _buildFeatureCard(
-                      title: 'Uyku Modu',
-                      subtitle: 'Gece için özel atmosfer',
-                      imageUrl: AssetManager.coverThunder,
-                      onTap: () => _navigateToSleep(context),
-                    ),
-                    _buildFeatureCard(
-                      title: 'Uyku Takibi',
-                      subtitle: 'Uyku kalitesi analizi',
-                      imageUrl: AssetManager.coverMeditationBell,
+                      title: 'Uyku Kaydı',
+                      subtitle: 'Ne kadar uyuduğunu kaydet',
+                      imageUrl: AssetManager.coverForest,
                       onTap: () => _navigateToSleepInput(context),
                     ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: AppSpacing.xxLarge),
-              
-              // 📊 Analiz & Takip
-              FadeInUp(
-                duration: const Duration(milliseconds: 600),
-                delay: const Duration(milliseconds: 800),
-                child: _buildSection(
-                  context,
-                  icon: FeatherIcons.barChart2,
-                  title: 'Analiz & Takip',
-                  subtitle: 'İlerlemenizi takip edin ve analiz edin',
-                  children: [
                     _buildFeatureCard(
-                      title: 'HRV Ölçümü',
-                      subtitle: 'Stres seviyesi ölçümü',
-                      imageUrl: AssetManager.coverLofi,
-                      onTap: () => _navigateToHRV(context),
+                      title: 'Uyku İstatistikleri',
+                      subtitle: 'Kalite ve trendlerini gör',
+                      imageUrl: AssetManager.coverOcean,
+                      onTap: () => _navigateToSleepAnalytics(context),
                     ),
                     _buildFeatureCard(
-                      title: 'Kişisel Günlük',
-                      subtitle: 'Duygularınızı kaydedin',
-                      imageUrl: AssetManager.coverRain,
-                      onTap: () => _navigateToJournal(context),
-                    ),
-                    _buildFeatureCard(
-                      title: 'Meditasyon Yolculukları',
-                      subtitle: 'Yapılandırılmış programlar',
-                      imageUrl: AssetManager.coverForest,
-                      onTap: () => _navigateToJourneys(context),
+                      title: 'Uyku Günlüğü',
+                      subtitle: 'Rüyalarını ve notlarını kaydet',
+                      imageUrl: AssetManager.coverMeditationBell,
+                      onTap: () => _navigateToSleepJournal(context),
                     ),
                   ],
                 ),
               ),
               
               const SizedBox(height: AppSpacing.xLarge),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -329,10 +331,228 @@ class ExploreScreen extends StatelessWidget {
     );
   }
 
+  /// Direkt spesifik egzersizi başlat - Döngü seçimi ile
+  void _navigateToDirectExercise(BuildContext context, String exerciseName) {
+    try {
+      // Egzersizi bul
+      final exercise = BreathingExercise.allExercises
+          .firstWhere((ex) => ex.name == exerciseName);
+      
+      // Döngü seçim modalını göster
+      _showCycleSelectionModal(context, exercise);
+    } catch (e) {
+      print('❌ Egzersiz bulunamadı: $exerciseName');
+      // Fallback olarak normal breathing screen'e git
+      _navigateToBreathing(context);
+    }
+  }
+
+  /// Döngü seçim modalı - ExerciseListScreen'den uyarlandı
+  void _showCycleSelectionModal(BuildContext context, BreathingExercise exercise) {
+    final List<int> cycleOptions = [5, 10, 15, 20, 25, 30];
+    int selectedCycles = 10;
+    final breathingProvider = context.read<BreathingProvider>();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter modalState) {
+            return Container(
+              padding: const EdgeInsets.all(AppSpacing.large),
+              decoration: BoxDecoration(
+                color: AppColors.surface.withOpacity(0.95),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(AppSpacing.large),
+                  topRight: Radius.circular(AppSpacing.large),
+                ),
+                border: Border.all(color: AppColors.glassBorder.withOpacity(0.2)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Başlık
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              exercise.name,
+                              style: AppTypography.headlineSmall,
+                            ),
+                            const SizedBox(height: AppSpacing.small),
+                            Text(
+                              'Kaç döngü yapmak istiyorsun?',
+                              style: AppTypography.bodyLarge.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          FeatherIcons.x,
+                          color: AppColors.textPrimary,
+                          size: 24,
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.large),
+
+                  // Döngü seçenekleri
+                  SizedBox(
+                    height: 200,
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        childAspectRatio: 1.4,
+                        crossAxisSpacing: 6,
+                        mainAxisSpacing: 6,
+                      ),
+                      itemCount: cycleOptions.length,
+                      itemBuilder: (context, index) {
+                        final cycles = cycleOptions[index];
+                        final isSelected = selectedCycles == cycles;
+                        final estimatedMinutes = (cycles * exercise.totalDuration / 60).round();
+                        
+                        return GestureDetector(
+                          onTap: () {
+                            modalState(() {
+                              selectedCycles = cycles;
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primaryAccent.withOpacity(0.2)
+                                  : AppColors.surfaceElevated,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppColors.primaryAccent
+                                    : AppColors.border,
+                                width: isSelected ? 2 : 1,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '$cycles',
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? AppColors.primaryAccent
+                                        : AppColors.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  'döngü',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                                Text(
+                                  '~${estimatedMinutes}dk',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xLarge),
+
+                  // Başlat butonu
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Egzersizi set et ve başlat
+                        breathingProvider.setExercise(exercise, customCycles: selectedCycles);
+                        breathingProvider.start();
+                        
+                        Navigator.of(context).pop(); // Modal'ı kapat
+                        
+                        // BreathingScreen'e git
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const BreathingScreen(),
+                          ),
+                        ).then((_) {
+                          // Ekrandan döndüğünde egzersizi durdur
+                          breathingProvider.stop();
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.medium),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSpacing.medium),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(FeatherIcons.play, size: 20),
+                          const SizedBox(width: AppSpacing.small),
+                          Text(
+                            'Başlat ($selectedCycles döngü)',
+                            style: AppTypography.bodyLarge.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.medium),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _navigateToSounds(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const SoundsScreen(),
+      ),
+    );
+  }
+
+  void _navigateToSoundsFiltered(
+    BuildContext context, {
+    required String title,
+    required List<String> tags,
+  }) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SoundsScreen(
+          customTitle: title,
+          filterTags: tags,
+        ),
       ),
     );
   }
@@ -345,42 +565,59 @@ class ExploreScreen extends StatelessWidget {
     );
   }
 
-  void _navigateToSleepStories(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const SleepStoriesScreen(),
-      ),
-    );
-  }
+  // 🚧 V2.0 Features - Temporarily Disabled
+  // void _navigateToSleepStories(BuildContext context) {
+  //   Navigator.of(context).push(
+  //     MaterialPageRoute(
+  //       builder: (context) => const SleepStoriesScreen(),
+  //     ),
+  //   );
+  // }
 
-  void _navigateToJourneys(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const JourneysScreen(),
-      ),
-    );
-  }
+  // void _navigateToJourneys(BuildContext context) {
+  //   Navigator.of(context).push(
+  //     MaterialPageRoute(
+  //       builder: (context) => const JourneysScreen(),
+  //     ),
+  //   );
+  // }
 
-  void _navigateToHRV(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const HRVMeasurementScreen(),
-      ),
-    );
-  }
+  // void _navigateToHRV(BuildContext context) {
+  //   Navigator.of(context).push(
+  //     MaterialPageRoute(
+  //       builder: (context) => const HRVMeasurementScreen(),
+  //     ),
+  //   );
+  // }
 
-  void _navigateToJournal(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const JournalScreen(),
-      ),
-    );
-  }
+  // void _navigateToJournal(BuildContext context) {
+  //   Navigator.of(context).push(
+  //     MaterialPageRoute(
+  //       builder: (context) => const JournalScreen(),
+  //     ),
+  //   );
+  // }
 
   void _navigateToSleepInput(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const SleepInputScreen(),
+      ),
+    );
+  }
+
+  void _navigateToSleepAnalytics(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const SleepAnalyticsScreen(),
+      ),
+    );
+  }
+
+  void _navigateToSleepJournal(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const SleepJournalScreen(),
       ),
     );
   }

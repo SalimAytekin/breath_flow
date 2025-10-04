@@ -200,7 +200,7 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: true,
         iconTheme: const IconThemeData(
-          color: AppColors.textPrimary,
+          color: Colors.white, // Ensures visibility on dark/transparent backgrounds
           size: AppSpacing.iconLarge,
         ),
         titleTextStyle: AppTypography.headlineMedium,
@@ -428,7 +428,7 @@ class AppTheme {
         size: AppSpacing.iconLarge,
       ),
       primaryIconTheme: const IconThemeData(
-        color: AppColors.textPrimary,
+        color: Colors.white, // Ensures back button and other primary icons are visible
         size: AppSpacing.iconLarge,
       ),
       
@@ -557,17 +557,24 @@ class AppTheme {
   
   /// Glass Morphism Decoration
   static BoxDecoration get glassDecoration => BoxDecoration(
-    color: AppColors.glassLight,
+    color: AppColors.glassLight.withOpacity(0.15),
     borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
     border: Border.all(
-      color: AppColors.glassBorder,
-      width: 1,
+      color: AppColors.glassBorder.withOpacity(0.3),
+      width: 1.5,
     ),
     boxShadow: [
       BoxShadow(
-        color: AppColors.shadowLight,
-        blurRadius: 20,
-        offset: const Offset(0, 8),
+        color: AppColors.shadowLight.withOpacity(0.1),
+        blurRadius: 24,
+        offset: const Offset(0, 12),
+        spreadRadius: 0,
+      ),
+      BoxShadow(
+        color: Colors.white.withOpacity(0.05),
+        blurRadius: 1,
+        offset: const Offset(0, 1),
+        spreadRadius: 0,
       ),
     ],
   );

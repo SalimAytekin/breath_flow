@@ -67,7 +67,6 @@ class BreathingExercise {
             s.type == BreathingStepType.exhale ||
             s.type == BreathingStepType.holdAfterExhale)
         .toList();
-
     return relevantSteps
         .map((step) => '${step.duration}sn ${_getStepName(step.type)}')
         .join(' · ');
@@ -88,198 +87,178 @@ class BreathingExercise {
     }
   }
 
+  /// Bir döngünün toplam süresini saniye cinsinden döndürür
+  int get totalDuration {
+    return steps.fold<int>(0, (total, step) => total + step.duration);
+  }
+
   static List<BreathingExercise> get allExercises => [
-        // =========== ODAKLANMA (FOCUS & PERFORMANCE) ===========
+        // =========== ODAKLANMA VE DİKKAT ===========
         const BreathingExercise(
           type: BreathingType.boxBreathing,
-          name: 'Kutu Nefesi',
+          name: 'Kutu Nefesi (4-4-4-4)',
           description:
-              'Zihinsel berraklık ve sakinlik için dört eşit aşamalı bir tekniktir. Stresli anlarda topraklanmanıza yardımcı olur.',
+              'Nefesini dört aşamada düzenle: al, tut, ver ve bekle. Zihinsel dengeyi artırır.',
           purpose: 'Odaklanma ve Denge',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: 'Nefes Al (4 sn)'),
-            BreathingStep(type: BreathingStepType.hold, duration: 4, instruction: 'Tut (4 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 4, instruction: 'Nefes Ver (4 sn)'),
-            BreathingStep(type: BreathingStepType.holdAfterExhale, duration: 4, instruction: 'Bekle (4 sn)'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: 'Şimdi derin bir nefes al (4 sn)'),
+            BreathingStep(type: BreathingStepType.hold, duration: 4, instruction: 'Nefesini içinde tut (4 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 4, instruction: 'Yavaşça bırak (4 sn)'),
+            BreathingStep(type: BreathingStepType.holdAfterExhale, duration: 4, instruction: 'Kısa bir an bekle (4 sn)'),
           ],
           category: BreathingCategory.odaklanma,
-          difficulty: ExerciseDifficulty.intermediate,
+          difficulty: ExerciseDifficulty.beginner,
         ),
         const BreathingExercise(
-          type: BreathingType.alternateNostril,
-          name: 'Değişken Burun Nefesi',
+          type: BreathingType.custom,
+          name: 'Basit Sayma Nefesi',
           description:
-              'Beynin sağ ve sol yarım kürelerini dengeleyerek zihinsel netliği ve odaklanmayı artırır. Sakinleştirici ve dengeleyici bir etkisi vardır.',
-          purpose: 'Zihinsel Netlik',
+              'Nefes alırken ve verirken sayılara odaklan. Zihni toparlamaya yardımcı olur.',
+          purpose: 'Zihinsel Odaklanma',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: 'Soldan Al (4 sn)'),
-            BreathingStep(type: BreathingStepType.hold, duration: 4, instruction: 'Tut (4 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 8, instruction: 'Sağdan Ver (8 sn)'),
-            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: 'Sağdan Al (4 sn)'),
-            BreathingStep(type: BreathingStepType.hold, duration: 4, instruction: 'Tut (4 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 8, instruction: 'Soldan Ver (8 sn)'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: ' 1\'den 4\'e kadar sayarak nefes al, (4 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 4, instruction: 'Şimdi 1\'den 4\'e kadar sayarak bırak, (4 sn)'),
           ],
           category: BreathingCategory.odaklanma,
-          difficulty: ExerciseDifficulty.advanced,
-          isPremium: true,
+          difficulty: ExerciseDifficulty.beginner,
         ),
         const BreathingExercise(
-          type: BreathingType.stimulatingBreath,
-          name: 'Uyarıcı Nefes',
+          type: BreathingType.deepBreathing,
+          name: 'Farkındalık Nefesi',
           description:
-              'Hızlı ve ritmik nefeslerle zihinsel sisliliği dağıtarak güne enerjik bir başlangıç yapmanızı veya öğleden sonraki yorgunluğu atmanızı sağlar.',
-          purpose: 'Zihinsel Uyanıklık',
+              'Nefesini doğal akışında gözlemle. Değiştirmeden sadece fark et.',
+          purpose: 'Nefes Farkındalığı',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 2, instruction: 'Hızlıca Al'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 2, instruction: 'Hızlıca Ver'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: 'Nefesin doğal akışını hisset (4 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 4, instruction: 'Hiç değiştirmeden bırak gitsin (4 sn)'),
           ],
           category: BreathingCategory.odaklanma,
           difficulty: ExerciseDifficulty.beginner,
         ),
 
-        // =========== KAYGI VE STRES AZALTICI (ANXIETY & STRESS RELIEF) ===========
+        // =========== SAKİNLEŞME VE STRES AZALTMA ===========
         const BreathingExercise(
-          type: BreathingType.breathing478,
-          name: '4-7-8 Tekniği',
+          type: BreathingType.extendedExhale,
+          name: 'Uzunca Nefes Ver (4-6)',
           description:
-              'Parasempatik sinir sistemini aktive ederek bedeni ve zihni hızla sakinleştiren, "rahatlatıcı nefes" olarak da bilinen güçlü bir tekniktir.',
-          purpose: 'Hızlı Sakinleşme',
+              'Kısa al, uzun ver. Bu ritim sinir sistemini sakinleştirir.',
+          purpose: 'Doğal Sakinleşme',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: 'Nefes Al (4 sn)'),
-            BreathingStep(type: BreathingStepType.hold, duration: 7, instruction: 'Tut (7 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 8, instruction: 'Yavaşça Ver (8 sn)'),
-          ],
-          category: BreathingCategory.kaygiVeStres,
-          difficulty: ExerciseDifficulty.intermediate,
-        ),
-        const BreathingExercise(
-          type: BreathingType.samaVritti,
-          name: 'Eşit Nefes (Sama Vritti)',
-          description:
-              'Eşit süreli nefes alıp verme, sinir sistemini dengeleyerek anksiyeteyi azaltır ve zihinsel denge sağlar. Başlangıç için harikadır.',
-          purpose: 'Sinir Sistemini Dengeleme',
-          steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: 'Nefes Al (4 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 4, instruction: 'Nefes Ver (4 sn)'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: 'Rahatça nefes al (4 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 6, instruction: 'Şimdi daha uzun ve sakin şekilde ver (6 sn)'),
           ],
           category: BreathingCategory.kaygiVeStres,
           difficulty: ExerciseDifficulty.beginner,
         ),
-        const BreathingExercise(
-          type: BreathingType.coherentBreathing,
-          name: 'Uyumlu Nefes',
-          description:
-              'Dakikada yaklaşık 5-6 nefes döngüsü ile kalp atış değişkenliğini (HRV) optimize ederek stres seviyelerini düşürür ve duygusal dayanıklılığı artırır.',
-          purpose: 'Duygusal Dayanıklılık',
-          steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 5, instruction: 'Nefes Al (5 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 5, instruction: 'Nefes Ver (5 sn)'),
-          ],
-          category: BreathingCategory.kaygiVeStres,
-          difficulty: ExerciseDifficulty.intermediate,
-          isPremium: true,
-        ),
-        const BreathingExercise(
-          type: BreathingType.triangleBreathing,
-          name: 'Üçgen Nefesi (4-7-8)',
-          description:
-              '4-7-8 tekniğinin bir varyasyonu olan bu yöntem, görsel bir üçgen imgesiyle kaygıyı azaltmaya ve ana odaklanmaya yardımcı olur.',
-          purpose: 'Anksiyete Giderme',
-          steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: 'Nefes Al (4 sn)'),
-            BreathingStep(type: BreathingStepType.hold, duration: 7, instruction: 'Tut (7 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 8, instruction: 'Yavaşça Ver (8 sn)'),
-          ],
-          category: BreathingCategory.kaygiVeStres,
-          difficulty: ExerciseDifficulty.intermediate,
-          isPremium: true,
-        ),
-
-        // =========== UYKU VE RAHATLAMA (SLEEP & RELAXATION) ===========
         const BreathingExercise(
           type: BreathingType.diaphragmaticBreathing,
           name: 'Diyafram Nefesi',
           description:
-              'Karından derin nefes alarak sinir sistemini rahatlatır, "savaş ya da kaç" tepkisini azaltır ve derin bir gevşeme hissi yaratır.',
-          purpose: 'Derin Gevşeme',
+              'Nefesi karnına doğru al. Göğüsten değil karından nefes almak stresi azaltır.',
+          purpose: 'Derin Rahatlama',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: 'Derin Nefes Al (4 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 6, instruction: 'Yavaşça Bırak (6 sn)'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 5, instruction: 'Nefesi karnına doğru çek (5 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 5, instruction: 'Karından yavaşça bırak (5 sn)'),
+          ],
+          category: BreathingCategory.kaygiVeStres,
+          difficulty: ExerciseDifficulty.beginner,
+        ),
+        const BreathingExercise(
+          type: BreathingType.samaVritti,
+          name: 'Eşit Nefes',
+          description:
+              'Nefesi aynı sürede alıp ver. Zihinsel denge ve iç huzur sağlar.',
+          purpose: 'Zihinsel Denge',
+          steps: [
+            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: '4 saniyede nefes al'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 4, instruction: 'Aynı sürede bırak'),
+          ],
+          category: BreathingCategory.kaygiVeStres,
+          difficulty: ExerciseDifficulty.beginner,
+        ),
+
+        // =========== UYKU VE RAHATLAMA ===========
+        const BreathingExercise(
+          type: BreathingType.custom,
+          name: 'Yavaşlatıcı Nefes',
+          description:
+              'Her nefeste ritmi biraz daha yavaşlat. Bedenini uykuya hazırlar.',
+          purpose: 'Uyku Hazırlığı',
+          steps: [
+            BreathingStep(type: BreathingStepType.inhale, duration: 5, instruction: 'Nefesini yavaşça al (5 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 7, instruction: 'Şimdi daha yavaş şekilde bırak (7 sn)'),
           ],
           category: BreathingCategory.uykuVeRahatlama,
           difficulty: ExerciseDifficulty.beginner,
         ),
         const BreathingExercise(
-          type: BreathingType.progressiveRelaxation,
-          name: 'Aşamalı Gevşeme Nefesi',
+          type: BreathingType.bodyScan,
+          name: 'Beden Farkındalığı Nefesi',
           description:
-              'Farklı kas gruplarını sıkıp bırakırken nefesinizi koordine ederek vücuttaki fiziksel gerilimi atmanıza ve uykuya hazırlanmanıza yardımcı olur.',
-          purpose: 'Fiziksel Gerilimi Azaltma',
+              'Nefes alırken bedenine odaklan. Gerginlikleri fark et ve bırak.',
+          purpose: 'Vücut Farkındalığı',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 5, instruction: 'Gerilirken Nefes Al (5 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 7, instruction: 'Gevşerken Ver (7 sn)'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 5, instruction: 'Nefesine odaklan, bedenini hisset (5 sn)'),
+            BreathingStep(type: BreathingStepType.hold, duration: 2, instruction: 'Kısa bir an nefesini tut ve hisset (2 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 6, instruction: 'Şimdi bırak gitsin, rahatla (6 sn)'),
           ],
           category: BreathingCategory.uykuVeRahatlama,
-          difficulty: ExerciseDifficulty.intermediate,
-          isPremium: true,
+          difficulty: ExerciseDifficulty.beginner,
         ),
         const BreathingExercise(
-          type: BreathingType.moonBreathing,
-          name: 'Ay Nefesi (Chandra Bhedana)',
+          type: BreathingType.diaphragmaticBreathing,
+          name: 'Gevşeme Nefesi (3-6)',
           description:
-              'Sadece sol burun deliğinden nefes alarak yapılan bu teknik, vücut ısısını düşürür ve parasempatik sinir sistemini aktive ederek uykuya geçişi kolaylaştırır.',
-          purpose: 'Zihni ve Vücudu Soğutma',
+              'Kısa nefes al, uzun nefes ver. Vücudun derin rahatlama yaşar.',
+          purpose: 'Derin Gevşeme',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: 'Soldan Al (4 sn)'),
-            BreathingStep(type: BreathingStepType.hold, duration: 4, instruction: 'Tut (4 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 6, instruction: 'Sağdan Ver (6 sn)'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 3, instruction: 'Kısa bir nefes al (3 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 6, instruction: 'Uzunca bırak, gevşemene izin ver (6 sn)'),
           ],
           category: BreathingCategory.uykuVeRahatlama,
-          difficulty: ExerciseDifficulty.advanced,
-          isPremium: true,
+          difficulty: ExerciseDifficulty.beginner,
         ),
 
-        // =========== ENERJİ VE CANLILIK (ENERGY & VITALITY) ===========
+        // =========== ENERJİ VE CANLANMA ===========
         const BreathingExercise(
-          type: BreathingType.wimHof,
-          name: 'Wim Hof Metodu',
+          type: BreathingType.diaphragmaticBreathing,
+          name: 'Canlandırıcı Diyafram',
           description:
-              'Güçlü, döngüsel nefesler ve ardından nefes tutma periyotları ile enerji seviyelerini yükseltir, odaklanmayı artırır ve bağışıklık sistemini güçlendirir.',
-          purpose: 'Enerji Patlaması ve Odak',
+              'Diyaframdan derin nefes alıp vermek bedene enerji kazandırır.',
+          purpose: 'Doğal Canlanma',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 2, instruction: 'Güçlü Al'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 1, instruction: 'Bırak'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 5, instruction: 'Karnından derin bir nefes al (5 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 5, instruction: 'Aynı derinlikte bırak (5 sn)'),
           ],
           category: BreathingCategory.enerjiVeCanlilik,
-          difficulty: ExerciseDifficulty.advanced,
-          isPremium: true,
+          difficulty: ExerciseDifficulty.beginner,
         ),
         const BreathingExercise(
-          type: BreathingType.kapalabhati,
-          name: 'Kafatası Parlatan Nefes',
+          type: BreathingType.deepBreathing,
+          name: 'Sabah Nefesi',
           description:
-              'Karından yapılan güçlü ve pasif nefes verişlerle toksinlerin atılmasına, metabolizmanın hızlanmasına ve zihnin canlanmasına yardımcı olur.',
-          purpose: 'Toksinlerden Arınma',
+              'Güne derin ve canlı nefeslerle başla. Sabah enerjini yükseltir.',
+          purpose: 'Güne Başlama',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 2, instruction: 'Normal Al'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 1, instruction: 'Güçlü Ver'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 6, instruction: 'Derin bir nefesle sabahı içine çek (6 sn)'),
+            BreathingStep(type: BreathingStepType.hold, duration: 2, instruction: 'Biraz bekle, enerjiyi hisset (2 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 4, instruction: 'Şimdi nefesini canlı bir şekilde bırak (4 sn)'),
           ],
           category: BreathingCategory.enerjiVeCanlilik,
-          difficulty: ExerciseDifficulty.advanced,
-          isPremium: true,
+          difficulty: ExerciseDifficulty.beginner,
         ),
         const BreathingExercise(
-          type: BreathingType.bellowsBreath,
-          name: 'Körük Nefesi (Bhastrika)',
+          type: BreathingType.resonanceBreathing,
+          name: 'Güne Başlama Nefesi (6-4)',
           description:
-              'Hızlı ve güçlü nefeslerle akciğer kapasitesini artırır, kan dolaşımını hızlandırır ve anında enerji patlaması sağlar.',
-          purpose: 'Anında Canlanma',
+              'Pozitif enerjiyle nefes al, hafif şekilde ver. Güne hazırlar.',
+          purpose: 'Pozitif Enerji',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 1, instruction: 'Güçlü Al'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 1, instruction: 'Güçlü Ver'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 6, instruction: 'Pozitif enerjiyle derin bir nefes al (6 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 4, instruction: 'Canlılıkla bırak gitsin (4 sn)'),
           ],
           category: BreathingCategory.enerjiVeCanlilik,
-          difficulty: ExerciseDifficulty.intermediate,
+          difficulty: ExerciseDifficulty.beginner,
         ),
       ];
 

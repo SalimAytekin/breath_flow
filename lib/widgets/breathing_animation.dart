@@ -43,45 +43,58 @@ class _BreathingAnimationState extends State<BreathingAnimation> with TickerProv
 
   void _updateAnimation() {
     final currentStep = widget.provider.currentStep;
-    if (currentStep == null || currentStep.type == _lastStep) return;
+    final stepProgress = widget.provider.stepProgress;
+    
+    if (currentStep == null) return;
 
-    _lastStep = currentStep.type;
-    _controller.duration = Duration(seconds: currentStep.duration);
+    // Sadece yeni adıma geçildiğinde animasyonu yeniden başlat
+    if (currentStep.type != _lastStep) {
+      _lastStep = currentStep.type;
+      _controller.duration = Duration(seconds: currentStep.duration);
 
-    // Haptik geri bildirim (YENİ PAKETLE GÜNCELLENDİ)
-    switch (currentStep.type) {
-      case BreathingStepType.inhale:
-      case BreathingStepType.exhale:
-        Vibrate.feedback(FeedbackType.light);
-        break;
-      case BreathingStepType.hold:
-      case BreathingStepType.holdAfterExhale:
-        Vibrate.feedback(FeedbackType.medium);
-        break;
+      // Haptik geri bildirim
+      switch (currentStep.type) {
+        case BreathingStepType.inhale:
+        case BreathingStepType.exhale:
+          Vibrate.feedback(FeedbackType.light);
+          break;
+        case BreathingStepType.hold:
+        case BreathingStepType.holdAfterExhale:
+          Vibrate.feedback(FeedbackType.medium);
+          break;
+      }
+
+      switch (currentStep.type) {
+        case BreathingStepType.inhale:
+          _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+            CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+          );
+          _controller.forward(from: 0.0);
+          break;
+        case BreathingStepType.exhale:
+          _animation = Tween<double>(begin: 1.0, end: 0.0).animate(
+            CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+          );
+          _controller.forward(from: 0.0);
+          break;
+        case BreathingStepType.hold:
+        case BreathingStepType.holdAfterExhale:
+          // Hold durumunda animasyonu durdur ve mevcut pozisyonda tut
+          _controller.stop();
+          break;
+      }
     }
-
-    switch (currentStep.type) {
-      case BreathingStepType.inhale:
-        _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-          CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-        );
-        _controller.forward(from: 0.0);
-        break;
-      case BreathingStepType.exhale:
-        _animation = Tween<double>(begin: 1.0, end: 0.0).animate(
-          CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-        );
-        _controller.forward(from: 0.0);
-        break;
-      case BreathingStepType.hold:
-      case BreathingStepType.holdAfterExhale:
-        // Mevcut durumda kal, animasyonu durdur.
-        _controller.stop();
-        // Animasyonun o anki değerinde kalmasını sağla.
-        _animation = Tween<double>(begin: _controller.value, end: _controller.value)
-            .animate(_controller);
-        break;
+    
+    // Pause durumunda animasyonu durdur
+    if (widget.provider.isPaused) {
+      _controller.stop();
+    } else if (!_controller.isAnimating && 
+               (currentStep.type == BreathingStepType.inhale || 
+                currentStep.type == BreathingStepType.exhale)) {
+      // Resume durumunda animasyonu devam ettir
+      _controller.forward();
     }
+    
     if (mounted) setState(() {});
   }
 
@@ -95,80 +108,119 @@ class _BreathingAnimationState extends State<BreathingAnimation> with TickerProv
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final animationValue = (_animation.value).clamp(0.0, 1.0);
-        final isInhaling = currentStep.type == BreathingStepType.inhale;
+        // Animasyon değerini nefes durumuna göre hesapla
+        double animationValue;
+        switch (currentStep.type) {
+          case BreathingStepType.inhale:
+            animationValue = _controller.value; // 0.0'dan 1.0'a büyür
+            break;
+          case BreathingStepType.exhale:
+            animationValue = 1.0 - _controller.value; // 1.0'dan 0.0'a küçülür
+            break;
+          case BreathingStepType.hold:
+            // Nefes alındıktan sonra hold - büyük halde sabit kalır
+            animationValue = 1.0;
+            break;
+          case BreathingStepType.holdAfterExhale:
+            // Nefes verildikten sonra hold - küçük halde sabit kalır
+            animationValue = 0.0;
+            break;
+        }
+        
+        animationValue = animationValue.clamp(0.0, 1.0);
 
-        // Arka plan gradyanı
-        final backgroundGradient = RadialGradient(
-          colors: isInhaling
-              ? [AppColors.focus.withOpacity(0.4), AppColors.primaryBackground]
-              : [AppColors.sleep.withOpacity(0.4), AppColors.primaryBackground],
-          radius: 1.0 + animationValue * 1.5,
-          stops: const [0.0, 1.0],
-        );
-
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            // 1. Hareketli Arka Plan
-            AnimatedContainer(
-              duration: const Duration(seconds: 2),
-              curve: Curves.easeInOut,
-              decoration: BoxDecoration(gradient: backgroundGradient),
-            ),
-
-            // 2. Parçacıklar veya diğer efektler buraya eklenebilir
-            // ...
-
-            // 3. Ana Nefes Dairesi
-            Container(
-              width: 200 + (animationValue * 100),
-              height: 200 + (animationValue * 100),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.white.withOpacity(0.2),
-                    Colors.white.withOpacity(0.05),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.4, 0.7, 1.0],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isInhaling ? AppColors.focus : AppColors.sleep)
-                        .withOpacity(0.3),
-                    blurRadius: 50,
-                    spreadRadius: 15,
+        return SizedBox.expand(
+          child: Stack(
+            children: [
+              // Ana nefes dairesi - sadece görsel efekt
+              Center(
+                child: Container(
+                  width: 150 + (animationValue * 120), // 150px'den 270px'e
+                  height: 150 + (animationValue * 120),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        Colors.white.withOpacity(0.3),
+                        Colors.white.withOpacity(0.1),
+                        Colors.white.withOpacity(0.05),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.4, 0.7, 1.0],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.2),
+                        blurRadius: 30 + (animationValue * 20),
+                        spreadRadius: 5 + (animationValue * 10),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-              child: Center(
+              // Text'ler - yumuşak geçişli
+              Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      currentStep.instruction,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w300,
-                        color: Colors.white,
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder: (Widget child, Animation<double> animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0.0, 0.3),
+                              end: Offset.zero,
+                            ).animate(CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            )),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: Text(
+                        currentStep.instruction,
+                        key: ValueKey(currentStep.instruction),
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w300,
+                          color: Colors.white,
+                          decoration: TextDecoration.none,
+                          shadows: [
+                            Shadow(
+                              blurRadius: 10,
+                              color: Colors.black54,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       '$countdown',
                       style: TextStyle(
-                        fontSize: 48,
+                        fontSize: 48, // Sabit boyut
                         fontWeight: FontWeight.bold,
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withOpacity(0.9),
+                        decoration: TextDecoration.none, // Alt çizgiyi kaldır
+                        shadows: const [
+                          Shadow(
+                            blurRadius: 15,
+                            color: Colors.black54,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
