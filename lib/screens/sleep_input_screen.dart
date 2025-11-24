@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'dart:ui';
-import 'dart:math' as math;
 import '../constants/app_colors.dart';
-import '../constants/app_theme.dart';
 import '../models/sleep_entry.dart';
 import '../providers/sleep_provider.dart';
 import '../providers/user_preferences_provider.dart';
 import '../widgets/global_background.dart';
-import '../widgets/professional_app_bar.dart';
 import 'sleep_analytics_screen.dart';
 
 class SleepInputScreen extends StatefulWidget {
@@ -38,21 +35,20 @@ class _SleepInputScreenState extends State<SleepInputScreen>
   late DateTime selectedDate;
   late TimeOfDay bedTime;
   late TimeOfDay wakeTime;
-  late int targetHours;
   
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     
-    // Animation Controllers
+    // ⚡ PERFORMANCE: Animation Controllers - duration optimize edildi
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 500), // 1200ms → 500ms
       vsync: this,
     );
     
     _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 1800), // 2000ms → 1800ms
       vsync: this,
     );
     
@@ -86,11 +82,9 @@ class _SleepInputScreenState extends State<SleepInputScreen>
     if (widget.existingEntry != null) {
       bedTime = TimeOfDay.fromDateTime(widget.existingEntry!.bedTime);
       wakeTime = TimeOfDay.fromDateTime(widget.existingEntry!.wakeTime);
-      targetHours = widget.existingEntry!.targetHours;
     } else {
       bedTime = const TimeOfDay(hour: 23, minute: 0);
       wakeTime = const TimeOfDay(hour: 7, minute: 0);
-      targetHours = context.read<SleepProvider>().defaultTargetHours;
     }
     
     // Start animations
@@ -108,12 +102,17 @@ class _SleepInputScreenState extends State<SleepInputScreen>
 
   @override
   Widget build(BuildContext context) {
-    return GlobalBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        extendBodyBehindAppBar: true,
-        appBar: _buildPremiumAppBar(context),
-        body: AnimatedBuilder(
+    return GestureDetector(
+      onTap: () {
+        // Klavyeyi kapat
+        FocusScope.of(context).unfocus();
+      },
+      child: GlobalBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBodyBehindAppBar: true,
+          appBar: _buildPremiumAppBar(context),
+          body: AnimatedBuilder(
           animation: _fadeAnimation,
           builder: (context, child) {
             return Opacity(
@@ -142,11 +141,6 @@ class _SleepInputScreenState extends State<SleepInputScreen>
                       
                       const SizedBox(height: 32),
                       
-                      // Target Hours - Premium Circular Design
-                      _buildPremiumTargetSection(),
-                      
-                      const SizedBox(height: 32),
-                      
                       // Sleep Summary - Premium Cards
                       _buildPremiumSummarySection(),
                       
@@ -160,6 +154,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
               ),
             );
           },
+        ),
         ),
       ),
     );
@@ -318,8 +313,15 @@ class _SleepInputScreenState extends State<SleepInputScreen>
                   'Kaliteli uyku için verilerinizi kaydedin',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withOpacity(0.9),
                     fontWeight: FontWeight.w500,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.3),
+                        offset: const Offset(0, 1),
+                        blurRadius: 2,
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -408,8 +410,15 @@ class _SleepInputScreenState extends State<SleepInputScreen>
                     _formatDate(selectedDate),
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.primary.withOpacity(0.9),
+                      color: Colors.white.withOpacity(0.9),
                       fontWeight: FontWeight.w500,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.3),
+                          offset: const Offset(0, 1),
+                          blurRadius: 2,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -556,202 +565,19 @@ class _SleepInputScreenState extends State<SleepInputScreen>
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: color,
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withOpacity(0.5),
+                      offset: const Offset(0, 1),
+                      blurRadius: 2,
+                    ),
+                  ],
                 ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  // 🎯 Premium Target Section with Circular Design
-  Widget _buildPremiumTargetSection() {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.focus.withOpacity(0.2),
-            AppColors.focus.withOpacity(0.1),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.focus.withOpacity(0.3),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.focus.withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-          BoxShadow(
-            color: Colors.white.withOpacity(0.1),
-            blurRadius: 1,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.focus.withOpacity(0.3),
-                      AppColors.focus.withOpacity(0.15),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.focus.withOpacity(0.4),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  FeatherIcons.target,
-                  color: AppColors.focus,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Hedef Uyku Süresi',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Kaç saat uyumayı hedefliyorsun?',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.white.withOpacity(0.7),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
-          
-          // Circular Target Display
-          AnimatedBuilder(
-            animation: _pulseAnimation,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _pulseAnimation.value,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.focus.withOpacity(0.3),
-                        AppColors.focus.withOpacity(0.1),
-                      ],
-                    ),
-                    border: Border.all(
-                      color: AppColors.focus.withOpacity(0.4),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.focus.withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '$targetHours',
-                          style: TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.focus,
-                            height: 1,
-                          ),
-                        ),
-                        Text(
-                          'saat',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.focus.withOpacity(0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Premium Slider
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.1),
-                width: 1,
-              ),
-            ),
-            child: SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                activeTrackColor: AppColors.focus,
-                inactiveTrackColor: AppColors.focus.withOpacity(0.2),
-                thumbColor: AppColors.focus,
-                overlayColor: AppColors.focus.withOpacity(0.2),
-                trackHeight: 8,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 14),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 24),
-              ),
-              child: Slider(
-                value: targetHours.toDouble(),
-                min: 4,
-                max: 12,
-                divisions: 8,
-                onChanged: (value) {
-                  setState(() {
-                    targetHours = value.toInt();
-                  });
-                },
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -759,7 +585,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
   // 📊 Premium Summary Section with Cards
   Widget _buildPremiumSummarySection() {
     final actualSleep = _calculateDuration();
-    final debt = actualSleep - Duration(hours: targetHours);
+    final debt = actualSleep - const Duration(hours: SleepEntry.standardTargetHours);
     
     return Container(
       padding: const EdgeInsets.all(24),
@@ -848,7 +674,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
               Expanded(
                 child: _buildPremiumSummaryCard(
                   'Hedef',
-                  '${targetHours}s 0dk',
+                  '${SleepEntry.standardTargetHours}s 0dk',
                   AppColors.focus,
                   FeatherIcons.target,
                 ),
@@ -910,7 +736,14 @@ class _SleepInputScreenState extends State<SleepInputScreen>
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: color,
+              color: Colors.white,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withOpacity(0.5),
+                  offset: const Offset(0, 1),
+                  blurRadius: 2,
+                ),
+              ],
             ),
             textAlign: TextAlign.center,
           ),
@@ -920,16 +753,50 @@ class _SleepInputScreenState extends State<SleepInputScreen>
   }
 
   Widget _buildPremiumDebtCard(Duration debt) {
+    final actualSleep = _calculateDuration();
+    final actualHours = actualSleep.inHours;
     final isNegative = debt.isNegative;
-    final color = isNegative ? AppColors.error : AppColors.success;
-    final icon = isNegative ? FeatherIcons.trendingDown : FeatherIcons.trendingUp;
     
+    // Hedef kontrolü
+    final isOnTarget = debt.inMinutes.abs() <= 30; // ±30 dakika tolerans
+    
+    // Sağlık kontrolü (7-9 saat)
+    final isHealthy = actualHours >= 7 && actualHours <= 9;
+    
+    Color color;
+    IconData icon;
     String debtText;
-    if (debt.inMinutes == 0) {
-      debtText = 'Hedefinde! 🎯';
-    } else {
+    String? healthWarning;
+    
+    if (isOnTarget && isHealthy) {
+      color = AppColors.success;
+      icon = FeatherIcons.checkCircle;
+      debtText = 'Mükemmel! Hedefinde uyudun 🎯';
+    } else if (isOnTarget && !isHealthy) {
+      color = AppColors.warning;
+      icon = FeatherIcons.alertTriangle;
+      debtText = 'Hedefinde ama dikkat! ⚠️';
+      if (actualHours < 7) {
+        healthWarning = 'Sağlığın için ${7 - actualHours} saat daha uyumalısın. Kendine iyi bak! 💙';
+      } else {
+        healthWarning = 'Çok fazla uyku da yorgunluk yapabilir. Dengeli ol 😊';
+      }
+    } else if (!isOnTarget && isHealthy) {
+      color = AppColors.success;
+      icon = FeatherIcons.checkCircle;
       final sleepProvider = context.read<SleepProvider>();
       debtText = sleepProvider.formatSleepDebt(debt);
+      healthWarning = 'Sağlıklı aralıkta uyudun, harika! ✨';
+    } else {
+      color = AppColors.error;
+      icon = FeatherIcons.trendingDown;
+      final sleepProvider = context.read<SleepProvider>();
+      debtText = sleepProvider.formatSleepDebt(debt);
+      if (actualHours < 7) {
+        healthWarning = 'Sağlığın için ${7 - actualHours} saat daha uyumalısın. Sen buna layıksın! ❤️';
+      } else {
+        healthWarning = 'Hedefini aştın ve çok uyudun. Dengeli uyku önemli 🌙';
+      }
     }
     
     return Container(
@@ -954,50 +821,96 @@ class _SleepInputScreenState extends State<SleepInputScreen>
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  color.withOpacity(0.3),
-                  color.withOpacity(0.15),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      color.withOpacity(0.3),
+                      color.withOpacity(0.15),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Uyku Durumu',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.8),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      debtText,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.5),
+                            offset: const Offset(0, 1),
+                            blurRadius: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (healthWarning != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    FeatherIcons.heart,
+                    color: color.withOpacity(0.8),
+                    size: 14,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      healthWarning,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Uyku Durumu',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.8),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  debtText,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          ],
         ],
       ),
     );
@@ -1050,9 +963,9 @@ class _SleepInputScreenState extends State<SleepInputScreen>
                   size: 20,
                 ),
               ),
-              label: const Text(
-                'Kaydet ve Analiz Et',
-                style: TextStyle(
+              label: Text(
+                widget.existingEntry != null ? 'Düzenle ve Analiz Et' : 'Kaydet ve Analiz Et',
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -1067,20 +980,94 @@ class _SleepInputScreenState extends State<SleepInputScreen>
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              onPressed: () {
+              onPressed: () async {
+                // Validasyon: Uyku süresi kontrolü
+                final duration = _calculateDuration();
+                if (duration.inMinutes < 60) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(FeatherIcons.alertCircle, color: Colors.white),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text('Uyku süresi en az 1 saat olmalıdır!'),
+                          ),
+                        ],
+                      ),
+                      backgroundColor: AppColors.error,
+                      behavior: SnackBarBehavior.floating,
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                  return;
+                }
+
+                if (duration.inHours > 16) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(FeatherIcons.alertCircle, color: Colors.white),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text('Uyku süresi 16 saatten fazla olamaz!'),
+                          ),
+                        ],
+                      ),
+                      backgroundColor: AppColors.error,
+                      behavior: SnackBarBehavior.floating,
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                  return;
+                }
+                
                 final sleepProvider = context.read<SleepProvider>();
                 final prefsProvider = context.read<UserPreferencesProvider>();
+                
+                // Aynı tarihte kayıt var mı kontrol et
+                final existingEntry = sleepProvider.getSleepEntryForDate(selectedDate);
+                if (existingEntry != null && widget.existingEntry == null) {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: AppColors.surface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      title: Text(
+                        'Bu Tarihte Kayıt Var',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      content: Text(
+                        '${_formatDate(selectedDate)} tarihinde zaten bir uyku kaydınız var. Üzerine yazmak ister misiniz?',
+                        style: TextStyle(color: Colors.white.withOpacity(0.8)),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: Text('İptal', style: TextStyle(color: Colors.white)),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: Text('Üzerine Yaz', style: TextStyle(color: AppColors.primary)),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirmed != true) return;
+                }
                 
                 final entry = SleepEntry(
                   date: selectedDate,
                   bedTime: _combineDateAndTime(selectedDate, bedTime),
                   wakeTime: _combineDateAndTime(selectedDate, wakeTime),
-                  targetHours: targetHours,
                 );
 
                 sleepProvider.addSleepEntry(entry);
 
-                final duration = _calculateDuration();
                 prefsProvider.recordSleepSession(duration.inMinutes / 60.0);
 
                 Navigator.of(context).pop();
@@ -1107,6 +1094,28 @@ class _SleepInputScreenState extends State<SleepInputScreen>
       initialDate: selectedDate,
       firstDate: DateTime.now().subtract(const Duration(days: 30)),
       lastDate: DateTime.now(),
+      locale: const Locale('tr', 'TR'), // Türkçe dil desteği
+      confirmText: 'Tamam',
+      cancelText: 'İptal',
+      helpText: 'Tarih Seç',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              surface: AppColors.surface,
+              onSurface: Colors.white,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     
     if (picked != null) {

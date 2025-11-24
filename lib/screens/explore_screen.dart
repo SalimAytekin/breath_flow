@@ -10,6 +10,7 @@ import '../widgets/quick_action_card.dart';
 import '../widgets/professional_card.dart';
 import '../widgets/global_background.dart';
 import '../services/asset_manager.dart';
+import '../ui/components/ad_container.dart';
 import '../models/breathing_exercise.dart';
 import '../providers/breathing_provider.dart';
 import 'breathing_screen.dart';
@@ -44,16 +45,16 @@ class ExploreScreen extends StatelessWidget {
               children: [
               // 🧭 Professional Header
               FadeInDown(
-                duration: const Duration(milliseconds: 600),
+                duration: const Duration(milliseconds: 400),
                 child: _buildProfessionalHeader(context),
               ),
               
               const SizedBox(height: AppSpacing.xxLarge),
               
-              // 🫁 Nefes Egzersizleri - Hibrit Yaklaşım
+              // 🫁 Nefes Egzersizleri
               FadeInUp(
-                duration: const Duration(milliseconds: 600),
-                delay: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 400),
+                delay: const Duration(milliseconds: 50),
                 child: _buildSection(
                   context,
                   icon: FeatherIcons.wind,
@@ -71,35 +72,35 @@ class ExploreScreen extends StatelessWidget {
                     _buildFeatureCard(
                       title: 'Kutu Nefes',
                       subtitle: '4-4-4-4 ritmi ile sakinleşme',
-                      imageUrl: AssetManager.coverOcean,
+                      imageUrl: AssetManager.kutuNefesi,
                       onTap: () => _navigateToDirectExercise(context, 'Kutu Nefesi (4-4-4-4)'),
                     ),
                     _buildFeatureCard(
                       title: 'Yavaşlatıcı Nefes',
                       subtitle: 'Her nefeste ritmi yavaşlat, uykuya hazırlan',
-                      imageUrl: AssetManager.coverForest,
+                      imageUrl: AssetManager.yavaslaticiNefes,
                       onTap: () => _navigateToDirectExercise(context, 'Yavaşlatıcı Nefes'),
                     ),
                     _buildFeatureCard(
                       title: 'Diyafram Nefesi',
                       subtitle: 'Karnından nefes al, stresi azalt',
-                      imageUrl: AssetManager.coverRain,
+                      imageUrl: AssetManager.diyaframNefesi,
                       onTap: () => _navigateToDirectExercise(context, 'Diyafram Nefesi'),
                     ),
                   ],
                 ),
               ),
               
-              const SizedBox(height: AppSpacing.xxLarge),
+              const SizedBox(height: AppSpacing.large),
               
-              // 🎵 Ses Dünyası
+              // 🎵 Ses Koleksiyonu
               FadeInUp(
-                duration: const Duration(milliseconds: 600),
-                delay: const Duration(milliseconds: 400),
+                duration: const Duration(milliseconds: 400),
+                delay: const Duration(milliseconds: 100),
                 child: _buildSection(
                   context,
                   icon: FeatherIcons.music,
-                  title: 'Ses Dünyası',
+                  title: 'Ses Koleksiyonu',
                   subtitle: 'Rahatlatıcı sesler ve karıştırıcı',
                   children: [
                     _buildFeatureCard(
@@ -146,8 +147,8 @@ class ExploreScreen extends StatelessWidget {
               
               // 🌙 Uyku Takibi
               FadeInUp(
-                duration: const Duration(milliseconds: 600),
-                delay: const Duration(milliseconds: 600),
+                duration: const Duration(milliseconds: 400),
+                delay: const Duration(milliseconds: 150),
                 child: _buildSection(
                   context,
                   icon: FeatherIcons.moon,
@@ -157,19 +158,19 @@ class ExploreScreen extends StatelessWidget {
                     _buildFeatureCard(
                       title: 'Uyku Kaydı',
                       subtitle: 'Ne kadar uyuduğunu kaydet',
-                      imageUrl: AssetManager.coverForest,
+                      imageUrl: AssetManager.sleepRecord,
                       onTap: () => _navigateToSleepInput(context),
                     ),
                     _buildFeatureCard(
                       title: 'Uyku İstatistikleri',
                       subtitle: 'Kalite ve trendlerini gör',
-                      imageUrl: AssetManager.coverOcean,
+                      imageUrl: AssetManager.sleepStats,
                       onTap: () => _navigateToSleepAnalytics(context),
                     ),
                     _buildFeatureCard(
                       title: 'Uyku Günlüğü',
                       subtitle: 'Rüyalarını ve notlarını kaydet',
-                      imageUrl: AssetManager.coverMeditationBell,
+                      imageUrl: AssetManager.sleepJournal,
                       onTap: () => _navigateToSleepJournal(context),
                     ),
                   ],
@@ -187,56 +188,60 @@ class ExploreScreen extends StatelessWidget {
 
   /// 🧭 Professional Header with Glass Effect
   Widget _buildProfessionalHeader(BuildContext context) {
-    return ProfessionalCard(
-      cardType: CardType.glass,
-      padding: AppSpacing.cardPaddingAll,
-      child: Row(
-        children: [
-          // Icon Container
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.medium),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primaryAccent.withOpacity(0.2),
-                  AppColors.primaryAccent.withOpacity(0.1),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+    return Semantics(
+      header: true,
+      label: 'Keşfet sayfası',
+      child: ProfessionalCard(
+        cardType: CardType.glass,
+        padding: AppSpacing.cardPaddingAll,
+        child: Row(
+          children: [
+            // Icon Container
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.medium),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primaryAccent.withOpacity(0.2),
+                    AppColors.primaryAccent.withOpacity(0.1),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
               ),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+              child: Icon(
+                FeatherIcons.compass,
+                color: AppColors.primaryAccent,
+                size: AppSpacing.iconLarge,
+              ),
             ),
-            child: Icon(
-              FeatherIcons.compass,
-              color: AppColors.primaryAccent,
-              size: AppSpacing.iconLarge,
-            ),
-          ),
-          
-          const SizedBox(width: AppSpacing.large),
-          
-          // Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Keşfet',
-                  style: AppTypography.displaySmall.copyWith(
-                    color: AppColors.textPrimary,
+            
+            const SizedBox(width: AppSpacing.large),
+            
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Keşfet',
+                    style: AppTypography.displaySmall.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.tiny),
-                Text(
-                  'Tüm özellikler ve içerikler burada',
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+                  const SizedBox(height: AppSpacing.tiny),
+                  Text(
+                    'Tüm özellikler ve içerikler burada',
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -261,46 +266,71 @@ class ExploreScreen extends StatelessWidget {
                   Icon(
                     icon,
                     color: AppColors.primaryAccent,
-                    size: AppTypography.displaySmall.fontSize,
+                    size: 24,
                   ),
                   const SizedBox(width: AppSpacing.medium),
-              Text(title, style: AppTypography.displaySmall),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: AppTypography.displaySmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: AppSpacing.tiny),
-              Text(subtitle,
-                  style: AppTypography.bodyMedium
-                      .copyWith(color: AppColors.textSecondary)),
+              Text(
+                subtitle,
+                style: AppTypography.bodyMedium
+                    .copyWith(color: AppColors.textSecondary),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         ),
         const SizedBox(height: AppSpacing.large),
-        SizedBox(
-          height: 220, // Give a fixed height for horizontal scrolling cards
-          child: ShaderMask(
-            shaderCallback: (Rect bounds) {
-              return const LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: <Color>[
-                  Colors.white,
-                  Colors.white,
-                  Colors.transparent,
-                ],
-                stops: [0.0, 0.9, 1.0],
-              ).createShader(bounds);
-            },
-            blendMode: BlendMode.dstIn,
-          child: ListView.separated(
-            itemCount: children.length,
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.large),
-            separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.medium),
-            itemBuilder: (context, index) => children[index],
+        // ♿ Accessibility: Semantics wrapper for horizontal scroll hint
+        Semantics(
+          label: '$title kategorisi',
+          hint: 'Yatay kaydırarak ${children.length} farklı seçenek arasından gezinebilirsiniz',
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = MediaQuery.of(context).size.width;
+            final isSmallScreen = screenWidth < 400;
+            final isMediumScreen = screenWidth >= 400 && screenWidth < 500;
+            final cardHeight = isSmallScreen ? 180.0 : (isMediumScreen ? 190.0 : 200.0);
+            
+            return SizedBox(
+              height: cardHeight,
+              child: ShaderMask(
+              shaderCallback: (Rect bounds) {
+                return const LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: <Color>[
+                    Colors.white,
+                    Colors.white,
+                    Colors.transparent,
+                  ],
+                  stops: [0.0, 0.9, 1.0],
+                ).createShader(bounds);
+              },
+              blendMode: BlendMode.dstIn,
+            child: ListView.separated(
+              itemCount: children.length,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.large),
+              separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.medium),
+              itemBuilder: (context, index) => children[index],
+              ),
             ),
-          ),
-        ),
+          );
+        },
+      ),
+      ),
       ],
     );
   }
@@ -311,16 +341,33 @@ class ExploreScreen extends StatelessWidget {
     required String imageUrl,
     VoidCallback? onTap,
   }) {
-    return SizedBox(
-      width: 160, // Fixed width for horizontal items
-      child: FeatureCard(
-        title: title,
-        subtitle: subtitle,
-        imageUrl: imageUrl,
-        onTap: onTap,
+    // ♿ Accessibility wrapper
+    return Semantics(
+      button: true,
+      label: title,
+      hint: subtitle,
+      enabled: onTap != null,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final screenWidth = MediaQuery.of(context).size.width;
+          final isSmallScreen = screenWidth < 400;
+          final isMediumScreen = screenWidth >= 400 && screenWidth < 500;
+          final cardWidth = isSmallScreen ? 140.0 : (isMediumScreen ? 150.0 : 160.0);
+          
+          return SizedBox(
+            width: cardWidth,
+            child: FeatureCard(
+              title: title,
+              subtitle: subtitle,
+              imageUrl: imageUrl,
+              onTap: onTap,
+            ),
+          );
+        },
       ),
     );
   }
+  
 
   // 🚀 Navigation Methods
   void _navigateToBreathing(BuildContext context) {
@@ -340,8 +387,16 @@ class ExploreScreen extends StatelessWidget {
       
       // Döngü seçim modalını göster
       _showCycleSelectionModal(context, exercise);
-    } catch (e) {
-      print('❌ Egzersiz bulunamadı: $exerciseName');
+    } on StateError {
+      // Egzersiz bulunamadı - kullanıcıyı bilgilendir
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Egzersiz bulunamadı, tüm egzersizler sayfasına yönlendiriliyorsunuz'),
+          backgroundColor: AppColors.warning,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
       // Fallback olarak normal breathing screen'e git
       _navigateToBreathing(context);
     }
@@ -360,8 +415,11 @@ class ExploreScreen extends StatelessWidget {
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter modalState) {
+            final screenWidth = MediaQuery.of(context).size.width;
+            final isSmallScreen = screenWidth < 400;
+            
             return Container(
-              padding: const EdgeInsets.all(AppSpacing.large),
+              padding: EdgeInsets.all(isSmallScreen ? AppSpacing.medium : AppSpacing.large),
               decoration: BoxDecoration(
                 color: AppColors.surface.withOpacity(0.95),
                 borderRadius: const BorderRadius.only(
@@ -370,55 +428,59 @@ class ExploreScreen extends StatelessWidget {
                 ),
                 border: Border.all(color: AppColors.glassBorder.withOpacity(0.2)),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Başlık
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              exercise.name,
-                              style: AppTypography.headlineSmall,
-                            ),
-                            const SizedBox(height: AppSpacing.small),
-                            Text(
-                              'Kaç döngü yapmak istiyorsun?',
-                              style: AppTypography.bodyLarge.copyWith(
-                                color: AppColors.textSecondary,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Başlık
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                exercise.name,
+                                style: AppTypography.headlineSmall.copyWith(
+                                  fontSize: isSmallScreen ? 18 : 20,
+                                ),
                               ),
-                            ),
-                          ],
+                              SizedBox(height: isSmallScreen ? AppSpacing.tiny : AppSpacing.small),
+                              Text(
+                                'Kaç tekrar yapmak istiyorsun?',
+                                style: AppTypography.bodyLarge.copyWith(
+                                  color: AppColors.textSecondary,
+                                  fontSize: isSmallScreen ? 14 : 16,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          FeatherIcons.x,
-                          color: AppColors.textPrimary,
-                          size: 24,
+                        IconButton(
+                          icon: Icon(
+                            FeatherIcons.x,
+                            color: AppColors.textPrimary,
+                            size: isSmallScreen ? 20 : 24,
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
                         ),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.large),
+                      ],
+                    ),
+                    SizedBox(height: isSmallScreen ? AppSpacing.medium : AppSpacing.large),
 
-                  // Döngü seçenekleri
-                  SizedBox(
-                    height: 200,
-                    child: GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        childAspectRatio: 1.4,
-                        crossAxisSpacing: 6,
-                        mainAxisSpacing: 6,
-                      ),
+                    // Döngü seçenekleri
+                    SizedBox(
+                      height: isSmallScreen ? 160 : 200,
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          childAspectRatio: isSmallScreen ? 1.3 : 1.4,
+                          crossAxisSpacing: isSmallScreen ? 4 : 6,
+                          mainAxisSpacing: isSmallScreen ? 4 : 6,
+                        ),
                       itemCount: cycleOptions.length,
                       itemBuilder: (context, index) {
                         final cycles = cycleOptions[index];
@@ -454,21 +516,21 @@ class ExploreScreen extends StatelessWidget {
                                         ? AppColors.primaryAccent
                                         : AppColors.textPrimary,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontSize: isSmallScreen ? 14 : 16,
                                   ),
                                 ),
                                 Text(
-                                  'döngü',
+                                  'tekrar',
                                   style: TextStyle(
                                     color: AppColors.textSecondary,
-                                    fontSize: 10,
+                                    fontSize: isSmallScreen ? 9 : 10,
                                   ),
                                 ),
                                 Text(
                                   '~${estimatedMinutes}dk',
                                   style: TextStyle(
                                     color: AppColors.textSecondary,
-                                    fontSize: 9,
+                                    fontSize: isSmallScreen ? 8 : 9,
                                   ),
                                 ),
                               ],
@@ -478,54 +540,61 @@ class ExploreScreen extends StatelessWidget {
                       },
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xLarge),
+                    SizedBox(height: isSmallScreen ? AppSpacing.large : AppSpacing.xLarge),
 
-                  // Başlat butonu
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Egzersizi set et ve başlat
-                        breathingProvider.setExercise(exercise, customCycles: selectedCycles);
-                        breathingProvider.start();
-                        
-                        Navigator.of(context).pop(); // Modal'ı kapat
-                        
-                        // BreathingScreen'e git
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const BreathingScreen(),
+                    // Başlat butonu
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // Egzersizi set et ve başlat
+                          breathingProvider.setExercise(exercise, customCycles: selectedCycles);
+                          breathingProvider.start();
+                          
+                          Navigator.of(context).pop(); // Modal'ı kapat
+                          
+                          // BreathingScreen'e git
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const BreathingScreen(),
+                            ),
+                          ).then((_) {
+                            // Ekrandan döndüğünde egzersizi durdur
+                            breathingProvider.stop();
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryAccent,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            vertical: isSmallScreen ? AppSpacing.small : AppSpacing.medium,
                           ),
-                        ).then((_) {
-                          // Ekrandan döndüğünde egzersizi durdur
-                          breathingProvider.stop();
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryAccent,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.medium),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSpacing.medium),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppSpacing.medium),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(FeatherIcons.play, size: isSmallScreen ? 18 : 20),
+                            SizedBox(width: isSmallScreen ? AppSpacing.tiny : AppSpacing.small),
+                            Flexible(
+                              child: Text(
+                                'Başlat ($selectedCycles tekrar)',
+                                style: AppTypography.bodyLarge.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: isSmallScreen ? 14 : 16,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(FeatherIcons.play, size: 20),
-                          const SizedBox(width: AppSpacing.small),
-                          Text(
-                            'Başlat ($selectedCycles döngü)',
-                            style: AppTypography.bodyLarge.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.medium),
-                ],
+                    SizedBox(height: isSmallScreen ? AppSpacing.small : AppSpacing.medium),
+                  ],
+                ),
               ),
             );
           },

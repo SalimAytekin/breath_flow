@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_strings.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
 import '../providers/theme_provider.dart';
-import '../widgets/simple_banner_ad.dart';
+import '../providers/audio_provider.dart';
+import '../ui/components/ad_container.dart';
+import '../widgets/smart_premium_dialog.dart';
+import '../providers/premium_provider.dart';
 import 'home_screen.dart';
 import 'explore_screen.dart';
 import 'profile_screen.dart';
@@ -20,16 +24,19 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen>
-    with TickerProviderStateMixin {
+with TickerProviderStateMixin {
   int _selectedIndex = 0;
   late PageController _pageController;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  AudioProvider? _audioProvider; // Provider referansını sakla
 
-  static const List<Widget> _widgetOptions = <Widget>[
-    HomeScreen(),
-    ExploreScreen(),
-    ProfileScreen(),
+  // ⚡ PERFORMANS: Sayfalar const olarak tanımlanıyor - gereksiz rebuild'leri engeller
+  // RepaintBoundary ile her sayfa izole ediliyor - bir sayfadaki değişiklik diğerlerini etkilemiyor
+  static const List<Widget> _widgetOptions = <Widget>[ // ⚡ Const list
+    RepaintBoundary(child: HomeScreen()),
+    RepaintBoundary(child: ExploreScreen()),
+    RepaintBoundary(child: ProfileScreen()),
   ];
 
   @override
@@ -51,6 +58,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Provider referansını güvenli şekilde al
+    _audioProvider = Provider.of<AudioProvider>(context, listen: false);
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     _animationController.dispose();
@@ -59,6 +73,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
 
   void _onItemTapped(int index) {
     if (_selectedIndex != index) {
+      // 🎵 Ana navigasyon değişiminde mixer seslerini durdur
+      _stopMixerSoundsOnNavigation();
+      
       setState(() {
         _selectedIndex = index;
       });
@@ -70,36 +87,94 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     }
   }
 
+  /// Ana navigasyon değişiminde mixer seslerini durdur
+  void _stopMixerSoundsOnNavigation() {
+    try {
+      if (_audioProvider != null && _audioProvider!.isMixerActive) {
+        _audioProvider!.stopAllSounds();
+        debugPrint('✅ MainNavigation: Mixer sesleri ana navigasyon değişiminde durduruldu');
+      }
+    } catch (e) {
+      debugPrint('❌ MainNavigation audio cleanup error: $e');
+    }
+  }
+
 @override
 Widget build(BuildContext context) {
-  return Scaffold(
-    extendBody: true,
-    backgroundColor: Colors.transparent,
-    body: GlobalBackground(
-      child: FadeTransition(
-        opacity: _fadeAnimation,
-        child: PageView(
-          controller: _pageController,
-          onPageChanged: (index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-          children: _widgetOptions,
-        ),
-      ),
-    ),
+  return Consumer<PremiumProvider>(
+    builder: (context, premiumProvider, child) {
+      // Premium tetikleyici kontrolü - ASKIYA ALINDI
+      // WidgetsBinding.instance.addPostFrameCallback((_) {
+      //   if (premiumProvider.currentActiveTrigger != null) {
+      //     SmartPremiumDialog.show(
+      //       context,
+      //       premiumProvider.currentActiveTrigger!,
+      //       onPurchase: () {
+      //         // Premium satın alma başarılı
+      //         ScaffoldMessenger.of(context).showSnackBar(
+      //           const SnackBar(
+      //             content: Text('Premium aktifleştirildi! 🎉'),
+      //             backgroundColor: Colors.green,
+      //           ),
+      //         );
+      //       },
+      //       onDismiss: () {
+      //         // Tetikleyici dismiss edildi
+      //       },
+      //     );
+      //   }
+      // });
+
+      return PopScope(
+        canPop: false, // Geri tuşu davranışını kontrol et
+        onPopInvoked: (didPop) {
+          if (!didPop) {
+            // 🎵 Geri tuşu basıldığında mixer seslerini durdur
+            _stopMixerSoundsOnNavigation();
+            // Uygulamadan çık
+            SystemNavigator.pop();
+          }
+        },
+        child: Scaffold(
+          extendBody: true,
+          backgroundColor: Colors.transparent,
+          body: GlobalBackground(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: PageView(
+                controller: _pageController,
+                physics: const ClampingScrollPhysics(), // Performans optimizasyonu
+                onPageChanged: (index) {
+                  // 🎵 Sayfa değişiminde mixer seslerini durdur
+                  _stopMixerSoundsOnNavigation();
+                  
+                  setState(() {
+                    _selectedIndex = index;
+                  });
+                },
+                children: _widgetOptions,
+              ),
+            ),
+          ),
     bottomNavigationBar: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Banner reklam - Navbar üstünde
-        const SimpleBannerAd(
-          placement: 'main_navigation',
-          margin: EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+        // ⚡ OPTIMIZED: Tek banner tüm ekranlar için - 3x memory tasarrufu
+        // RepaintBoundary ile izole edildi - gereksiz rebuild'leri engeller
+        RepaintBoundary(
+          child: AdContainer(
+            key: const ValueKey('main_navigation_banner'),
+            placement: 'main_navigation',
+            height: 50.0,
+            margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+          ),
         ),
         _buildBottomNavBar(Theme.of(context).brightness == Brightness.dark),
       ],
     ),
+        ),
+      );
+    },
   );
 }
 

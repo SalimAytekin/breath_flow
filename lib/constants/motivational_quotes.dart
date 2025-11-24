@@ -1,11 +1,8 @@
-import 'dart:math';
-
 class MotivationalQuotes {
   static final List<String> _quotes = [
     "Bugün, dün olduğundan daha iyi olmak için bir şans.",
     "Küçük adımlar, büyük başarılara yol açar.",
     "Nefes al, sakin ol ve anın tadını çıkar.",
-    "Başlamak için mükemmel olmak zorunda değilsin, ama başlamak zorundasın.",
     "Her fırtınanın ardından bir gökkuşağı belirir.",
     "Zorluklar, zihnin kaslarını güçlendirir.",
     "Kendine inan, çünkü sen sandığından daha güçlüsün.",

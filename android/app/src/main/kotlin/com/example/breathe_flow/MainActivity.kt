@@ -1,4 +1,4 @@
-package com.example.breathe_flow
+package com.breathflow.app
 
 import io.flutter.embedding.android.FlutterActivity
 

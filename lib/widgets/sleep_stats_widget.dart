@@ -202,10 +202,10 @@ class SleepStatsWidget extends StatelessWidget {
               Expanded(
                 child: _buildActionButton(
                   context,
-                  'Hedef Ayarla',
-                  FeatherIcons.target,
+                  'Analiz Gör',
+                  FeatherIcons.barChart2,
                   AppColors.focus,
-                  () => _showTargetDialog(context, sleepProvider),
+                  () => _navigateToSleepAnalytics(context),
                 ),
               ),
             ],
@@ -353,7 +353,7 @@ class SleepStatsWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: weeklyEntries.map((entry) {
               final sleepHours = entry.actualSleep.inMinutes / 60;
-              final targetHours = entry.targetHours.toDouble();
+              final targetHours = 8.0; // Sabit standart
               final barHeight = (sleepHours / 12) * 80; // 12 saat max için normalize
               
               final isToday = _isToday(entry.date);
@@ -465,80 +465,7 @@ class SleepStatsWidget extends StatelessWidget {
     );
   }
   
-  void _showTargetDialog(BuildContext context, SleepProvider sleepProvider) {
-    int currentTarget = sleepProvider.defaultTargetHours;
-    
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Hedef Uyku Süresi'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Günlük uyku hedefinizi belirleyin:',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 20),
-              Text(
-                '$currentTarget saat',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              SliderTheme(
-                data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: AppColors.primary,
-                  inactiveTrackColor: AppColors.primary.withOpacity(0.3),
-                  thumbColor: AppColors.primary,
-                ),
-                child: Slider(
-                  value: currentTarget.toDouble(),
-                  min: 4,
-                  max: 12,
-                  divisions: 8,
-                  onChanged: (value) {
-                    setState(() {
-                      currentTarget = value.toInt();
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('İptal'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                sleepProvider.setDefaultTargetHours(currentTarget);
-                Navigator.pop(context);
-                
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Hedef uyku süresi $currentTarget saat olarak güncellendi!'),
-                    backgroundColor: AppColors.success,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Kaydet'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Hedef ayarlama fonksiyonu kaldırıldı - artık sabit 8 saat standart kullanılıyor
   
   bool _isToday(DateTime date) {
     final now = DateTime.now();

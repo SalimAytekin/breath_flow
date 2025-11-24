@@ -60,6 +60,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
 
     return Scaffold(
       appBar: AppBar(
@@ -79,17 +81,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: EdgeInsets.symmetric(
+              horizontal: isSmallScreen ? 16.0 : 24.0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(height: screenHeight * 0.05),
+                SizedBox(height: isSmallScreen ? 20 : screenHeight * 0.05),
                 
                 // App icon
                 Center(
                   child: Container(
-                    width: 80,
-                    height: 80,
+                    width: isSmallScreen ? 70 : 80,
+                    height: isSmallScreen ? 70 : 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: AppColors.primaryGradient,
@@ -101,21 +105,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.self_improvement,
-                      size: 40,
+                      size: isSmallScreen ? 35 : 40,
                       color: Colors.white,
                     ),
                   ),
                 ),
                 
-                const SizedBox(height: 32),
+                SizedBox(height: isSmallScreen ? 24 : 32),
                 
                 Text(
                   'Aramıza Katıl',
                   style: AppTypography.displayMedium.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
+                    fontSize: isSmallScreen ? 22 : 28,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -131,11 +136,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   textAlign: TextAlign.center,
                 ),
                 
-                SizedBox(height: screenHeight * 0.05),
+                SizedBox(height: isSmallScreen ? 20 : screenHeight * 0.05),
                 
                 // Signup form
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(isSmallScreen ? 20 : 24),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceElevated.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(24),
@@ -346,6 +351,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
     Widget? suffixIcon,
     String? Function(String?)? validator,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -354,9 +362,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
           style: AppTypography.labelMedium.copyWith(
             color: AppColors.textSecondary,
             fontWeight: FontWeight.w500,
+            fontSize: isSmallScreen ? 13 : 14,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: isSmallScreen ? 6 : 8),
         TextFormField(
           controller: controller,
           obscureText: obscureText,

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../models/breathing_exercise.dart';
 import '../constants/app_colors.dart';
+import '../providers/user_preferences_provider.dart';
 
 class BreathingExerciseCard extends StatelessWidget {
   final BreathingExercise exercise;
@@ -45,19 +48,19 @@ class BreathingExerciseCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Görsel ve başlık
               Row(
                 children: [
+                  // Egzersiz görseli
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
-                      color: _getExerciseColor().withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      _getExerciseIcon(),
-                      color: _getExerciseColor(),
-                      size: 24,
+                      image: DecorationImage(
+                        image: AssetImage(exercise.imagePath),
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -74,30 +77,74 @@ class BreathingExerciseCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${exercise.totalCycleTime} saniye/döngü',
+                          exercise.description,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${exercise.totalCycleTime} saniye/tekrar',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  if (exercise.isPremium)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.warning.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'PRO',
-                        style: TextStyle(
-                          color: AppColors.warning,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                  Consumer<UserPreferencesProvider>(
+                    builder: (context, userPrefs, child) {
+                      final isFavorite = userPrefs.isFavoriteExercise(exercise.type.name);
+                      
+                      return GestureDetector(
+                        onTap: () {
+                          HapticFeedback.mediumImpact();
+                          userPrefs.toggleFavoriteExercise(exercise.type.name);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isFavorite 
+                                ? Colors.red.shade50 
+                                : AppColors.surface,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isFavorite 
+                                  ? Colors.red.shade300 
+                                  : AppColors.border,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Icon(
+                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                            color: isFavorite ? Colors.red.shade400 : AppColors.textSecondary,
+                            size: 20,
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
+                  ),
+                  // PRO etiketi kaldırıldı - Premium sistemi askıya alındı
+                  // const SizedBox(width: 8),
+                  // if (exercise.isPremium)
+                  //   Container(
+                  //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  //     decoration: BoxDecoration(
+                  //       color: AppColors.warning.withOpacity(0.1),
+                  //       borderRadius: BorderRadius.circular(8),
+                  //     ),
+                  //     child: Text(
+                  //       'PRO',
+                  //       style: TextStyle(
+                  //         color: AppColors.warning,
+                  //         fontSize: 10,
+                  //         fontWeight: FontWeight.bold,
+                  //       ),
+                  //     ),
+                  //   ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -143,7 +190,9 @@ class BreathingExerciseCard extends StatelessWidget {
         return AppColors.relaxation;
       case BreathingType.deepBreathing:
         return AppColors.sleep;
-      case BreathingType.calmingBreath:
+      case BreathingType.coherentBreathing:
+        return AppColors.primary;
+      default:
         return AppColors.primary;
     }
   }
@@ -156,7 +205,9 @@ class BreathingExerciseCard extends StatelessWidget {
         return Icons.favorite;
       case BreathingType.deepBreathing:
         return Icons.waves;
-      case BreathingType.calmingBreath:
+      case BreathingType.coherentBreathing:
+        return Icons.spa;
+      default:
         return Icons.spa;
     }
   }
@@ -169,6 +220,10 @@ class BreathingExerciseCard extends StatelessWidget {
         return AppColors.warning;
       case BreathingStepType.exhale:
         return AppColors.info;
+      case BreathingStepType.holdAfterExhale:
+        return AppColors.textSecondary;
+      default:
+        return AppColors.textSecondary;
     }
   }
 } 

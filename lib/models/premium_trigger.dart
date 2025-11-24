@@ -100,10 +100,11 @@ class PremiumTrigger {
       color: const Color(0xFF4CAF50),
       offerType: PremiumOfferType.specificFeature,
       conditions: {
-        'journeyId': 'stress_reduction_7_day',
-        'completionRate': 1.0,
+        'journeyCompleted': true,
+        'completionRate': 0.7, // %70 tamamlanma yeterli
       },
       priority: 3,
+      cooldown: Duration(days: 3), // 7 gün yerine 3 gün
       targetFeatures: ['advanced_journeys', 'expert_content'],
     ),
 
@@ -118,10 +119,11 @@ class PremiumTrigger {
       color: const Color(0xFFFF9800),
       offerType: PremiumOfferType.specificFeature,
       conditions: {
-        'savedMixesCount': 3,
+        'savedMixesCount': 2, // Daha erken tetikle
         'featureUsage': 'sound_mixer',
       },
       priority: 2,
+      cooldown: Duration(days: 2), // Daha kısa cooldown
       targetFeatures: ['unlimited_mixes', 'hd_sounds'],
     ),
 
@@ -317,7 +319,7 @@ class PremiumOffer {
         'Reklamsız deneyim',
         'Öncelikli destek'
       ],
-      price: '₺29,99/ay',
+      price: '₺19,99/ay',
       ctaText: 'Premium\'a Başla',
       icon: Icons.star,
       primaryColor: const Color(0xFF7D8AFF),
@@ -369,8 +371,8 @@ class PremiumOffer {
         '%50 indirim',
         'Sınırlı süre'
       ],
-      price: '₺14,99/ay',
-      originalPrice: '₺29,99',
+      price: '₺9,99/ay',
+      originalPrice: '₺19,99',
       discountPercentage: 50,
       ctaText: 'İndirimi Yakala',
       icon: Icons.local_offer,

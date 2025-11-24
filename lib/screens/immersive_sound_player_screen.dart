@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
-import 'package:chewie/chewie.dart';
-import 'package:video_player/video_player.dart';
 import 'dart:async';
-import 'dart:math';
 import '../models/sound_item.dart';
-import '../providers/audio_provider.dart';
+import '../providers/seamless_audio_provider.dart';
+import '../providers/user_preferences_provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
 import '../constants/app_typography.dart';
+import '../core/ads/ad_manager.dart';
 import '../utils/performance_utils.dart';
+import '../providers/premium_provider.dart';
 
 class ImmersiveSoundPlayerScreen extends StatefulWidget {
   final SoundItem sound;
@@ -26,20 +26,11 @@ class ImmersiveSoundPlayerScreen extends StatefulWidget {
 }
 
 class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
-    with TickerProviderStateMixin, WidgetsBindingObserver {
+    with SingleTickerProviderStateMixin {
   
-  // Chewie Player - SEAMLESS LOOPS! 🔄
-  VideoPlayerController? _videoPlayerController;
-  ChewieController? _chewieController;
-  bool _hasVideo = false;
-  bool _lastVideoPlayingState = false;
-  bool _videoNearEndLogged = false;
-  
-  // Animation Controllers
+  // Animation Controller - Sadece fade için
   late AnimationController _fadeController;
-  late AnimationController _backgroundController;
   late Animation<double> _fadeAnimation;
-  late Animation<double> _backgroundAnimation;
   
   // Timer
   Timer? _timer;
@@ -47,16 +38,12 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
   
   // State Management
   bool _isDisposed = false;
-  AudioProvider? _audioProvider;
+  SeamlessAudioProvider? _seamlessProvider;
 
   @override
   void initState() {
     super.initState();
     _setupAnimations();
-    _checkVideoAvailability();
-    
-    // Add lifecycle observer
-    WidgetsBinding.instance.addObserver(this);
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -65,20 +52,10 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
     });
   }
 
-  void _checkVideoAvailability() {
-    _hasVideo = widget.sound.videoPath != null;
-    
-    if (_hasVideo) {
-      debugPrint('🎬 Video detected for ${widget.sound.name}: ${widget.sound.videoPath}');
-    } else {
-      debugPrint('📷 No video for ${widget.sound.name} - using animated background');
-    }
-  }
-
   void _setupAnimations() {
-    // Fade animation
+    // Sadece fade animation - geçiş için
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 300), // Hızlı çıkış
       vsync: this,
     );
     
@@ -89,45 +66,12 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
       parent: _fadeController,
       curve: Curves.easeOut,
     ));
-
-    // Background animation
-    _backgroundController = AnimationController(
-      duration: const Duration(seconds: 15),
-      vsync: this,
-    );
-    
-    _backgroundAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _backgroundController,
-      curve: Curves.easeInOut,
-    ));
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _audioProvider = Provider.of<AudioProvider>(context, listen: false);
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    
-    if (_chewieController != null) {
-      if (state == AppLifecycleState.resumed) {
-        // ✅ Resume video when app comes to foreground
-        if (!_isDisposed && mounted) {
-          _chewieController!.play();
-          debugPrint('✅ Chewie video resumed on app foreground');
-        }
-      } else if (state == AppLifecycleState.paused) {
-        // Pause video when app goes to background
-        _chewieController!.pause();
-        debugPrint('📱 Chewie video paused on app background');
-      }
-    }
+    _seamlessProvider = Provider.of<SeamlessAudioProvider>(context, listen: false);
   }
 
   Future<void> _initializeScreen() async {
@@ -139,15 +83,8 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
     // Set immersive mode
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
     
-    // Initialize video if available - CHEWIE SEAMLESS!
-    if (_hasVideo) {
-      PerformanceMonitor.instance.trackVideoStart(widget.sound.videoPath!);
-      await _initializeChewieVideo();
-    }
-    
-    // Start animations
+    // Start fade animation
     _fadeController.forward();
-    _backgroundController.repeat(reverse: true);
     
     // Start audio and timer
     await Future.delayed(const Duration(milliseconds: 200));
@@ -158,230 +95,31 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
     }
   }
 
-  Future<void> _initializeChewieVideo() async {
-    if (_isDisposed || !_hasVideo) return;
-    
-    try {
-      debugPrint('🎬 Initializing CHEWIE video: ${widget.sound.videoPath}');
-      
-      // Create video player controller first with SEAMLESS loop optimization
-      _videoPlayerController = VideoPlayerController.asset(
-        widget.sound.videoPath!,
-        videoPlayerOptions: VideoPlayerOptions(
-          mixWithOthers: true, // Allow mixing with audio
-          allowBackgroundPlayback: true,
-        ),
-      );
-      
-      // 🚀 AGGRESSIVE preloading for seamless loops
-      _videoPlayerController!.setLooping(true);
-      
-      // Add video state listener for performance monitoring
-      _videoPlayerController!.addListener(_videoStateListener);
-      
-      // Initialize video controller with BUFFER PRE-LOADING
-      await _videoPlayerController!.initialize();
-      
-      // 🔄 AGGRESSIVE BUFFERING for seamless loops
-      await _videoPlayerController!.seekTo(Duration.zero);
-      await _videoPlayerController!.play();
-      await Future.delayed(Duration(milliseconds: 100)); // Allow initial buffering
-      await _videoPlayerController!.pause();
-      await _videoPlayerController!.seekTo(Duration.zero);
-      
-      debugPrint('✅ VideoPlayerController initialized with BUFFER PRE-LOAD');
-      debugPrint('   📏 Duration: ${_videoPlayerController!.value.duration}');
-      debugPrint('   📐 Size: ${_videoPlayerController!.value.size}');
-      debugPrint('   📱 Aspect: ${_videoPlayerController!.value.aspectRatio.toStringAsFixed(2)}');
-      debugPrint('   🔄 Loop pre-buffered for SEAMLESS playback');
-      
-      // ✨ CHEWIE configuration for SEAMLESS looping
-      _chewieController = ChewieController(
-        videoPlayerController: _videoPlayerController!,
-        
-        // 🔄 SEAMLESS LOOPING - Key feature!
-        looping: true,
-        
-        // 🔇 MUTED for separate audio handling
-        autoPlay: true,
-        startAt: Duration.zero,
-        
-        // 🎛️ Hide all controls - we handle them
-        showControls: false,
-        showControlsOnInitialize: false,
-        
-        // 🎯 FULL SCREEN aspect ratio - use video's natural ratio
-        aspectRatio: _videoPlayerController!.value.aspectRatio,
-        
-        // 🚀 ANTI-BLACK SCREEN optimizations
-        allowFullScreen: false,
-        allowMuting: false,
-        allowPlaybackSpeedChanging: false,
-        
-                 // 🎵 Volume handled by VideoPlayerController separately
-        
-        // 📱 SEAMLESS LOOP optimizations
-        materialProgressColors: ChewieProgressColors(
-          playedColor: Colors.transparent,
-          handleColor: Colors.transparent,
-          backgroundColor: Colors.transparent,
-          bufferedColor: Colors.transparent,
-        ),
-        
-        // 🔄 ENHANCED error recovery for smooth loops
-        errorBuilder: (context, errorMessage) {
-          debugPrint('🔴 Chewie Error: $errorMessage');
-          // Don't show error - return transparent container to avoid black screen
-          return Container(
-            color: Colors.transparent,
-            child: Center(
-              child: Icon(
-                Icons.refresh,
-                color: Colors.white24,
-                size: 48,
-              ),
-            ),
-          );
-        },
-        
-        // 🎯 BUFFER MANAGEMENT for seamless loops
-        placeholder: Container(
-          color: Colors.transparent, // NO BLACK PLACEHOLDER
-          child: Center(
-            child: CircularProgressIndicator(
-              color: Colors.white24,
-              strokeWidth: 2,
-            ),
-          ),
-        ),
-      );
-      
-      // 🎵 MUTE video completely for separate audio
-      await _videoPlayerController!.setVolume(0.0);
-      
-      debugPrint('✅ Chewie initialized with SEAMLESS looping');
-      debugPrint('🔄 Looping: ON, Volume: 0.0, Controls: HIDDEN');
-      debugPrint('🎵 Audio handled separately - NO CONFLICTS!');
-      debugPrint('🚀 SEAMLESS video loops - NO BLACK SCREENS!');
-      
-      if (!_isDisposed && mounted) {
-        setState(() {}); // Trigger rebuild to show video
-      }
-      
-    } catch (e) {
-      debugPrint('❌ Chewie video setup error: $e');
-      debugPrint('📁 Video path was: ${widget.sound.videoPath}');
-      debugPrint('🎵 Sound name: ${widget.sound.name}');
-      // Continue without video - graceful fallback
-    }
-  }
-
-  void _videoStateListener() {
-    if (_videoPlayerController != null && !_isDisposed) {
-      final value = _videoPlayerController!.value;
-      
-      if (value.hasError) {
-        debugPrint('🔴 Video Error: ${value.errorDescription}');
-        PerformanceMonitor.instance.trackVideoStutter(widget.sound.videoPath!, 500); // Major error
-      }
-      
-      if (value.isPlaying != _lastVideoPlayingState) {
-        _lastVideoPlayingState = value.isPlaying;
-        debugPrint('🎬 Chewie playing state changed: ${value.isPlaying}');
-        
-        if (!value.isPlaying && value.position >= value.duration && value.duration > Duration.zero) {
-          debugPrint('🔄 Video finished, Chewie handles seamless restart...');
-        }
-      }
-      
-      // Position tracking for seamless loop monitoring
-      final position = value.position;
-      final duration = value.duration;
-      if (duration > Duration.zero) {
-        final progress = position.inMilliseconds / duration.inMilliseconds;
-        
-        // Near end detection (95% complete)
-        if (progress > 0.95 && !_videoNearEndLogged) {
-          debugPrint('⏰ Chewie near end: ${position.inSeconds}s / ${duration.inSeconds}s - PREPARING LOOP');
-          _videoNearEndLogged = true;
-        }
-        
-        // Loop restart detection (back to beginning)
-        if (progress < 0.05 && _videoNearEndLogged) {
-          debugPrint('🔄 Chewie SEAMLESS loop restart detected! NO BLACK SCREEN!');
-          _videoNearEndLogged = false; // Reset for next loop
-        }
-      }
-      
-      // Monitor for buffering (indicates potential stutters)
-      if (value.isBuffering) {
-        debugPrint('⏳ Chewie buffering... (${(value.position.inMilliseconds / value.duration.inMilliseconds * 100).toStringAsFixed(1)}%)');
-        PerformanceMonitor.instance.trackVideoStutter(widget.sound.videoPath!, 100);
-      }
-      
-      // Monitor for initialization state
-      if (value.isInitialized && !value.hasError) {
-        // Video is ready and healthy
-        if (value.isPlaying && !value.isBuffering) {
-          // Perfect playback state
-        }
-      }
-    }
-  }
-
   void _startAudio() {
-    if (_audioProvider != null && !_isDisposed) {
-      debugPrint('🎵 === STARTING AUDIO DEBUG ===');
-      debugPrint('🎵 Sound ID: ${widget.sound.id}');
-      debugPrint('🎵 Sound Name: ${widget.sound.name}');
-      debugPrint('🎵 Sound Asset Path: ${widget.sound.assetPath}');
-      debugPrint('🎵 Audio Provider State: ${_audioProvider != null ? 'Available' : 'NULL'}');
-      
-      try {
-        _audioProvider!.playExclusive(widget.sound);
-        debugPrint('✅ Audio playExclusive called successfully');
+    if (_isDisposed) return;
+    
+    _seamlessProvider!.playSeamlessLoop(widget.sound);
+    
+    // Verify seamless audio is working
+    Future.delayed(Duration(milliseconds: 500), () {
+      if (_seamlessProvider != null && !_isDisposed) {
+        final isPlaying = _seamlessProvider!.isPlaying(widget.sound.id);
         
-        // Verify audio is actually playing after a short delay
-        Future.delayed(Duration(milliseconds: 500), () {
-          if (_audioProvider != null && !_isDisposed) {
-            final isPlaying = _audioProvider!.isPlaying(widget.sound.id);
-            final exclusiveSound = _audioProvider!.exclusiveSound;
-            final playerState = _audioProvider!.exclusivePlayerState;
-            
-            debugPrint('🔍 === AUDIO VERIFICATION ===');
-            debugPrint('🔍 Is Playing: $isPlaying');
-            debugPrint('🔍 Exclusive Sound: ${exclusiveSound?.name ?? 'NULL'}');
-            debugPrint('🔍 Player State: $playerState');
-            debugPrint('🔍 Master Volume: ${_audioProvider!.masterVolume}');
-            debugPrint('🔍 Sound Volume: ${_audioProvider!.getVolume(widget.sound.id)}');
-            
-            if (!isPlaying) {
-              debugPrint('🚨 AUDIO NOT PLAYING! Attempting restart...');
-              _restartAudio();
-            }
-          }
-        });
-      } catch (e) {
-        debugPrint('❌ Error starting audio: $e');
+        if (!isPlaying) {
+          _restartAudio();
+        }
       }
-    } else {
-      debugPrint('❌ Cannot start audio - provider disposed or null');
-    }
+    });
   }
   
   void _restartAudio() {
-    debugPrint('🔄 Restarting audio...');
-    if (_audioProvider != null && !_isDisposed) {
-      // Stop and restart
-      _audioProvider!.stopAllSounds().then((_) {
-        Future.delayed(Duration(milliseconds: 100), () {
-          if (_audioProvider != null && !_isDisposed) {
-            _audioProvider!.playExclusive(widget.sound);
-            debugPrint('🔄 Audio restart attempted');
-          }
-        });
+    _seamlessProvider!.stopAllSounds().then((_) {
+      Future.delayed(Duration(milliseconds: 100), () {
+        if (_seamlessProvider != null && !_isDisposed) {
+          _seamlessProvider!.playSeamlessLoop(widget.sound);
+        }
       });
-    }
+    });
   }
 
   void _startTimer() {
@@ -401,55 +139,19 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
   }
 
   void _togglePlayback() async {
-    if (_isDisposed || _audioProvider == null) return;
+    if (_isDisposed) return;
     
-    // Check both playing state and exclusive sound
-    final isCurrentlyPlaying = _audioProvider!.isPlaying(widget.sound.id) && 
-                              _audioProvider!.exclusiveSound?.id == widget.sound.id &&
-                              _audioProvider!.exclusivePlayerState == PlayerState.playing;
-    
-    debugPrint('🎛️ Toggle playback - Currently playing: $isCurrentlyPlaying');
-    debugPrint('🎛️ Audio state: ${_audioProvider!.exclusivePlayerState}');
-    debugPrint('🎛️ Exclusive sound: ${_audioProvider!.exclusiveSound?.name}');
+    bool isCurrentlyPlaying = _seamlessProvider!.isPlaying(widget.sound.id);
     
     // 🎯 IMMEDIATE haptic feedback for responsiveness
     HapticFeedback.mediumImpact();
     
     if (isCurrentlyPlaying) {
-      // PAUSE: Audio + Video (NON-BLOCKING)
-      debugPrint('⏸️ Pausing audio + chewie video');
-      
-      // Audio pause (sync)
-      _audioProvider!.pauseExclusive();
+      _seamlessProvider!.pause(widget.sound.id, withFade: true);
       _stopTimer();
-      _backgroundController.stop();
-      
-      // Video pause (async - don't block UI)
-      if (_hasVideo && _chewieController != null) {
-        _chewieController!.pause();
-        debugPrint('⏸️ Chewie paused');
-      }
     } else {
-      // PLAY/RESTART: Audio + Video (OPTIMIZED)
-      if (_audioProvider!.exclusiveSound?.id != widget.sound.id) {
-        // Start fresh if not the current exclusive sound
-        debugPrint('▶️ Starting fresh audio + chewie video');
-        _audioProvider!.playExclusive(widget.sound);
-      } else {
-        // Resume if paused
-        debugPrint('▶️ Resuming audio + chewie video');
-      _audioProvider!.resumeExclusive();
-      }
-      
+      _seamlessProvider!.resume(widget.sound.id, withFade: true);
       _startTimer();
-      _backgroundController.repeat(reverse: true);
-      
-      // Video resume (async - don't block UI)
-      if (_hasVideo && _chewieController != null) {
-        // 🚀 BUFFERED resume for smooth playback
-        _chewieController!.play();
-        debugPrint('▶️ Chewie resumed - seamless loop continues');
-      }
     }
   }
 
@@ -458,43 +160,34 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
     
     _isDisposed = true;
     
-    // 📊 Stop performance monitoring and report results
-    PerformanceMonitor.instance.trackAudioEnd(widget.sound.id);
-    if (_hasVideo) {
-      PerformanceMonitor.instance.trackVideoEnd(widget.sound.videoPath!);
+    // 📊 Record sound session to statistics
+    if (_elapsed.inMinutes > 0 && mounted) {
+      try {
+        final userPrefsProvider = Provider.of<UserPreferencesProvider>(context, listen: false);
+        userPrefsProvider.recordSoundSession(_elapsed.inMinutes);
+        
+        // 🎯 Ses oturumu sonrası interstitial reklam göster
+        final premiumProvider = Provider.of<PremiumProvider>(context, listen: false);
+        if (!premiumProvider.canAccessFeature('ad_free')) {
+          await AdManager.instance.showInterstitial(placement: 'sound_session_complete');
+        }
+      } catch (e) {
+        // Hata sessizce yoksayılır
+      }
     }
+    
+    // 📊 Stop performance monitoring
+    PerformanceMonitor.instance.trackAudioEnd(widget.sound.id);
     PerformanceMonitor.instance.stopMonitoring();
     
-    // Stop everything
+    // Stop everything - hızlı kapatma
     _stopTimer();
-    _audioProvider?.stopAllSounds();
     
-    // Safely stop and dispose Chewie
-    if (_chewieController != null) {
-      try {
-        await _chewieController!.pause();
-        _chewieController!.dispose();
-        debugPrint('✅ Chewie controller disposed safely');
-      } catch (e) {
-        debugPrint('❌ Chewie dispose error: $e');
-      }
-      _chewieController = null;
-    }
-    
-    // Dispose video controller
-    if (_videoPlayerController != null) {
-      try {
-        _videoPlayerController!.removeListener(_videoStateListener);
-        await _videoPlayerController!.dispose();
-        debugPrint('✅ VideoPlayerController disposed safely');
-      } catch (e) {
-        debugPrint('❌ VideoPlayerController dispose error: $e');
-      }
-      _videoPlayerController = null;
-    }
-    
-    // Animate out
-    await _fadeController.reverse();
+    // Paralel: Ses + ekran animasyonu aynı anda
+    await Future.wait([
+      _seamlessProvider!.stopAllSounds(withFade: true),
+      _fadeController.reverse(),
+    ]);
     
     // Restore system UI
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -515,38 +208,10 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
   void dispose() {
     _isDisposed = true;
     
-    // Remove lifecycle observer
-    WidgetsBinding.instance.removeObserver(this);
-    
-    // Stop timer first
     _stopTimer();
-    
-    // Safely dispose Chewie
-    if (_chewieController != null) {
-      try {
-        _chewieController!.dispose();
-        debugPrint('✅ Chewie controller disposed safely');
-      } catch (e) {
-        debugPrint('❌ Chewie dispose error: $e');
-      }
-      _chewieController = null;
-    }
-    
-    // Dispose video controller
-    if (_videoPlayerController != null) {
-      try {
-        _videoPlayerController!.removeListener(_videoStateListener);
-        _videoPlayerController!.dispose();
-        debugPrint('✅ VideoPlayerController disposed safely');
-      } catch (e) {
-        debugPrint('❌ VideoPlayerController dispose error: $e');
-      }
-      _videoPlayerController = null;
-    }
     
     // Dispose animations
     _fadeController.dispose();
-    _backgroundController.dispose();
     
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     
@@ -555,10 +220,9 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AudioProvider>(
-      builder: (context, audioProvider, child) {
-        final isPlaying = audioProvider.isPlaying(widget.sound.id) &&
-                          audioProvider.exclusiveSound?.id == widget.sound.id;
+    return Consumer<SeamlessAudioProvider>(
+      builder: (context, seamlessProvider, child) {
+        bool isPlaying = seamlessProvider.isPlaying(widget.sound.id);
 
         return WillPopScope(
           onWillPop: () async {
@@ -571,8 +235,27 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
               opacity: _fadeAnimation,
               child: Stack(
                 children: [
-                  // Background Layer
+                  // Background Layer - Sadece statik resim
                   _buildBackgroundLayer(),
+                  
+                  // Dark overlay for readability
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.4),
+                            Colors.transparent,
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.7),
+                          ],
+                          stops: const [0.0, 0.3, 0.7, 1.0],
+                        ),
+                      ),
+                    ),
+                  ),
                   
                   // Content Layer
                   _buildContentLayer(isPlaying),
@@ -593,52 +276,6 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
 
   Widget _buildBackgroundLayer() {
     return Positioned.fill(
-      child: Stack(
-        children: [
-          // Chewie Video (if available) - SEAMLESS LOOPS! 🔄
-          if (_hasVideo && _chewieController != null)
-            Positioned.fill(
-              child: FittedBox(
-                fit: BoxFit.cover, // FULL SCREEN - crop to fill
-                child: SizedBox(
-                  width: _videoPlayerController!.value.size.width,
-                  height: _videoPlayerController!.value.size.height,
-                  child: Chewie(
-                    controller: _chewieController!,
-                  ),
-                ),
-              ),
-            ),
-          // Animated background (only when no video or as overlay)
-          if (!(_hasVideo && _chewieController != null))
-            _buildAnimatedBackground(),
-          // Dark overlay for readability (sadece video yoksa uygula)
-          if (!(_hasVideo && _chewieController != null))
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.4),
-                      Colors.transparent,
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.7),
-                    ],
-                    stops: const [0.0, 0.3, 0.7, 1.0],
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnimatedBackground() {
-    return AnimatedBuilder(
-      animation: _backgroundAnimation,
       child: Image.asset(
         widget.sound.imagePath,
         fit: BoxFit.cover,
@@ -657,38 +294,17 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
           );
         },
       ),
-      builder: (context, child) {
-        return Positioned.fill(
-          child: Opacity(
-            opacity: _hasVideo && 
-                     _chewieController != null ? 0.1 : 0.8,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  transform: GradientRotation(_backgroundAnimation.value * 2 * pi),
-                  colors: [
-                    widget.sound.color.withOpacity(0.3),
-                    widget.sound.color.withOpacity(0.6),
-                    widget.sound.color.withOpacity(0.4),
-                    widget.sound.color.withOpacity(0.8),
-                  ],
-                ),
-              ),
-              child: child,
-            ),
-          ),
-        );
-      },
     );
   }
 
   Widget _buildContentLayer(bool isPlaying) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
+    
     return Positioned.fill(
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
+          padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 20 : 32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -697,25 +313,27 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
                 style: AppTypography.displayLarge.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w300,
-                  fontSize: 64,
+                  fontSize: isSmallScreen ? 48 : 64,
                 ),
               ),
-              const SizedBox(height: AppSpacing.medium),
+              SizedBox(height: isSmallScreen ? AppSpacing.small : AppSpacing.medium),
               Text(
                 widget.sound.name,
                 style: AppTypography.displaySmall.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
+                  fontSize: isSmallScreen ? 20 : 24,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: AppSpacing.small),
+              SizedBox(height: isSmallScreen ? 8 : AppSpacing.small),
               Text(
                 widget.sound.description,
                 style: AppTypography.bodyMedium.copyWith(
                   color: Colors.white.withOpacity(0.8),
+                  fontSize: isSmallScreen ? 13 : 16,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -727,16 +345,19 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
   }
 
   Widget _buildControlsLayer(bool isPlaying) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
+    
     return Positioned(
-      bottom: 120,
+      bottom: isSmallScreen ? 100 : 120,
       left: 0,
       right: 0,
       child: Center(
         child: GestureDetector(
           onTap: _togglePlayback,
           child: Container(
-            width: 80,
-            height: 80,
+            width: isSmallScreen ? 70 : 80,
+            height: isSmallScreen ? 70 : 80,
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.9),
               shape: BoxShape.circle,
@@ -751,7 +372,7 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
             child: Icon(
               isPlaying ? FeatherIcons.pause : FeatherIcons.play,
               color: Colors.white,
-              size: 32,
+              size: isSmallScreen ? 28 : 32,
             ),
           ),
         ),
@@ -770,6 +391,7 @@ class _ImmersiveSoundPlayerScreenState extends State<ImmersiveSoundPlayerScreen>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: Colors.black.withOpacity(0.5),
+            border: Border.all(color: Colors.white, width: 2),
           ),
           child: const Icon(
             FeatherIcons.x,

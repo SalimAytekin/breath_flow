@@ -1,11 +1,20 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import '../models/premium_trigger.dart';
 
 class PremiumProvider extends ChangeNotifier {
+  // Ana premium durumu
   bool _isPremiumUser = false;
   DateTime? _premiumExpiryDate;
+  
+  // Test modu kontrolü
+  bool _testMode = true; // Premium sistemi askıya alındı - herkes ücretsiz erişim
+  
+  // Kullanıcı analitikleri ve tetikleyici sistemi
   Map<String, dynamic> _userContext = {};
   Map<String, DateTime> _triggerCooldowns = {};
   List<String> _dismissedTriggers = [];
@@ -27,11 +36,33 @@ class PremiumProvider extends ChangeNotifier {
   };
 
   // Getters
-  bool get isPremiumUser => _isPremiumUser;
+  bool get isPremiumUser {
+    if (_testMode) {
+      // Debug log kaldırıldı - çok fazla spam yapıyordu
+      return _isPremiumUser;
+    }
+    // Production modunda gerçek premium durumunu kontrol et
+    return _isPremiumUser && !_isPremiumExpired();
+  }
+  
+  bool get isTestMode => _testMode;
   DateTime? get premiumExpiryDate => _premiumExpiryDate;
   Map<String, dynamic> get userContext => _userContext;
   PremiumTrigger? get currentActiveTrigger => _currentActiveTrigger;
   Map<String, dynamic> get analyticsData => _analyticsData;
+  
+  // Premium süresi dolmuş mu kontrol et
+  bool _isPremiumExpired() {
+    if (_premiumExpiryDate == null) return false;
+    return _premiumExpiryDate!.isBefore(DateTime.now());
+  }
+  
+  // Test modunu aç/kapat
+  void setTestMode(bool enabled) {
+    _testMode = enabled;
+    if (kDebugMode) print('🚨 DEBUG: Test modu ${enabled ? 'açıldı' : 'kapatıldı'}');
+    notifyListeners();
+  }
 
   PremiumProvider() {
     _initializeData();
@@ -42,26 +73,47 @@ class PremiumProvider extends ChangeNotifier {
     await _loadUserContext();
     await _loadAnalyticsData();
     await _loadTriggerData();
+    // Çevrimiçi senkronizasyon (claim/Firestore) — sessiz çalışır
+    await synchronizePremiumStatus();
     notifyListeners();
   }
 
   Future<void> _loadPremiumStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _isPremiumUser = prefs.getBool('is_premium_user') ?? false;
       
-      final expiryString = prefs.getString('premium_expiry_date');
-      if (expiryString != null) {
-        _premiumExpiryDate = DateTime.parse(expiryString);
+      if (_testMode) {
+        // Test modunda premium durumunu sıfırla
+        _isPremiumUser = false;
+        await prefs.setBool('is_premium_user', false);
+        await prefs.remove('premium_expiry_date');
+        if (kDebugMode) print('🚨 TEST: Premium durumu sıfırlandı (Test modu aktif)');
+      } else {
+        // Production modunda gerçek premium durumunu yükle
+        _isPremiumUser = prefs.getBool('is_premium_user') ?? false;
         
-        // Süre dolmuşsa premium'u iptal et
-        if (_premiumExpiryDate!.isBefore(DateTime.now())) {
-          _isPremiumUser = false;
-          await _savePremiumStatus();
+        final expiryString = prefs.getString('premium_expiry_date');
+        if (expiryString != null && expiryString.isNotEmpty) {
+          try {
+            _premiumExpiryDate = DateTime.parse(expiryString);
+            
+            // Süre dolmuşsa premium'u iptal et
+            if (_isPremiumExpired()) {
+              _isPremiumUser = false;
+              await _savePremiumStatus();
+              if (kDebugMode) print('🚨 Premium süresi dolmuş, iptal edildi');
+            }
+          } catch (e) {
+            debugPrint('Tarih parsing hatası: $e');
+            _premiumExpiryDate = null;
+          }
         }
       }
     } catch (e) {
       debugPrint('Premium durumu yüklenirken hata: $e');
+      // Fallback değerler
+      _isPremiumUser = false;
+      _premiumExpiryDate = null;
     }
   }
 
@@ -74,6 +126,84 @@ class PremiumProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Premium durumu kaydedilirken hata: $e');
+    }
+  }
+
+  // Firebase Auth custom claim'lerinden premium durumunu yenile
+  Future<void> refreshFromAuthClaims() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final tokenResult = await user.getIdTokenResult(true); // force refresh
+      final claims = tokenResult.claims ?? {};
+
+      final bool claimPremium = (claims['isPremium'] == true);
+      DateTime? claimExpiry;
+      if (claims['premium_exp'] is int) {
+        // Saniye timestamp bekleniyor
+        claimExpiry = DateTime.fromMillisecondsSinceEpoch((claims['premium_exp'] as int) * 1000);
+      } else if (claims['premium_exp'] is String) {
+        claimExpiry = DateTime.tryParse(claims['premium_exp']);
+      }
+
+      if (claimPremium != _isPremiumUser || (claimExpiry ?? _premiumExpiryDate) != _premiumExpiryDate) {
+        _isPremiumUser = claimPremium;
+        _premiumExpiryDate = claimExpiry;
+        await _savePremiumStatus();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Auth claim yenileme hatası: $e');
+    }
+  }
+
+  // Firestore yedeği: users/{uid} dokümanından premium bilgisi oku
+  Future<void> refreshFromFirestore() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (!doc.exists) return;
+      final data = doc.data();
+      if (data == null) return;
+
+      final bool fsPremium = (data['isPremium'] == true);
+      DateTime? fsExpiry;
+      if (data['premiumExpiry'] is Timestamp) {
+        fsExpiry = (data['premiumExpiry'] as Timestamp).toDate();
+      } else if (data['premiumExpiry'] is String) {
+        fsExpiry = DateTime.tryParse(data['premiumExpiry']);
+      }
+
+      if (fsPremium != _isPremiumUser || (fsExpiry ?? _premiumExpiryDate) != _premiumExpiryDate) {
+        _isPremiumUser = fsPremium;
+        _premiumExpiryDate = fsExpiry;
+        await _savePremiumStatus();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Firestore premium yenileme hatası: $e');
+    }
+  }
+
+  // Tek giriş noktası: önce Auth claims, sonra Firestore fallback
+  Future<void> synchronizePremiumStatus() async {
+    await refreshFromAuthClaims();
+    // Claims gelmediyse veya premium değilse Firestore ile doğrula
+    if (!_isPremiumUser || _premiumExpiryDate == null) {
+      await refreshFromFirestore();
+    }
+  }
+
+  // Token geçerliliğini garanti altına al (expire edge-case)
+  Future<void> ensureValidToken() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      await user.getIdToken(true);
+    } catch (e) {
+      debugPrint('Token yenileme hatası: $e');
     }
   }
 
@@ -235,13 +365,22 @@ class PremiumProvider extends ChangeNotifier {
 
   // Tetikleyicileri kontrol et
   Future<void> _checkTriggers() async {
-    if (_isPremiumUser) return; // Premium kullanıcılara gösterme
+    // Premium sistemi askıya alındı - tetikleyici gösterme
+    if (_testMode) {
+      return;
+    }
+    
+    if (isPremiumUser) return; // Premium kullanıcılara gösterme
 
     // Kullanıcı bağlamını analytics ile birleştir
     final fullContext = Map<String, dynamic>.from(_userContext);
     fullContext.addAll(_analyticsData);
 
-    for (final trigger in PremiumTrigger.predefinedTriggers) {
+    // Tetikleyicileri önceliğe göre sırala
+    final sortedTriggers = List<PremiumTrigger>.from(PremiumTrigger.predefinedTriggers);
+    sortedTriggers.sort((a, b) => b.priority.compareTo(a.priority));
+
+    for (final trigger in sortedTriggers) {
       // Cooldown kontrolü
       if (_triggerCooldowns.containsKey(trigger.id)) {
         final cooldownEnd = _triggerCooldowns[trigger.id]!;
@@ -251,9 +390,9 @@ class PremiumProvider extends ChangeNotifier {
       // Dismissed kontrolü
       if (_dismissedTriggers.contains(trigger.id)) continue;
 
-      // Show count kontrolü (aynı tetikleyiciyi çok gösterme)
+      // Show count kontrolü (daha esnek limit)
       final showCount = _triggerShowCounts[trigger.id] ?? 0;
-      if (showCount >= 3) continue;
+      if (showCount >= 5) continue; // 3 yerine 5
 
       // Koşulları kontrol et
       if (trigger.checkConditions(fullContext)) {
@@ -261,6 +400,7 @@ class PremiumProvider extends ChangeNotifier {
         _triggerShowCounts[trigger.id] = showCount + 1;
         await _saveTriggerData();
         notifyListeners();
+        if (kDebugMode) print('🚨 DEBUG: Tetikleyici gösterildi: ${trigger.id}');
         break; // Sadece bir tetikleyici göster
       }
     }
@@ -301,6 +441,9 @@ class PremiumProvider extends ChangeNotifier {
       case PremiumOfferType.bundleOffer:
         _premiumExpiryDate = DateTime.now().add(const Duration(days: 365));
         break;
+      case PremiumOfferType.discountOffer:
+        _premiumExpiryDate = DateTime.now().add(const Duration(days: 30));
+        break;
       default:
         _premiumExpiryDate = DateTime.now().add(const Duration(days: 30));
         break;
@@ -311,12 +454,51 @@ class PremiumProvider extends ChangeNotifier {
     // Aktif tetikleyiciyi temizle
     _currentActiveTrigger = null;
     
+    // Premium satın alma analitiği
+    await trackUserAction('premium_purchased', {
+      'offerType': offerType.name,
+      'expiryDate': _premiumExpiryDate?.toIso8601String(),
+    });
+    
+    if (kDebugMode) print('🎉 Premium satın alındı: ${offerType.name}');
+    notifyListeners();
+  }
+  
+  // Test için premium durumunu manuel ayarla
+  Future<void> setTestPremiumStatus(bool isPremium, {Duration? duration}) async {
+    if (!_testMode) {
+      if (kDebugMode) print('⚠️ Test modu kapalı, premium durumu değiştirilemez');
+      return;
+    }
+    
+    _isPremiumUser = isPremium;
+    if (isPremium && duration != null) {
+      _premiumExpiryDate = DateTime.now().add(duration);
+    } else if (!isPremium) {
+      _premiumExpiryDate = null;
+    }
+    
+    await _savePremiumStatus();
+    if (kDebugMode) print('🚨 TEST: Premium durumu manuel olarak ayarlandı: $isPremium');
     notifyListeners();
   }
 
-  // Premium özellik erişim kontrolü
+  // Merkezi premium özellik erişim kontrolü
   bool canAccessFeature(String featureId) {
-    if (_isPremiumUser) return true;
+    // Test modunda reklam özelliği için özel kontrol
+    if (_testMode && featureId == 'ad_free') {
+      // Debug log kaldırıldı - çok fazla spam yapıyordu
+      return false; // Test modunda da reklamları göster
+    }
+    
+    // Premium sistemi askıya alındı - diğer özellikler için herkes erişebilir
+    if (_testMode) {
+      if (kDebugMode) print('🚨 DEBUG: Premium sistemi askıya alındı - ${featureId} özelliğine erişim verildi');
+      return true;
+    }
+    
+    // Premium kullanıcılar tüm özelliklere erişebilir
+    if (isPremiumUser) return true;
     
     // Ücretsiz özellikler listesi
     const freeFeatures = [
@@ -326,9 +508,45 @@ class PremiumProvider extends ChangeNotifier {
       'basic_journal',
       'basic_hrv',
       'free_stories',
+      'sound_mixing', // Mix limiti var ama erişilebilir
+      'ad_free', // Premium kullanıcılar için reklamsız deneyim
     ];
     
     return freeFeatures.contains(featureId);
+  }
+  
+  // Premium gerektiren özellikler
+  bool isPremiumFeature(String featureId) {
+    // Premium sistemi askıya alındı - hiçbir özellik premium değil
+    if (_testMode) {
+      return false;
+    }
+    
+    const premiumFeatures = [
+      'premium_sounds',
+      'advanced_breathing',
+      'advanced_hrv',
+      'expert_content',
+      'premium_stories',
+      'unlimited_mixes',
+      'hd_sounds',
+      'custom_programs',
+      'personalized_insights',
+      'advanced_journeys',
+    ];
+    
+    return premiumFeatures.contains(featureId);
+  }
+  
+  // Özellik limiti kontrolü
+  bool checkFeatureLimit(String featureId, int currentUsage, int maxFreeUsage) {
+    // Premium sistemi askıya alındı - limit yok
+    if (_testMode) {
+      return true;
+    }
+    
+    if (isPremiumUser) return true;
+    return currentUsage < maxFreeUsage;
   }
 
   // Premium gerektiren özellik kullanımında tetikleyici göster
@@ -389,6 +607,33 @@ class PremiumProvider extends ChangeNotifier {
     final trigger = PremiumTrigger.predefinedTriggers
       .firstWhere((t) => t.id == triggerId);
     showTrigger(trigger);
+  }
+  
+  // Debug için tetikleyici verilerini sıfırla
+  Future<void> resetTriggerData() async {
+    _triggerCooldowns.clear();
+    _dismissedTriggers.clear();
+    _triggerShowCounts.clear();
+    _currentActiveTrigger = null;
+    await _saveTriggerData();
+    if (kDebugMode) print('🚨 DEBUG: Tetikleyici verileri sıfırlandı');
+    notifyListeners();
+  }
+  
+  // Premium durumu hakkında detaylı bilgi
+  Map<String, dynamic> getPremiumStatusInfo() {
+    return {
+      'isPremiumUser': isPremiumUser,
+      'isTestMode': _testMode,
+      'premiumExpiryDate': _premiumExpiryDate?.toIso8601String(),
+      'isExpired': _isPremiumExpired(),
+      'remainingDays': _premiumExpiryDate != null 
+        ? _premiumExpiryDate!.difference(DateTime.now()).inDays 
+        : 0,
+      'activeTriggers': _currentActiveTrigger?.id,
+      'totalTriggersShown': _triggerShowCounts.values.fold(0, (a, b) => a + b),
+      'dismissedTriggers': _dismissedTriggers.length,
+    };
   }
 
   // Kullanıcı journey'ini takip et

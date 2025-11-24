@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_vibrate/flutter_vibrate.dart';
+import 'package:vibration/vibration.dart';
 import '../constants/app_colors.dart';
 import '../models/breathing_exercise.dart';
 import '../providers/breathing_provider.dart';
@@ -56,11 +56,11 @@ class _BreathingAnimationState extends State<BreathingAnimation> with TickerProv
       switch (currentStep.type) {
         case BreathingStepType.inhale:
         case BreathingStepType.exhale:
-          Vibrate.feedback(FeedbackType.light);
+          Vibration.vibrate(duration: 50);
           break;
         case BreathingStepType.hold:
         case BreathingStepType.holdAfterExhale:
-          Vibrate.feedback(FeedbackType.medium);
+          Vibration.vibrate(duration: 100);
           break;
       }
 
@@ -134,28 +134,37 @@ class _BreathingAnimationState extends State<BreathingAnimation> with TickerProv
             children: [
               // Ana nefes dairesi - sadece görsel efekt
               Center(
-                child: Container(
-                  width: 150 + (animationValue * 120), // 150px'den 270px'e
-                  height: 150 + (animationValue * 120),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        Colors.white.withOpacity(0.3),
-                        Colors.white.withOpacity(0.1),
-                        Colors.white.withOpacity(0.05),
-                        Colors.transparent,
-                      ],
-                      stops: const [0.0, 0.4, 0.7, 1.0],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.white.withOpacity(0.2),
-                        blurRadius: 30 + (animationValue * 20),
-                        spreadRadius: 5 + (animationValue * 10),
+                child: Builder(
+                  builder: (context) {
+                    final screenWidth = MediaQuery.of(context).size.width;
+                    final isSmallScreen = screenWidth < 400;
+                    final baseSize = isSmallScreen ? 120 : 150;
+                    final maxSize = isSmallScreen ? 200 : 270;
+                    
+                      return Container(
+                      width: baseSize + (animationValue * (maxSize - baseSize)),
+                      height: baseSize + (animationValue * (maxSize - baseSize)),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            Colors.white.withOpacity(0.3),
+                            Colors.white.withOpacity(0.1),
+                            Colors.white.withOpacity(0.05),
+                            Colors.transparent,
+                          ],
+                          stops: const [0.0, 0.4, 0.7, 1.0],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.2),
+                            blurRadius: 30 + (animationValue * 20),
+                            spreadRadius: 5 + (animationValue * 10),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
               // Text'ler - yumuşak geçişli
@@ -180,41 +189,57 @@ class _BreathingAnimationState extends State<BreathingAnimation> with TickerProv
                           ),
                         );
                       },
-                      child: Text(
-                        currentStep.instruction,
-                        key: ValueKey(currentStep.instruction),
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w300,
-                          color: Colors.white,
-                          decoration: TextDecoration.none,
-                          shadows: [
-                            Shadow(
-                              blurRadius: 10,
-                              color: Colors.black54,
-                              offset: Offset(0, 2),
+                      child: Builder(
+                        builder: (context) {
+                          final screenWidth = MediaQuery.of(context).size.width;
+                          final isSmallScreen = screenWidth < 400;
+                          
+                          return Text(
+                            currentStep.instruction,
+                            key: ValueKey(currentStep.instruction),
+                            style: TextStyle(
+                              fontSize: isSmallScreen ? 18 : 22,
+                              fontWeight: FontWeight.w300,
+                              color: Colors.white,
+                              decoration: TextDecoration.none,
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 10,
+                                  color: Colors.black54,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        textAlign: TextAlign.center,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '$countdown',
-                      style: TextStyle(
-                        fontSize: 48, // Sabit boyut
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white.withOpacity(0.9),
-                        decoration: TextDecoration.none, // Alt çizgiyi kaldır
-                        shadows: const [
-                          Shadow(
-                            blurRadius: 15,
-                            color: Colors.black54,
-                            offset: Offset(0, 3),
+                    SizedBox(height: MediaQuery.of(context).size.width < 400 ? 6 : 8),
+                    Builder(
+                      builder: (context) {
+                        final screenWidth = MediaQuery.of(context).size.width;
+                        final isSmallScreen = screenWidth < 400;
+                        
+                        return Text(
+                          '$countdown',
+                          style: TextStyle(
+                            fontSize: isSmallScreen ? 40 : 48,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white.withOpacity(0.9),
+                            decoration: TextDecoration.none,
+                            shadows: const [
+                              Shadow(
+                                blurRadius: 15,
+                                color: Colors.black54,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                   ],
                 ),

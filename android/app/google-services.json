@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:703714068680:android:39e181c41ead37ad2c3dfd",
+        "mobilesdk_app_id": "1:703714068680:android:367778196fb9a9e92c3dfd",
         "android_client_info": {
-          "package_name": "com.example.breathe_flow"
+          "package_name": "com.breatheflow.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "703714068680-d9vlvvqp1f8adqbd4mj1amsfitm9ipa3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDy6s3IMOWLimfgZ78tHofXkd2Dqs4B_jM"
@@ -20,7 +25,99 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "703714068680-d9vlvvqp1f8adqbd4mj1amsfitm9ipa3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "703714068680-k2vr70qbt7lsm0dfvg5lq4vh6mh31r14.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.breatheFlow"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:703714068680:android:5fe58f6c23cd8ca62c3dfd",
+        "android_client_info": {
+          "package_name": "com.breathflow.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "703714068680-d9vlvvqp1f8adqbd4mj1amsfitm9ipa3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDy6s3IMOWLimfgZ78tHofXkd2Dqs4B_jM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "703714068680-d9vlvvqp1f8adqbd4mj1amsfitm9ipa3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "703714068680-k2vr70qbt7lsm0dfvg5lq4vh6mh31r14.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.breatheFlow"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:703714068680:android:39e181c41ead37ad2c3dfd",
+        "android_client_info": {
+          "package_name": "com.example.breathe_flow"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "703714068680-fg79fjqerg49947vs5ltauag7bjoasoi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.breathe_flow",
+            "certificate_hash": "a807adc7f36cde7da9cb4da6f2d648fb093c7097"
+          }
+        },
+        {
+          "client_id": "703714068680-d9vlvvqp1f8adqbd4mj1amsfitm9ipa3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDy6s3IMOWLimfgZ78tHofXkd2Dqs4B_jM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "703714068680-d9vlvvqp1f8adqbd4mj1amsfitm9ipa3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "703714068680-k2vr70qbt7lsm0dfvg5lq4vh6mh31r14.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.breatheFlow"
+              }
+            }
+          ]
         }
       }
     }

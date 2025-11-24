@@ -118,7 +118,7 @@ class PerformanceUtils {
   
   static void logPerformanceInfo(String operation, Duration duration) {
     if (kDebugMode) {
-      debugPrint('⚡ Performance: $operation took ${duration.inMilliseconds}ms');
+ if (kDebugMode) debugPrint('⚡ Performance: $operation took ${duration.inMilliseconds}ms');
     }
   }
 }
@@ -467,10 +467,10 @@ class PerformanceMonitor {
   void startMonitoring() {
     if (_performanceTimer?.isActive == true) return;
     
-    debugPrint('🚀 Performance Monitor STARTED');
-    debugPrint('📊 Target FPS: $_targetFPS');
-    debugPrint('⚠️ Stutter threshold: ${_stutterThresholdMs}ms');
-    debugPrint('🎵 Audio gap threshold: ${_audioGapThresholdMs}ms');
+ if (kDebugMode) debugPrint('🚀 Performance Monitor STARTED');
+ if (kDebugMode) debugPrint('📊 Target FPS: $_targetFPS');
+ if (kDebugMode) debugPrint('⚠️ Stutter threshold: ${_stutterThresholdMs}ms');
+ if (kDebugMode) debugPrint('🎵 Audio gap threshold: ${_audioGapThresholdMs}ms');
     
     // Frame rate monitoring
     SchedulerBinding.instance.addTimingsCallback(_onFrameTimingAvailable);
@@ -487,7 +487,7 @@ class PerformanceMonitor {
     _performanceTimer = null;
     SchedulerBinding.instance.removeTimingsCallback(_onFrameTimingAvailable);
     
-    debugPrint('🛑 Performance Monitor STOPPED');
+ if (kDebugMode) debugPrint('🛑 Performance Monitor STOPPED');
     _reportFinalStats();
     _clearData();
   }
@@ -502,12 +502,12 @@ class PerformanceMonitor {
       // Detect stutters (frames taking too long)
       final frameTimeMs = frameDuration.inMicroseconds / 1000;
       if (frameTimeMs > _stutterThresholdMs) {
-        debugPrint('🚨 FRAME STUTTER detected: ${frameTimeMs.toStringAsFixed(1)}ms');
+ if (kDebugMode) debugPrint('🚨 FRAME STUTTER detected: ${frameTimeMs.toStringAsFixed(1)}ms');
         
         // Log detailed stutter info
-        debugPrint('   🎬 Build: ${timing.buildDuration.inMicroseconds / 1000}ms');
-        debugPrint('   🎨 Raster: ${timing.rasterDuration.inMicroseconds / 1000}ms');
-        debugPrint('   ⏱️ Total: ${timing.totalSpan.inMicroseconds / 1000}ms');
+ if (kDebugMode) debugPrint('   🎬 Build: ${timing.buildDuration.inMicroseconds / 1000}ms');
+ if (kDebugMode) debugPrint('   🎨 Raster: ${timing.rasterDuration.inMicroseconds / 1000}ms');
+ if (kDebugMode) debugPrint('   ⏱️ Total: ${timing.totalSpan.inMicroseconds / 1000}ms');
       }
       
       // Keep only recent frame times (last 5 seconds worth)
@@ -520,7 +520,7 @@ class PerformanceMonitor {
   /// 🎵 Track audio playback start for gap detection
   void trackAudioStart(String soundId) {
     _audioStartTimes[soundId] = DateTime.now();
-    debugPrint('🎵 Audio tracking started: $soundId');
+ if (kDebugMode) debugPrint('🎵 Audio tracking started: $soundId');
   }
   
   /// ⏸️ Track audio playback end and calculate gaps
@@ -528,7 +528,7 @@ class PerformanceMonitor {
     final startTime = _audioStartTimes[soundId];
     if (startTime != null) {
       final duration = DateTime.now().difference(startTime).inMilliseconds;
-      debugPrint('🎵 Audio session duration: ${duration}ms for $soundId');
+ if (kDebugMode) debugPrint('🎵 Audio session duration: ${duration}ms for $soundId');
       _audioStartTimes.remove(soundId);
     }
   }
@@ -542,16 +542,16 @@ class PerformanceMonitor {
     _audioGaps[soundId]!.add(gapMs);
     
     if (gapMs > _audioGapThresholdMs) {
-      debugPrint('🚨 AUDIO GAP detected: ${gapMs}ms in $soundId');
+ if (kDebugMode) debugPrint('🚨 AUDIO GAP detected: ${gapMs}ms in $soundId');
     } else {
-      debugPrint('✅ Smooth audio loop: ${gapMs}ms gap in $soundId');
+ if (kDebugMode) debugPrint('✅ Smooth audio loop: ${gapMs}ms gap in $soundId');
     }
   }
   
   /// 🎬 Track video playback start
   void trackVideoStart(String videoPath) {
     _videoStartTimes[videoPath] = DateTime.now();
-    debugPrint('🎬 Video tracking started: $videoPath');
+ if (kDebugMode) debugPrint('🎬 Video tracking started: $videoPath');
   }
   
   /// ⏹️ Track video playback end
@@ -559,7 +559,7 @@ class PerformanceMonitor {
     final startTime = _videoStartTimes[videoPath];
     if (startTime != null) {
       final duration = DateTime.now().difference(startTime).inMilliseconds;
-      debugPrint('🎬 Video session duration: ${duration}ms for $videoPath');
+ if (kDebugMode) debugPrint('🎬 Video session duration: ${duration}ms for $videoPath');
       _videoStartTimes.remove(videoPath);
     }
   }
@@ -573,7 +573,7 @@ class PerformanceMonitor {
     _videoStutters[videoPath]!.add(stutterMs);
     
     if (stutterMs > _stutterThresholdMs) {
-      debugPrint('🚨 VIDEO STUTTER detected: ${stutterMs}ms in $videoPath');
+ if (kDebugMode) debugPrint('🚨 VIDEO STUTTER detected: ${stutterMs}ms in $videoPath');
     }
   }
   
@@ -589,17 +589,17 @@ class PerformanceMonitor {
     final stutterCount = _frameTimes.where((time) => time.inMicroseconds / 1000 > _stutterThresholdMs).length;
     final stutterPercentage = (stutterCount / _frameTimes.length * 100);
     
-    debugPrint('📊 === PERFORMANCE REPORT ===');
-    debugPrint('🎯 Current FPS: $currentFPS (target: $_targetFPS)');
-    debugPrint('⚠️ Stutters: $stutterCount/${_frameTimes.length} (${stutterPercentage.toStringAsFixed(1)}%)');
-    debugPrint('⏱️ Avg frame time: ${(avgFrameTime / 1000).toStringAsFixed(1)}ms');
+ if (kDebugMode) debugPrint('📊 === PERFORMANCE REPORT ===');
+ if (kDebugMode) debugPrint('🎯 Current FPS: $currentFPS (target: $_targetFPS)');
+ if (kDebugMode) debugPrint('⚠️ Stutters: $stutterCount/${_frameTimes.length} (${stutterPercentage.toStringAsFixed(1)}%)');
+ if (kDebugMode) debugPrint('⏱️ Avg frame time: ${(avgFrameTime / 1000).toStringAsFixed(1)}ms');
     
     // Audio performance
     _audioGaps.forEach((soundId, gaps) {
       if (gaps.isNotEmpty) {
         final avgGap = gaps.fold<int>(0, (sum, gap) => sum + gap) / gaps.length;
         final problemGaps = gaps.where((gap) => gap > _audioGapThresholdMs).length;
-        debugPrint('🎵 Audio $soundId: ${avgGap.toStringAsFixed(1)}ms avg gap, $problemGaps problem loops');
+ if (kDebugMode) debugPrint('🎵 Audio $soundId: ${avgGap.toStringAsFixed(1)}ms avg gap, $problemGaps problem loops');
       }
     });
     
@@ -607,25 +607,25 @@ class PerformanceMonitor {
     _videoStutters.forEach((videoPath, stutters) {
       if (stutters.isNotEmpty) {
         final avgStutter = stutters.fold<int>(0, (sum, stutter) => sum + stutter) / stutters.length;
-        debugPrint('🎬 Video ${videoPath.split('/').last}: ${stutters.length} stutters, ${avgStutter.toStringAsFixed(1)}ms avg');
+ if (kDebugMode) debugPrint('🎬 Video ${videoPath.split('/').last}: ${stutters.length} stutters, ${avgStutter.toStringAsFixed(1)}ms avg');
       }
     });
     
-    debugPrint('========================');
+ if (kDebugMode) debugPrint('========================');
   }
   
   /// 📈 Report final performance statistics
   void _reportFinalStats() {
-    debugPrint('📈 === FINAL PERFORMANCE REPORT ===');
+ if (kDebugMode) debugPrint('📈 === FINAL PERFORMANCE REPORT ===');
     
     if (_frameTimes.isNotEmpty) {
       final avgFrameTime = _frameTimes.fold<int>(0, (sum, time) => sum + time.inMicroseconds) / _frameTimes.length;
       final avgFPS = (1000000 / avgFrameTime).round();
       final totalStutters = _frameTimes.where((time) => time.inMicroseconds / 1000 > _stutterThresholdMs).length;
       
-      debugPrint('🎯 Session average FPS: $avgFPS');
-      debugPrint('⚠️ Total stutters: $totalStutters');
-      debugPrint('📊 Total frames analyzed: ${_frameTimes.length}');
+ if (kDebugMode) debugPrint('🎯 Session average FPS: $avgFPS');
+ if (kDebugMode) debugPrint('⚠️ Total stutters: $totalStutters');
+ if (kDebugMode) debugPrint('📊 Total frames analyzed: ${_frameTimes.length}');
     }
     
     // Audio summary
@@ -637,9 +637,9 @@ class PerformanceMonitor {
     });
     
     if (totalAudioGaps > 0) {
-      debugPrint('🎵 Total audio loops: $totalAudioGaps');
-      debugPrint('🚨 Problem audio gaps: $problemAudioGaps');
-      debugPrint('✅ Smooth audio rate: ${((totalAudioGaps - problemAudioGaps) / totalAudioGaps * 100).toStringAsFixed(1)}%');
+ if (kDebugMode) debugPrint('🎵 Total audio loops: $totalAudioGaps');
+ if (kDebugMode) debugPrint('🚨 Problem audio gaps: $problemAudioGaps');
+ if (kDebugMode) debugPrint('✅ Smooth audio rate: ${((totalAudioGaps - problemAudioGaps) / totalAudioGaps * 100).toStringAsFixed(1)}%');
     }
     
     // Video summary
@@ -649,10 +649,10 @@ class PerformanceMonitor {
     });
     
     if (totalVideoStutters > 0) {
-      debugPrint('🎬 Total video stutters: $totalVideoStutters');
+ if (kDebugMode) debugPrint('🎬 Total video stutters: $totalVideoStutters');
     }
     
-    debugPrint('================================');
+ if (kDebugMode) debugPrint('================================');
   }
   
   /// 🧹 Clear all monitoring data
@@ -689,38 +689,38 @@ class PerformanceOptimizer {
   
   /// 🚀 Optimize app for smooth video/audio playback
   static Future<void> optimizeForMediaPlayback() async {
-    debugPrint('🚀 Optimizing app for SEAMLESS media playback...');
+ if (kDebugMode) debugPrint('🚀 Optimizing app for SEAMLESS media playback...');
     
     // Memory optimization
     if (Platform.isAndroid) {
-      debugPrint('📱 Android: Requesting high performance mode');
+ if (kDebugMode) debugPrint('📱 Android: Requesting high performance mode');
       // Note: These would require platform channels in real implementation
     }
     
     if (Platform.isIOS) {
-      debugPrint('🍎 iOS: Optimizing for media playback');
+ if (kDebugMode) debugPrint('🍎 iOS: Optimizing for media playback');
       // Note: These would require platform channels in real implementation
     }
     
-    debugPrint('✅ Media playback optimizations applied');
+ if (kDebugMode) debugPrint('✅ Media playback optimizations applied');
   }
   
   /// 🎵 Pre-warm audio system for faster startup
   static Future<void> preWarmAudioSystem() async {
-    debugPrint('🎵 Pre-warming audio system for faster loop starts...');
+ if (kDebugMode) debugPrint('🎵 Pre-warming audio system for faster loop starts...');
     
     // This would involve creating and disposing a dummy audio player
     // to initialize the audio system faster for subsequent plays
     
-    debugPrint('✅ Audio system pre-warmed');
+ if (kDebugMode) debugPrint('✅ Audio system pre-warmed');
   }
   
   /// 🎬 Pre-warm video system for smoother playback
   static Future<void> preWarmVideoSystem() async {
-    debugPrint('🎬 Pre-warming video system for smoother loops...');
+ if (kDebugMode) debugPrint('🎬 Pre-warming video system for smoother loops...');
     
     // This would involve initializing video codec caches
     
-    debugPrint('✅ Video system pre-warmed');
+ if (kDebugMode) debugPrint('✅ Video system pre-warmed');
   }
 } 

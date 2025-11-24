@@ -3,14 +3,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/sleep_entry.dart';
+import '../core/analytics/analytics_service.dart';
+import '../core/crashlytics/crashlytics_service.dart';
 
 class SleepProvider extends ChangeNotifier {
   List<SleepEntry> _sleepEntries = [];
-  int _defaultTargetHours = 8;
   
   // Getters
   List<SleepEntry> get sleepEntries => List.unmodifiable(_sleepEntries);
-  int get defaultTargetHours => _defaultTargetHours;
   
   SleepProvider() {
     _loadSleepData();
@@ -18,62 +18,108 @@ class SleepProvider extends ChangeNotifier {
   
   /// Verileri yükle
   Future<void> _loadSleepData() async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    _defaultTargetHours = prefs.getInt('default_target_hours') ?? 8;
-    
-    final entriesJson = prefs.getStringList('sleep_entries') ?? [];
-    _sleepEntries = entriesJson.map((jsonString) {
-      final json = jsonDecode(jsonString);
-      return SleepEntry.fromJson(json);
-    }).toList();
-    
-    // Tarihe göre sırala (en yeni önce)
-    _sleepEntries.sort((a, b) => b.date.compareTo(a.date));
-    
-    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      final entriesJson = prefs.getStringList('sleep_entries') ?? [];
+      _sleepEntries = entriesJson.map((jsonString) {
+        final json = jsonDecode(jsonString);
+        return SleepEntry.fromJson(json);
+      }).toList();
+      
+      // Tarihe göre sırala (en yeni önce)
+      _sleepEntries.sort((a, b) => b.date.compareTo(a.date));
+      
+      notifyListeners();
+    } catch (e, stackTrace) {
+      await CrashlyticsService.instance.recordError(
+        e,
+        stackTrace,
+        reason: 'Sleep Data Load Failed',
+        additionalData: {
+          'component': 'SleepProvider',
+          'method': '_loadSleepData',
+        },
+      );
+      debugPrint('🚨 Sleep data load error: $e');
+    }
   }
   
   /// Verileri kaydet
   Future<void> _saveSleepData() async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    await prefs.setInt('default_target_hours', _defaultTargetHours);
-    
-    final entriesJson = _sleepEntries.map((entry) {
-      return jsonEncode(entry.toJson());
-    }).toList();
-    
-    await prefs.setStringList('sleep_entries', entriesJson);
-  }
-  
-  /// Hedef uyku saatini ayarla
-  Future<void> setDefaultTargetHours(int hours) async {
-    _defaultTargetHours = hours;
-    await _saveSleepData();
-    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      final entriesJson = _sleepEntries.map((entry) {
+        return jsonEncode(entry.toJson());
+      }).toList();
+      
+      await prefs.setStringList('sleep_entries', entriesJson);
+    } catch (e, stackTrace) {
+      await CrashlyticsService.instance.recordError(
+        e,
+        stackTrace,
+        reason: 'Sleep Data Save Failed',
+        additionalData: {
+          'component': 'SleepProvider',
+          'method': '_saveSleepData',
+          'entries_count': _sleepEntries.length.toString(),
+        },
+      );
+      debugPrint('🚨 Sleep data save error: $e');
+    }
   }
   
   /// Yeni uyku verisi ekle
   Future<void> addSleepEntry(SleepEntry entry) async {
-    // Aynı gün için zaten veri varsa, güncelle
-    final existingIndex = _sleepEntries.indexWhere((e) => 
-      e.date.year == entry.date.year &&
-      e.date.month == entry.date.month &&
-      e.date.day == entry.date.day
-    );
-    
-    if (existingIndex != -1) {
-      _sleepEntries[existingIndex] = entry;
-    } else {
-      _sleepEntries.add(entry);
+    try {
+      // Aynı gün için zaten veri varsa, güncelle
+      final existingIndex = _sleepEntries.indexWhere((e) => 
+        e.date.year == entry.date.year &&
+        e.date.month == entry.date.month &&
+        e.date.day == entry.date.day
+      );
+      
+      final isUpdate = existingIndex != -1;
+      
+      if (isUpdate) {
+        _sleepEntries[existingIndex] = entry;
+      } else {
+        _sleepEntries.add(entry);
+      }
+      
+      // Tarihe göre sırala
+      _sleepEntries.sort((a, b) => b.date.compareTo(a.date));
+      
+      await _saveSleepData();
+      
+      // Analytics event - Uyku kaydı eklendi
+      await AnalyticsService.instance.logSleepEntryAdded();
+      
+      // Analytics event - Uyku analizi tamamlandı
+      await AnalyticsService.instance.logEvent('sleep_analysis_completed', {
+        'sleep_duration_hours': (entry.actualSleep.inMinutes / 60).toString(),
+        'sleep_debt_minutes': entry.sleepDebt.inMinutes.toString(),
+        'is_update': isUpdate.toString(),
+        'bedtime': entry.bedTime.toIso8601String(),
+        'wake_time': entry.wakeTime.toIso8601String(),
+      });
+      
+      notifyListeners();
+    } catch (e, stackTrace) {
+      await CrashlyticsService.instance.recordError(
+        e,
+        stackTrace,
+        reason: 'Sleep Entry Add Failed',
+        additionalData: {
+          'component': 'SleepProvider',
+          'method': 'addSleepEntry',
+          'entry_date': entry.date.toIso8601String(),
+          'sleep_duration': entry.actualSleep.inMinutes.toString(),
+        },
+      );
+      debugPrint('🚨 Sleep entry add error: $e');
     }
-    
-    // Tarihe göre sırala
-    _sleepEntries.sort((a, b) => b.date.compareTo(a.date));
-    
-    await _saveSleepData();
-    notifyListeners();
   }
   
   /// Belirli bir gün için uyku verisi al
@@ -85,32 +131,75 @@ class SleepProvider extends ChangeNotifier {
     ).firstOrNull;
   }
   
-  /// Son 7 günün uyku borcu toplamı (sadece veri girilen günler)
+  /// Uyku kaydını sil
+  Future<void> deleteSleepEntry(DateTime date) async {
+    try {
+      _sleepEntries.removeWhere((entry) =>
+        entry.date.year == date.year &&
+        entry.date.month == date.month &&
+        entry.date.day == date.day
+      );
+      
+      await _saveSleepData();
+      
+      // Analytics event - Uyku kaydı silindi
+      await AnalyticsService.instance.logEvent('sleep_entry_deleted', {
+        'deleted_date': date.toIso8601String(),
+        'remaining_entries': _sleepEntries.length.toString(),
+      });
+      
+      notifyListeners();
+    } catch (e, stackTrace) {
+      await CrashlyticsService.instance.recordError(
+        e,
+        stackTrace,
+        reason: 'Sleep Entry Delete Failed',
+        additionalData: {
+          'component': 'SleepProvider',
+          'method': 'deleteSleepEntry',
+          'delete_date': date.toIso8601String(),
+        },
+      );
+      debugPrint('🚨 Sleep entry delete error: $e');
+    }
+  }
+  
+  /// ✅ DÜZELTME: Bu haftanın uyku borcu (Pazartesi-Pazar)
   Duration get weeklyDebt {
     final now = DateTime.now();
+    
+    // ✅ DÜZELTME: Pazartesi'yi hafta başı olarak al
+    // weekday: 1=Pazartesi, 7=Pazar
+    final daysToSubtract = now.weekday - 1;
+    final startOfWeek = now.subtract(Duration(days: daysToSubtract));
     Duration totalDebt = Duration.zero;
     
-    for (int i = 0; i < 7; i++) {
-      final date = now.subtract(Duration(days: i));
+    // Pazartesi'den bugüne kadar
+    for (int i = 0; i < now.weekday; i++) {
+      final date = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day).add(Duration(days: i));
       final entry = getSleepEntryForDate(date);
       
       // Sadece veri girilen günleri hesapla
       if (entry != null && entry.actualSleep > Duration.zero) {
         totalDebt += entry.sleepDebt;
       }
-      // Veri girilmeyen günleri hesaplamaya dahil etme
     }
     
     return totalDebt;
   }
 
-  /// Veri girilen gün sayısı (son 7 gün)
+  /// ✅ DÜZELTME: Bu haftada veri girilen gün sayısı (Pazartesi-Pazar)
   int get daysWithDataCount {
     final now = DateTime.now();
+    
+    // ✅ DÜZELTME: Pazartesi'yi hafta başı olarak al
+    final daysToSubtract = now.weekday - 1;
+    final startOfWeek = now.subtract(Duration(days: daysToSubtract));
     int count = 0;
     
-    for (int i = 0; i < 7; i++) {
-      final date = now.subtract(Duration(days: i));
+    // Pazartesi'den bugüne kadar
+    for (int i = 0; i < now.weekday; i++) {
+      final date = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day).add(Duration(days: i));
       final entry = getSleepEntryForDate(date);
       
       if (entry != null && entry.actualSleep > Duration.zero) {
@@ -121,17 +210,33 @@ class SleepProvider extends ChangeNotifier {
     return count;
   }
   
-  /// Son 7 günün ortalama uyku süresi
+  /// Haftalık ortalama uyku süresi (Pzt-Paz)
+  /// weeklyEntries ile aynı mantık - grafikteki günlerle tutarlı
   Duration get weeklyAverageSleep {
+    final entries = weeklyEntries.where((e) => e.actualSleep > Duration.zero).toList();
+    
+    if (entries.isEmpty) return Duration.zero;
+    
+    int totalMinutes = 0;
+    for (var entry in entries) {
+      totalMinutes += entry.actualSleep.inMinutes;
+    }
+    
+    final averageMinutes = totalMinutes ~/ entries.length;
+    return Duration(minutes: averageMinutes);
+  }
+  
+  /// Aylık ortalama uyku süresi (son 30 gün)
+  Duration get monthlyAverageSleep {
     final now = DateTime.now();
     int totalMinutes = 0;
     int daysWithData = 0;
     
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < 30; i++) {
       final date = now.subtract(Duration(days: i));
       final entry = getSleepEntryForDate(date);
       
-      if (entry != null) {
+      if (entry != null && entry.actualSleep > Duration.zero) {
         totalMinutes += entry.actualSleep.inMinutes;
         daysWithData++;
       }
@@ -143,44 +248,90 @@ class SleepProvider extends ChangeNotifier {
     return Duration(minutes: averageMinutes);
   }
   
+  /// Aylık veri girilen gün sayısı
+  int get monthlyDaysWithDataCount {
+    final now = DateTime.now();
+    int count = 0;
+    
+    for (int i = 0; i < 30; i++) {
+      final date = now.subtract(Duration(days: i));
+      final entry = getSleepEntryForDate(date);
+      
+      if (entry != null && entry.actualSleep > Duration.zero) {
+        count++;
+      }
+    }
+    
+    return count;
+  }
+  
   /// Ortalama uyku kalitesi skoru (0-100).
   /// Bu skor, hedeflenen uyku süresine ne kadar yaklaşıldığına göre hesaplanır.
   int get sleepQualityScore {
-    if (sleepEntries.isEmpty) return 0;
+    try {
+      if (sleepEntries.isEmpty) return 0;
 
-    // Sadece veri olan günleri al
-    final entriesWithData = weeklyEntries.where((e) => e.actualSleep > Duration.zero).toList();
-    if (entriesWithData.isEmpty) return 0;
+      // Sadece veri olan günleri al
+      final entriesWithData = weeklyEntries.where((e) => e.actualSleep > Duration.zero).toList();
+      if (entriesWithData.isEmpty) return 0;
 
-    double totalScore = 0;
-    for (var entry in entriesWithData) {
-      final targetMinutes = entry.targetSleep.inMinutes;
-      final actualMinutes = entry.actualSleep.inMinutes;
-      
-      if (targetMinutes == 0) continue; // Hedef yoksa puanlama yapma
+      double totalScore = 0;
+      for (var entry in entriesWithData) {
+        final targetMinutes = entry.targetSleep.inMinutes;
+        final actualMinutes = entry.actualSleep.inMinutes;
+        
+        if (targetMinutes == 0) continue; // Hedef yoksa puanlama yapma
 
-      // Hedefe olan uzaklık (dakika cinsinden)
-      final difference = (targetMinutes - actualMinutes).abs();
+        // Hedefe olan uzaklık (dakika cinsinden)
+        final difference = (targetMinutes - actualMinutes).abs();
 
-      // Skoru hesapla: 30 dakikaya kadar olan sapmalar tam puan (100) alır.
-      // Sonraki her 15 dakikalık sapma için 10 puan düşülür.
-      double score = 100.0 - ((difference - 30) / 15) * 10;
+        // Skoru hesapla: 30 dakikaya kadar olan sapmalar tam puan (100) alır.
+        // Sonraki her 15 dakikalık sapma için 10 puan düşülür.
+        double score = 100.0 - ((difference - 30) / 15) * 10;
 
-      // Skorun 0'ın altına düşmesini ve 100'ü aşmasını engelle
-      totalScore += score.clamp(0, 100);
+        // Skorun 0'ın altına düşmesini ve 100'ü aşmasını engelle
+        totalScore += score.clamp(0, 100);
+      }
+
+      // Ortalamayı al ve tam sayıya yuvarla
+      return (totalScore / entriesWithData.length).round();
+    } catch (e, stackTrace) {
+      // Error handling - Crashlytics'e gönder
+      CrashlyticsService.instance.recordError(
+        e,
+        stackTrace,
+        reason: 'Sleep Quality Score Calculation Failed',
+        additionalData: {
+          'component': 'SleepProvider',
+          'method': 'sleepQualityScore',
+          'entries_count': sleepEntries.length.toString(),
+        },
+      );
+      debugPrint('🚨 Sleep quality score calculation error: $e');
+      return 0; // Fallback değer
     }
-
-    // Ortalamayı al ve tam sayıya yuvarla
-    return (totalScore / entriesWithData.length).round();
   }
   
-  /// Haftalık uyku verileri (grafik için)
+  /// ✅ DÜZELTME: Haftalık uyku verileri (Pazartesi-Pazar)
   List<SleepEntry> get weeklyEntries {
     final now = DateTime.now();
+    
+    // ✅ DÜZELTME: Pazartesi'yi hafta başı olarak al
+    final daysToSubtract = now.weekday - 1;
+    final startOfWeek = now.subtract(Duration(days: daysToSubtract));
+    final startDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+    
     final entries = <SleepEntry>[];
     
-    for (int i = 6; i >= 0; i--) {
-      final date = DateTime(now.year, now.month, now.day - i);
+    // Pazartesi'den Pazar'a kadar 7 gün (henüz gelmemiş günler de dahil)
+    for (int i = 0; i < 7; i++) {
+      final date = startDate.add(Duration(days: i));
+      
+      // Gelecek günleri gösterme
+      if (date.isAfter(now)) {
+        break;
+      }
+      
       final entry = getSleepEntryForDate(date);
       
       // Grafik için veri olmasa bile günü temsil eden bir entry ekle
@@ -188,7 +339,6 @@ class SleepProvider extends ChangeNotifier {
         date: date,
         bedTime: date, // Uyunmamış gün için sıfır süreli
         wakeTime: date,
-        targetHours: _defaultTargetHours,
       ));
     }
     
@@ -198,9 +348,9 @@ class SleepProvider extends ChangeNotifier {
   /// Haftalık grafik için maksimum Y ekseni değerini hesaplar.
   double get maxSleepForChart {
     final entries = weeklyEntries;
-    if (entries.isEmpty) return (_defaultTargetHours + 2).toDouble();
+    if (entries.isEmpty) return 10.0; // 8 + 2 saat
 
-    double maxHours = _defaultTargetHours.toDouble();
+    double maxHours = 8.0; // Standart hedef
     for (var entry in entries) {
       if (entry.actualSleep.inHours > maxHours) {
         maxHours = entry.actualSleep.inHours.toDouble();

@@ -7,18 +7,22 @@ import '../constants/app_spacing.dart';
 import '../constants/app_typography.dart';
 import '../screens/immersive_sound_player_screen.dart';
 import '../providers/audio_provider.dart';
+import '../providers/user_preferences_provider.dart';
 import 'package:provider/provider.dart';
+import '../providers/premium_provider.dart';
 
 class SoundCard extends StatefulWidget {
   final SoundItem sound;
   final double? width;
   final double? height;
+  final void Function(SoundItem)? onTap; // optional external tap handler
 
   const SoundCard({
     super.key,
     required this.sound,
     this.width,
     this.height = 200,
+    this.onTap,
   });
 
   @override
@@ -73,7 +77,11 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
 
   void _onCardTap() {
     HapticFeedback.mediumImpact();
-    
+    if (widget.onTap != null) {
+      widget.onTap!(widget.sound);
+      return;
+    }
+
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => 
@@ -96,8 +104,11 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
 
   void _onPlayPauseButtonTap() {
     HapticFeedback.mediumImpact();
-    final audioProvider = Provider.of<AudioProvider>(context, listen: false);
-    
+    if (widget.onTap != null) {
+      widget.onTap!(widget.sound);
+      return;
+    }
+
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => 
@@ -120,11 +131,14 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
 
   void _onMixerButtonTap() {
     HapticFeedback.selectionClick();
-    Provider.of<AudioProvider>(context, listen: false).toggleMixerSound(widget.sound);
+    final audioProvider = Provider.of<AudioProvider>(context, listen: false);
+    audioProvider.toggleMixerSound(widget.sound);
   }
 
   @override
   Widget build(BuildContext context) {
+    // ⚡ PERFORMANCE: Selector yerine watch kullanımı optimize edildi
+    // Sadece bu sound'a ait değişikliklerde rebuild olur
     final audioProvider = context.watch<AudioProvider>();
     final isPlayingInMixer = audioProvider.mixerSounds.any((s) => s.id == widget.sound.id);
     final isThisSoundExclusive = audioProvider.exclusiveSound?.id == widget.sound.id;
@@ -179,7 +193,9 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
                     _buildGradientOverlay(),
                     _buildGlassmorphismOverlay(),
                     _buildContent(isThisSoundPlaying),
-                    if (widget.sound.isPremium) _buildProBadge(),
+                    // Premium badge kaldırıldı - Premium sistemi askıya alındı
+                    // if (widget.sound.isPremium) _buildProBadge(),
+                    _buildFavoriteButton(),
                     _buildMixerButton(isPlayingInMixer),
                   ],
                 ),
@@ -212,7 +228,7 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
           );
         },
         errorBuilder: (context, error, stackTrace) {
-          debugPrint('🚨 Image load error: ${widget.sound.imagePath}');
+          // ⚡ Image error - silent fallback (no log spam)
           return Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -344,27 +360,63 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildProBadge() {
-    return Positioned(
-      top: AppSpacing.medium,
-      left: AppSpacing.medium,
-      child: Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.6),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: AppColors.premium.withOpacity(0.8),
-            width: 1.5,
+  // Premium badge kaldırıldı - Premium sistemi askıya alındı
+  // Widget _buildProBadge() {
+  //   return Positioned(
+  //     top: AppSpacing.medium,
+  //     left: AppSpacing.medium + 44, // Kalp ikonunun yanında
+  //     child: Container(
+  //       width: 28,
+  //       height: 28,
+  //       decoration: BoxDecoration(
+  //         color: Colors.black.withOpacity(0.6),
+  //         shape: BoxShape.circle,
+  //         border: Border.all(
+  //           color: AppColors.premium.withOpacity(0.8),
+  //           width: 1.5,
+  //         ),
+  //       ),
+  //       child: Icon(
+  //         Icons.diamond,
+  //         color: AppColors.premium,
+  //         size: 14,
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildFavoriteButton() {
+    return Consumer<UserPreferencesProvider>(
+      builder: (context, userPrefs, child) {
+        final isFavorite = userPrefs.isFavoriteSound(widget.sound.id);
+        
+        return Positioned(
+          top: AppSpacing.medium,
+          left: AppSpacing.medium,
+          child: GestureDetector(
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              userPrefs.toggleFavoriteSound(widget.sound.id);
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isFavorite ? Colors.red : Colors.white.withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: isFavorite ? Colors.red : Colors.white,
+                size: 20,
+              ),
+            ),
           ),
-        ),
-        child: Icon(
-          Icons.diamond,
-          color: AppColors.premium,
-          size: 14,
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -373,7 +425,23 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
       top: AppSpacing.medium,
       right: AppSpacing.medium,
       child: GestureDetector(
-        onTap: _onMixerButtonTap,
+        onTap: () {
+          // Premium sistemi askıya alındı - mix limiti yok
+          // const maxFreeMixCount = 3; // 2 veya 3; burada 3 kullandık
+          // final isAtLimit = !premiumProvider.isPremiumUser &&
+          //     audioProvider.mixerSounds.length >= maxFreeMixCount &&
+          //     !audioProvider.mixerSounds.any((s) => s.id == widget.sound.id);
+
+          // if (isAtLimit) {
+          //   final trigger = PremiumTrigger.predefinedTriggers.firstWhere(
+          //     (t) => t.targetFeatures.contains('unlimited_mixes'),
+          //     orElse: () => PremiumTrigger.predefinedTriggers.first,
+          //   );
+          //   SmartPremiumDialog.show(context, trigger);
+          //   return;
+          // }
+          _onMixerButtonTap();
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
@@ -412,27 +480,4 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
       ),
     );
   }
-
-  Widget _buildPlayingIndicator() {
-    return Positioned(
-      bottom: 12,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.graphic_eq, color: AppColors.primary, size: 16),
-            const SizedBox(width: 6),
-            Text(
-              "Çalıyor",
-              style: AppTypography.labelSmall.copyWith(color: Colors.white),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-} 
+}

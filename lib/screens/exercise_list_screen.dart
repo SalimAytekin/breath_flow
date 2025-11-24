@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:breathe_flow/providers/premium_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:animate_do/animate_do.dart';
@@ -11,9 +12,12 @@ import '../constants/app_spacing.dart';
 import '../constants/app_typography.dart';
 import '../models/breathing_exercise.dart';
 import '../providers/breathing_provider.dart';
+import '../providers/user_preferences_provider.dart';
 import '../widgets/professional_app_bar.dart';
 import '../widgets/global_background.dart';
 import 'breathing_screen.dart';
+import '../services/asset_manager.dart';
+import '../ui/components/ad_container.dart';
 
 class ExerciseListScreen extends StatefulWidget {
   final BreathingCategory category;
@@ -31,7 +35,7 @@ class ExerciseListScreen extends StatefulWidget {
 
 class _ExerciseListScreenState extends State<ExerciseListScreen> {
   late final ScrollController _scrollController;
-  double _opacity = 0.0;
+  final ValueNotifier<double> _opacity = ValueNotifier(0.0); // ⚡ Optimized - no setState
 
   @override
   void initState() {
@@ -44,6 +48,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _opacity.dispose(); // ⚡ Dispose ValueNotifier
     super.dispose();
   }
 
@@ -52,10 +57,8 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
     final offset = _scrollController.hasClients ? _scrollController.offset : 0;
     final newOpacity = (offset / scrollThreshold).clamp(0.0, 1.0);
 
-    if (newOpacity != _opacity) {
-      setState(() {
-        _opacity = newOpacity;
-      });
+    if (newOpacity != _opacity.value) {
+      _opacity.value = newOpacity; // ⚡ No setState - huge performance boost
     }
   }
 
@@ -173,6 +176,10 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
     }
   }
 
+  String _getExerciseImage(BreathingExercise exercise) {
+    return exercise.imagePath;
+  }
+
   @override
   Widget build(BuildContext context) {
     final breathingProvider = Provider.of<BreathingProvider>(context, listen: false);
@@ -194,13 +201,11 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
             controller: _scrollController,
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // Kategori başlığı ve açıklama
+              // Kategori başlığı ve açıklama - ⚡ Animation removed
               SliverToBoxAdapter(
-                child: FadeInDown(
-                  duration: const Duration(milliseconds: 600),
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.large),
-                    child: Column(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.large),
+                  child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -224,8 +229,18 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                             borderRadius: BorderRadius.circular(1),
                           ),
                         ),
-                      ],
-                    ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // 📺 Banner Reklam - Kategori açıklamasından sonra
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 0, vertical: AppSpacing.medium),
+                  child: const AdContainer(
+                    placement: 'exercise_list_screen',
+                    margin: EdgeInsets.symmetric(horizontal: 0, vertical: 8),
                   ),
                 ),
               ),
@@ -237,13 +252,10 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final exercise = exercises[index];
-                      return FadeInUp(
-                        duration: const Duration(milliseconds: 600),
-                        delay: Duration(milliseconds: 100 * index),
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.medium),
-                          child: _buildModernExerciseCard(context, breathingProvider, exercise, widget.category),
-                        ),
+                      // ⚡ OPTIMIZED: FadeInUp animasyonu kaldırıldı - instant render
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.large),
+                        child: _buildModernExerciseCard(context, breathingProvider, exercise, widget.category),
                       );
                     },
                     childCount: exercises.length,
@@ -264,293 +276,346 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
 
   Widget _buildModernExerciseCard(
     BuildContext context, BreathingProvider provider, BreathingExercise exercise, BreathingCategory category) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
+    
+    return GestureDetector(
+      onTap: () {
+        final premiumProvider = context.read<PremiumProvider>();
+        if (exercise.isPremium && !premiumProvider.canAccessFeature('advanced_breathing')) {
+          premiumProvider.showFeatureLimitTrigger('advanced_breathing');
+          return;
+        }
+        _showCycleSelectionModal(context, provider, exercise, category);
+      },
+      child: Container(
+        constraints: BoxConstraints(minHeight: isSmallScreen ? 150 : 160),
+        padding: EdgeInsets.all(isSmallScreen ? AppSpacing.small : AppSpacing.medium),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.surface.withOpacity(0.9),
+              AppColors.surface.withOpacity(0.8),
+              _getCategoryColor(category).withOpacity(0.15),
+            ],
+            stops: const [0.0, 0.6, 1.0],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: _getCategoryColor(category).withOpacity(0.25),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+            BoxShadow(
+              color: _getCategoryColor(category).withOpacity(0.1),
+              blurRadius: 20,
+              spreadRadius: -5,
+            ),
+          ],
+        ),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Sol: Mini thumbnail
+              Center(child: _buildCompactThumbnail(exercise, category)),
+
+              SizedBox(width: isSmallScreen ? AppSpacing.small : AppSpacing.medium),
+
+              // Orta: Bilgiler
+              Expanded(child: _buildCompactInfo(exercise, category)),
+
+              SizedBox(width: isSmallScreen ? 4 : AppSpacing.small),
+
+              // Sağ: Favorite + Play
+              _buildCompactActions(exercise, category),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Kompakt thumbnail widget
+  Widget _buildCompactThumbnail(BreathingExercise exercise, BreathingCategory category) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final thumbnailSize = screenWidth < 400 ? 90.0 : (screenWidth < 500 ? 100.0 : 110.0);
+    
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.medium),
+      width: thumbnailSize,
+      height: thumbnailSize,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: _getCategoryColor(category).withOpacity(0.4),
+          width: 2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: _getCategoryColor(category).withOpacity(0.1),
-            blurRadius: 16,
-            spreadRadius: 1,
+            color: _getCategoryColor(category).withOpacity(0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.surface.withOpacity(0.95),
-                AppColors.surface.withOpacity(0.85),
-                _getCategoryColor(category).withOpacity(0.08),
-              ],
-              stops: const [0.0, 0.7, 1.0],
-            ),
-            border: Border.all(
-              color: _getCategoryColor(category).withOpacity(0.15),
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withOpacity(0.08),
-                  Colors.transparent,
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.3, 1.0],
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Resim - Yüksek Kalite ve Sıkıştırmasız
+            Container(
+              decoration: BoxDecoration(
+                color: _getCategoryColor(category).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
               ),
-              borderRadius: BorderRadius.circular(17),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(18),
-                splashColor: _getCategoryColor(category).withOpacity(0.15),
-                highlightColor: _getCategoryColor(category).withOpacity(0.08),
-                onTap: () {
-                  if (exercise.isPremium && !context.read<PremiumProvider>().isPremiumUser) {
-                    context.read<PremiumProvider>().showFeatureLimitTrigger('advanced_breathing');
-                    return;
-                  }
-                  _showCycleSelectionModal(context, provider, exercise, category);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.large),
-                  child: Row(
-                    children: [
-                      // Sol taraf - Renkli ikon
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              _getCategoryColor(category).withOpacity(0.2),
-                              _getCategoryColor(category).withOpacity(0.1),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: _getCategoryColor(category).withOpacity(0.25),
-                            width: 1.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: _getCategoryColor(category).withOpacity(0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.white.withOpacity(0.1),
-                                Colors.transparent,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: Icon(
-                            _getExerciseIcon(exercise),
-                            color: _getCategoryColor(category),
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                      
-                      const SizedBox(width: AppSpacing.large),
-                      
-                      // Orta - İçerik
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Başlık ve premium badge
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    exercise.name,
-                                    style: AppTypography.headlineSmall.copyWith(
-                                      color: AppColors.textPrimary,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 18,
-                                      letterSpacing: -0.4,
-                                    ),
-                                  ),
-                                ),
-                                if (exercise.isPremium)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          AppColors.premium,
-                                          AppColors.premium.withOpacity(0.8),
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: AppColors.premium.withOpacity(0.3),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 1),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(FeatherIcons.award, color: Colors.white, size: 10),
-                                        const SizedBox(width: 3),
-                                        Text(
-                                          'PRO',
-                                          style: AppTypography.labelSmall.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 9,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            
-                            const SizedBox(height: AppSpacing.small),
-                            
-                            // Kısa açıklama
-                            Text(
-                              _getExerciseShortDescription(exercise),
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: AppColors.textSecondary,
-                                height: 1.5,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            
-                            const SizedBox(height: AppSpacing.medium),
-                            
-                            // Sadece timing bilgisi
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.medium,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    _getCategoryColor(category).withOpacity(0.15),
-                                    _getCategoryColor(category).withOpacity(0.08),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: _getCategoryColor(category).withOpacity(0.2),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    FeatherIcons.clock,
-                                    size: 12,
-                                    color: _getCategoryColor(category),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    exercise.timingsFormatted,
-                                    style: AppTypography.labelMedium.copyWith(
-                                      color: _getCategoryColor(category),
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+              child: Center(
+                child: Image.asset(
+                  _getExerciseImage(exercise),
+                  fit: BoxFit.contain,
+                  cacheWidth: 300,
+                  cacheHeight: 300,
+                  isAntiAlias: true,
+                  filterQuality: FilterQuality.high,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            _getCategoryColor(category).withOpacity(0.6),
+                            _getCategoryColor(category).withOpacity(0.8),
                           ],
                         ),
                       ),
-                      
-                      const SizedBox(width: AppSpacing.medium),
-                      
-                      // Sağ taraf - Renkli play butonu
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              _getCategoryColor(category).withOpacity(0.8),
-                              _getCategoryColor(category).withOpacity(0.6),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(13),
-                          boxShadow: [
-                            BoxShadow(
-                              color: _getCategoryColor(category).withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(13),
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.white.withOpacity(0.15),
-                                Colors.transparent,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: Icon(
-                            FeatherIcons.play,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
+                      child: Icon(
+                        _getExerciseIcon(exercise),
+                        color: Colors.white.withOpacity(0.8),
+                        size: 32,
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
-          ),
+            // Hafif overlay
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.25),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  // Kompakt bilgi widget
+  Widget _buildCompactInfo(BreathingExercise exercise, BreathingCategory category) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
+    final titleFontSize = isSmallScreen ? 16.0 : (screenWidth < 500 ? 17.0 : 18.0);
+    final descFontSize = isSmallScreen ? 11.0 : (screenWidth < 500 ? 12.0 : 13.0);
+    
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 2.0 : 4.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Başlık
+              Text(
+                exercise.name,
+                style: AppTypography.headlineSmall.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: titleFontSize,
+                  height: 1.25,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(height: isSmallScreen ? 4 : 6),
+              // Açıklama
+              Text(
+                _getExerciseShortDescription(exercise),
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: descFontSize,
+                  height: 1.4,
+                ),
+                maxLines: isSmallScreen ? 2 : 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+          SizedBox(height: isSmallScreen ? 4 : 6),
+          // Timing badge
+          _buildTimingChips(exercise, category),
+        ],
+      ),
+    );
+  }
+
+  Color _getStepColor(BreathingStepType type, BreathingCategory category) {
+    switch (type) {
+      case BreathingStepType.inhale:
+        return AppColors.success;
+      case BreathingStepType.hold:
+        return AppColors.warning;
+      case BreathingStepType.exhale:
+        return AppColors.info;
+      default:
+        return _getCategoryColor(category);
+    }
+  }
+
+  String _getStepLabel(BreathingStepType type) {
+    switch (type) {
+      case BreathingStepType.inhale:
+        return 'al';
+      case BreathingStepType.hold:
+        return 'tut';
+      case BreathingStepType.exhale:
+        return 'ver';
+      case BreathingStepType.holdAfterExhale:
+        return 'bekle';
+      default:
+        return '';
+    }
+  }
+
+  Widget _buildTimingChips(BreathingExercise exercise, BreathingCategory category) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
+    
+    return Wrap(
+      spacing: isSmallScreen ? 4.0 : 6.0,
+      runSpacing: isSmallScreen ? 3.0 : 4.0,
+      children: exercise.steps
+          .where((step) => _getStepLabel(step.type).isNotEmpty)
+          .map((step) {
+        final color = _getStepColor(step.type, category);
+        final label = _getStepLabel(step.type);
+        return Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: isSmallScreen ? 6 : 8,
+            vertical: isSmallScreen ? 3 : 4,
+          ),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(isSmallScreen ? 6 : 8),
+            border: Border.all(
+              color: color.withOpacity(0.4),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            '${step.duration}sn $label',
+            style: AppTypography.labelSmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: isSmallScreen ? 10 : 12,
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // Kompakt aksiyonlar widget
+  Widget _buildCompactActions(BreathingExercise exercise, BreathingCategory category) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final iconButtonSize = screenWidth < 400 ? 38.0 : 44.0;
+    final playButtonSize = screenWidth < 400 ? 46.0 : 54.0;
+    final iconSize = screenWidth < 400 ? 20.0 : 26.0;
+    
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // Favorite button
+        Consumer<UserPreferencesProvider>(
+          builder: (context, userPrefs, child) {
+            final isFavorite = userPrefs.isFavoriteExercise(exercise.type.name);
+            
+            return GestureDetector(
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                userPrefs.toggleFavoriteExercise(exercise.type.name);
+              },
+              child: Container(
+                width: iconButtonSize,
+                height: iconButtonSize,
+                decoration: BoxDecoration(
+                  color: isFavorite 
+                      ? Colors.red.withOpacity(0.15)
+                      : AppColors.surfaceElevated,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isFavorite 
+                        ? Colors.red.withOpacity(0.5)
+                        : AppColors.border,
+                    width: 1.5,
+                  ),
+                ),
+                child: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: isFavorite ? Colors.red : AppColors.textSecondary,
+                  size: screenWidth < 400 ? 18 : 22,
+                ),
+              ),
+            );
+          },
+        ),
+        
+        // Play button
+        Container(
+          width: playButtonSize,
+          height: playButtonSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [
+                _getCategoryColor(category).withOpacity(1),
+                _getCategoryColor(category).withOpacity(0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _getCategoryColor(category).withOpacity(0.5),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Icon(
+            FeatherIcons.play,
+            color: Colors.white,
+            size: iconSize,
+          ),
+        ),
+      ],
     );
   }
 
@@ -592,7 +657,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter modalState) {
             return Container(
-              margin: const EdgeInsets.all(AppSpacing.medium),
+              margin: EdgeInsets.all(MediaQuery.of(context).size.width < 400 ? AppSpacing.small : AppSpacing.medium),
               decoration: BoxDecoration(
                 color: AppColors.surface.withOpacity(0.95),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
@@ -605,56 +670,60 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                   ),
                 ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.large),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Başlık
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                exercise.name,
-                                style: AppTypography.headlineSmall,
-                              ),
-                              const SizedBox(height: AppSpacing.small),
-                              Text(
-                                'Kaç döngü yapmak istiyorsun?',
-                                style: AppTypography.bodyLarge.copyWith(
-                                  color: AppColors.textSecondary,
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.all(MediaQuery.of(context).size.width < 400 ? AppSpacing.medium : AppSpacing.large),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Başlık
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  exercise.name,
+                                  style: AppTypography.headlineSmall.copyWith(
+                                    fontSize: MediaQuery.of(context).size.width < 400 ? 18 : 20,
+                                  ),
                                 ),
-                              ),
-                            ],
+                                SizedBox(height: MediaQuery.of(context).size.width < 400 ? AppSpacing.tiny : AppSpacing.small),
+                                Text(
+                                  'Kaç tekrar yapmak istiyorsun?',
+                                  style: AppTypography.bodyLarge.copyWith(
+                                    color: AppColors.textSecondary,
+                                    fontSize: MediaQuery.of(context).size.width < 400 ? 14 : 16,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            FeatherIcons.x,
-                            color: AppColors.textPrimary,
-                            size: 24,
+                          IconButton(
+                            icon: Icon(
+                              FeatherIcons.x,
+                              color: AppColors.textPrimary,
+                              size: MediaQuery.of(context).size.width < 400 ? 20 : 24,
+                            ),
+                            onPressed: () => Navigator.of(context).pop(),
                           ),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.large),
+                        ],
+                      ),
+                      SizedBox(height: MediaQuery.of(context).size.width < 400 ? AppSpacing.medium : AppSpacing.large),
 
-                    // Döngü seçenekleri - Modern Grid Layout
-                    SizedBox(
-                      height: 200,
-                      child: GridView.builder(
+                      // Döngü seçenekleri - Modern Grid Layout
+                      SizedBox(
+                        height: MediaQuery.of(context).size.width < 400 ? 160 : 200,
+                        child: GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 3,
-                          childAspectRatio: 1.4,
-                          crossAxisSpacing: 6,
-                          mainAxisSpacing: 6,
+                          childAspectRatio: MediaQuery.of(context).size.width < 400 ? 1.3 : 1.4,
+                          crossAxisSpacing: MediaQuery.of(context).size.width < 400 ? 4 : 6,
+                          mainAxisSpacing: MediaQuery.of(context).size.width < 400 ? 4 : 6,
                         ),
                         itemCount: cycleOptions.length,
                         itemBuilder: (context, index) {
@@ -691,21 +760,21 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                                           ? _getCategoryColor(category)
                                           : AppColors.textPrimary,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                                      fontSize: MediaQuery.of(context).size.width < 400 ? 14 : 16,
                                     ),
                                   ),
                                   Text(
-                                    'döngü',
+                                    'tekrar',
                                     style: TextStyle(
                                       color: AppColors.textSecondary,
-                                      fontSize: 10,
+                                      fontSize: MediaQuery.of(context).size.width < 400 ? 9 : 10,
                                     ),
                                   ),
                                   Text(
                                     '~${estimatedMinutes}dk',
                                     style: TextStyle(
                                       color: AppColors.textSecondary,
-                                      fontSize: 9,
+                                      fontSize: MediaQuery.of(context).size.width < 400 ? 8 : 9,
                                     ),
                                   ),
                                 ],
@@ -715,44 +784,51 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                         },
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xLarge),
+                      SizedBox(height: MediaQuery.of(context).size.width < 400 ? AppSpacing.large : AppSpacing.xLarge),
 
-                    // Başlat butonu - Modern tasarım
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          provider.setExercise(exercise, customCycles: selectedCycles);
-                          Navigator.of(context).pop();
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(builder: (ctx) => const BreathingScreen()),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _getCategoryColor(category),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.medium),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppSpacing.medium),
+                      // Başlat butonu - Modern tasarım
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            provider.setExercise(exercise, customCycles: selectedCycles);
+                            Navigator.of(context).pop();
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (ctx) => const BreathingScreen()),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _getCategoryColor(category),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(
+                              vertical: MediaQuery.of(context).size.width < 400 ? AppSpacing.small : AppSpacing.medium,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppSpacing.medium),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(FeatherIcons.play, size: MediaQuery.of(context).size.width < 400 ? 14 : 16),
+                              SizedBox(width: MediaQuery.of(context).size.width < 400 ? AppSpacing.tiny : AppSpacing.small),
+                              Flexible(
+                                child: Text(
+                                  'Başlat ($selectedCycles tekrar)',
+                                  style: AppTypography.bodyLarge.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                    fontSize: MediaQuery.of(context).size.width < 400 ? 14 : 16,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(FeatherIcons.play, size: 16),
-                            const SizedBox(width: AppSpacing.small),
-                            Text(
-                              'Başlat ($selectedCycles döngü)',
-                              style: AppTypography.bodyLarge.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );

@@ -16,6 +16,7 @@ class AssetManager {
   static const String _imageBasePath = 'assets/images';
   static const String _lottieBasePath = 'assets/lottie';
   static const String _videoBasePath = 'assets/videos';
+  static const String _breathingExercisesPath = 'assets/images/breathing_exercises';
 
   // ================================
   // AUDIO ASSETS - Kategorize Edilmiş
@@ -353,6 +354,44 @@ class AssetManager {
     // ŞİMDİ: Placeholder - gelecekte implement edilecek
     return null;
   }
+
+  // ================================
+  // BREATHING EXERCISE IMAGES
+  // ================================
+
+  /// 🫁 Nefes egzersizi görseli al
+  static String breathingExercise(String category, String fileName) {
+    return '$_breathingExercisesPath/$category/$fileName';
+  }
+
+  // --- Odaklanma ve Konsantrasyon ---
+  static String get kutuNefesi => image('sounds/kutu_nefesi.jpg');
+  static String get basitSaymaNefesi => image('sounds/basit_sayma_nefesi.jpg');
+  static String get farkindalikNefesi => image('sounds/farkindalik_nefesi.jpg');
+
+  // --- Rahatlama ve Huzur ---
+  static String get uzuncaNefesVer => image('sounds/uzunca_nefes_ver.jpg');
+  static String get diyaframNefesi => image('sounds/diyafram_nefesi.jpg');
+  static String get esitNefes => image('sounds/esit_nefes.jpg');
+
+  // --- Huzurlu Uyku ---
+  static String get yavaslaticiNefes => image('sounds/yavaslatici_nefes.jpg');
+  static String get bedenFarkindaligiNefesi => image('sounds/beden_farkindaligi_nefesi.jpg');
+  static String get gevseemeNefesi => image('sounds/gevseeme_nefesi.jpg');
+
+  // --- Enerji ve Zindelik ---
+  static String get canlandiriciDiyafram => image('sounds/canlandirici_diyafram.jpg');
+  static String get sabahNefesi => image('sounds/sabah_nefesi.jpg');
+  static String get guneBaslamaNefesi => image('sounds/gune_baslama_nefesi.jpg');
+
+  // ================================
+  // SLEEP TRACKING IMAGES
+  // ================================
+
+  // --- Uyku Takibi ---
+  static String get sleepRecord => image('sleep_tracking/sleep_record.jpg');
+  static String get sleepStats => image('sleep_tracking/sleep_stats.jpg');
+  static String get sleepJournal => image('sleep_tracking/sleep_journal.jpg');
 
   // ================================
   // UTILITY METHODS

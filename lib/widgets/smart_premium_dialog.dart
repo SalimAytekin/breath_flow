@@ -1,8 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/premium_trigger.dart';
 import '../providers/premium_provider.dart';
 import '../constants/app_colors.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
+import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SmartPremiumDialog extends StatefulWidget {
   final PremiumTrigger trigger;
@@ -430,33 +434,162 @@ class _SmartPremiumDialogState extends State<SmartPremiumDialog>
 
   void _handlePurchase(BuildContext context) {
     final premiumProvider = Provider.of<PremiumProvider>(context, listen: false);
+    if (premiumProvider.isTestMode) {
+      // Test modunda simüle et
+      premiumProvider.purchasePremium(widget.trigger.offerType);
+      premiumProvider.trackUserAction('premium_purchase_attempted', {
+        'triggerId': widget.trigger.id,
+        'offerType': widget.trigger.offerType.name,
+        'source': 'smart_dialog',
+      });
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Premium (TEST) aktifleştirildi! 🎉'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      widget.onPurchase?.call();
+      return;
+    }
+
+    // Production: Google Play Billing ile gerçek satın alma
+    _initiateGooglePlayPurchase(context, premiumProvider);
+  }
+
+  Future<void> _initiateGooglePlayPurchase(BuildContext context, PremiumProvider premiumProvider) async {
+    final InAppPurchase inAppPurchase = InAppPurchase.instance;
     
-    // Premium satın alma simülasyonu
-    premiumProvider.purchasePremium(widget.trigger.offerType);
+    // Google Play Billing'in mevcut olup olmadığını kontrol et
+    final bool isAvailable = await inAppPurchase.isAvailable();
+    if (!isAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Google Play Billing mevcut değil'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    // Premium ürün ID'si (Google Play Console'da tanımlanacak)
+    const String productId = 'premium_monthly'; // Google Play Console'da oluşturulacak
     
-    // Analytics tracking
-    premiumProvider.trackUserAction('premium_purchase_attempted', {
-      'triggerId': widget.trigger.id,
-      'offerType': widget.trigger.offerType.name,
-      'source': 'smart_dialog',
+    try {
+      // Ürün detaylarını al
+      final ProductDetailsResponse response = await inAppPurchase.queryProductDetails({productId});
+      
+      if (response.notFoundIDs.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ürün bulunamadı: ${response.notFoundIDs.join(', ')}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+
+      if (response.productDetails.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Ürün detayları alınamadı'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+
+      final ProductDetails productDetails = response.productDetails.first;
+      
+      // Satın alma parametrelerini hazırla
+      final PurchaseParam purchaseParam = PurchaseParam(
+        productDetails: productDetails,
+        applicationUserName: null, // Opsiyonel kullanıcı adı
+      );
+
+      // Satın alma işlemini başlat
+      final bool success = await inAppPurchase.buyNonConsumable(purchaseParam: purchaseParam);
+      
+      if (success) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Satın alma işlemi başlatıldı...'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+        
+        // Satın alma durumunu dinle
+        _listenToPurchaseUpdates(context, premiumProvider);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Satın alma işlemi başlatılamadı'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Hata: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  void _listenToPurchaseUpdates(BuildContext context, PremiumProvider premiumProvider) {
+    final InAppPurchase inAppPurchase = InAppPurchase.instance;
+    StreamSubscription<List<PurchaseDetails>>? subscription;
+    
+    subscription = inAppPurchase.purchaseStream.listen((List<PurchaseDetails> purchaseDetailsList) {
+      for (final PurchaseDetails purchaseDetails in purchaseDetailsList) {
+        if (purchaseDetails.status == PurchaseStatus.purchased) {
+          // Satın alma başarılı - Premium'u aktifleştir
+          premiumProvider.trackUserAction('premium_purchase_success', {
+            'productId': purchaseDetails.productID,
+            'purchaseId': purchaseDetails.purchaseID,
+          });
+          
+          // Token yenile ve premium durumunu senkronize et
+          () async {
+            await premiumProvider.ensureValidToken();
+            await premiumProvider.synchronizePremiumStatus();
+            
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Premium aktifleştirildi! 🎉'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            }
+          }();
+          
+          // Satın alma işlemini tamamla
+          if (purchaseDetails.pendingCompletePurchase) {
+            inAppPurchase.completePurchase(purchaseDetails);
+          }
+        } else if (purchaseDetails.status == PurchaseStatus.error) {
+          // Satın alma hatası
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Satın alma hatası: ${purchaseDetails.error?.message}'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
     });
-    
-    Navigator.of(context).pop();
-    
-    // Success feedback
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Premium aktifleştirildi! 🎉'),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-    
-    widget.onPurchase?.call();
   }
 
   void _handleDismiss(BuildContext context, bool permanent) {
     final premiumProvider = Provider.of<PremiumProvider>(context, listen: false);
+    
+    // 🚨 DEBUG: Premium durumunu kontrol et
+    if (kDebugMode) print('🚨 DEBUG: Dismiss öncesi premium durumu: ${premiumProvider.isPremiumUser}');
     
     // Dismiss tracking
     premiumProvider.trackUserAction('premium_trigger_dismissed', {
@@ -467,6 +600,9 @@ class _SmartPremiumDialogState extends State<SmartPremiumDialog>
     
     // Dismiss trigger
     premiumProvider.dismissTrigger(widget.trigger.id, permanent: permanent);
+    
+    // 🚨 DEBUG: Premium durumunu tekrar kontrol et
+    if (kDebugMode) print('🚨 DEBUG: Dismiss sonrası premium durumu: ${premiumProvider.isPremiumUser}');
     
     Navigator.of(context).pop();
     widget.onDismiss?.call();

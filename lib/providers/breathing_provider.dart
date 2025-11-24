@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/breathing_exercise.dart';
 import '../constants/app_colors.dart';
+import '../core/analytics/analytics_service.dart';
+import '../core/crashlytics/crashlytics_service.dart';
 
 class BreathingProvider extends ChangeNotifier {
   // --- Private State Variables ---
@@ -19,6 +21,10 @@ class BreathingProvider extends ChangeNotifier {
   int _sessionDuration = 5; // Default 5 minutes
   int _totalCycles = 0;
   int _completedCycles = 0;
+  
+  // Real-time session tracking
+  DateTime? _sessionStartTime;
+  int _actualSessionDurationSeconds = 0;
 
   // Progress within a single step (0.0 to 1.0)
   double _stepProgress = 0.0;
@@ -36,6 +42,11 @@ class BreathingProvider extends ChangeNotifier {
   int get totalCycles => _totalCycles;
   int get completedCycles => _completedCycles;
   double get stepProgress => _stepProgress;
+  
+  // Real-time session duration getters
+  int get actualSessionDurationSeconds => _actualSessionDurationSeconds;
+  int get actualSessionDurationMinutes => (_actualSessionDurationSeconds / 60).round();
+  Duration get actualSessionDuration => Duration(seconds: _actualSessionDurationSeconds);
   
   // --- Public Methods ---
 
@@ -82,6 +93,21 @@ class BreathingProvider extends ChangeNotifier {
     _isRunning = false;
     _isPaused = false;
     _timer?.cancel();
+    
+    // Calculate final session duration
+    if (_sessionStartTime != null) {
+      final endTime = DateTime.now();
+      _actualSessionDurationSeconds = endTime.difference(_sessionStartTime!).inSeconds;
+      
+      // Analytics event - Egzersiz tamamlandı
+      if (_currentExercise != null) {
+        AnalyticsService.instance.logExerciseCompleted(
+          exerciseId: _currentExercise!.type.name,
+          durationSeconds: _actualSessionDurationSeconds,
+        );
+      }
+    }
+    
     _currentExercise = null; // Clear exercise on stop to return to selection screen
     notifyListeners();
   }
@@ -94,8 +120,17 @@ class BreathingProvider extends ChangeNotifier {
     _isRunning = true;
     _completedCycles = 0;
     _stepIndex = -1; // Start with -1 to trigger _nextStep immediately
+    _sessionStartTime = DateTime.now(); // Start tracking real time
+    _actualSessionDurationSeconds = 0;
     _nextStep();
     _startTimer();
+    
+    // Analytics event - Egzersiz başladı
+    AnalyticsService.instance.logExerciseStarted(
+      exerciseId: _currentExercise!.type.name,
+      from: 'breathing_screen', // Bu parametre çağıran yerden geçilebilir
+    );
+    
     notifyListeners();
   }
 
@@ -132,8 +167,18 @@ class BreathingProvider extends ChangeNotifier {
       // Check if the entire session is completed
       if (_completedCycles >= _totalCycles) {
         // Session finished based on cycles
+        _isRunning = false;
+        _isPaused = false;
+        _timer?.cancel();
+        
+        // Calculate final session duration
+        if (_sessionStartTime != null) {
+          final endTime = DateTime.now();
+          _actualSessionDurationSeconds = endTime.difference(_sessionStartTime!).inSeconds;
+        }
+        
+        // Callback'i çağır ama currentExercise'ı temizleme
         _onSessionCompleted?.call();
-        stop();
         return;
       }
     }
@@ -149,6 +194,11 @@ class BreathingProvider extends ChangeNotifier {
     }
 
     _countdown--;
+    
+    // Update actual session duration
+    if (_sessionStartTime != null) {
+      _actualSessionDurationSeconds = DateTime.now().difference(_sessionStartTime!).inSeconds;
+    }
     
     final int stepDuration = _currentStep!.duration;
     // Calculate progress (0.0 to 1.0)
@@ -179,5 +229,13 @@ class BreathingProvider extends ChangeNotifier {
       case BreathingStepType.holdAfterExhale:
         return AppColors.sleep;
     }
+  }
+  
+  @override
+  void dispose() {
+    // 🛡️ CRITICAL FIX: Ensure timer is cancelled
+    _timer?.cancel();
+    _timer = null;
+    super.dispose();
   }
 } 

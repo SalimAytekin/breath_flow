@@ -2,13 +2,14 @@ class SleepEntry {
   final DateTime date;
   final DateTime bedTime;
   final DateTime wakeTime;
-  final int targetHours;
+  
+  // Sabit standart: 8 saat
+  static const int standardTargetHours = 8;
   
   const SleepEntry({
     required this.date,
     required this.bedTime,
     required this.wakeTime,
-    required this.targetHours,
   });
   
   /// Gerçekte kaç saat uyuduğu
@@ -21,8 +22,8 @@ class SleepEntry {
     return wakeTime.difference(bedTime);
   }
   
-  /// Hedef uyku süresi
-  Duration get targetSleep => Duration(hours: targetHours);
+  /// Hedef uyku süresi (sabit 8 saat standart)
+  Duration get targetSleep => const Duration(hours: standardTargetHours);
   
   /// Uyku borcu (negatif ise eksik, pozitif ise fazla)
   Duration get sleepDebt => actualSleep - targetSleep;
@@ -33,7 +34,6 @@ class SleepEntry {
       'date': date.toIso8601String(),
       'bedTime': bedTime.toIso8601String(),
       'wakeTime': wakeTime.toIso8601String(),
-      'targetHours': targetHours,
     };
   }
   
@@ -43,7 +43,6 @@ class SleepEntry {
       date: DateTime.parse(json['date']),
       bedTime: DateTime.parse(json['bedTime']),
       wakeTime: DateTime.parse(json['wakeTime']),
-      targetHours: json['targetHours'],
     );
   }
   

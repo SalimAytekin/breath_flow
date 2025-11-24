@@ -1,7 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:animate_do/animate_do.dart';
-import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import '../widgets/professional_app_bar.dart';
 import '../constants/app_strings.dart';
 import '../constants/app_colors.dart';
@@ -9,13 +8,18 @@ import '../constants/app_theme.dart';
 import '../models/sound_item.dart';
 import '../models/sound_category.dart';
 import '../providers/audio_provider.dart';
+import '../providers/premium_provider.dart';
 import '../widgets/sound_player_card.dart';
 import 'dart:ui';
 import '../widgets/mixer_panel.dart';
 import '../widgets/sound_card.dart';
 import '../constants/app_spacing.dart';
 import '../widgets/global_background.dart';
+import '../widgets/smart_premium_dialog.dart';
 import '../constants/app_typography.dart';
+import '../models/premium_trigger.dart';
+import '../screens/immersive_sound_player_screen.dart';
+import '../ui/components/ad_container.dart';
 
 class SoundsScreen extends StatefulWidget {
   final String? customTitle;
@@ -34,6 +38,7 @@ class SoundsScreen extends StatefulWidget {
 class _SoundsScreenState extends State<SoundsScreen> {
   late final ScrollController _scrollController;
   late final List<SoundCategory> categories;
+  AudioProvider? _audioProvider; // Provider referansını sakla
 
   @override
   void initState() {
@@ -48,6 +53,13 @@ class _SoundsScreenState extends State<SoundsScreen> {
     } else {
       categories = SoundItem.allCategories;
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Provider referansını güvenli şekilde al
+    _audioProvider = Provider.of<AudioProvider>(context, listen: false);
   }
   
   /// Sesleri kategorilere göre gruplar
@@ -82,12 +94,30 @@ class _SoundsScreenState extends State<SoundsScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    
+    // 🎵 Mixer ekranından çıkışta sesleri otomatik durdur
+    // NOT: Context kullanmıyoruz, sadece önceden alınmış provider referansını kullanıyoruz
+    try {
+      if (_audioProvider != null && _audioProvider!.isMixerActive) {
+        _audioProvider!.stopAllSounds();
+      }
+    } catch (e) {
+      // Hata sessizce yoksayılır
+    }
+    
     super.dispose();
   }
 
   void _onSoundTapped(SoundItem sound) {
-    final audioProvider = Provider.of<AudioProvider>(context, listen: false);
-    audioProvider.toggleMixerSound(sound);
+    // Premium kontrolü (şu an askıda)
+    // final premiumProvider = Provider.of<PremiumProvider>(context, listen: false);
+    
+    // Kart tıklaması player ekranını açar
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => ImmersiveSoundPlayerScreen(sound: sound),
+      ),
+    );
   }
 
   @override
@@ -100,22 +130,36 @@ class _SoundsScreenState extends State<SoundsScreen> {
         extendBodyBehindAppBar: true,
         appBar: ProfessionalAppBar(
           scrollController: _scrollController,
-          title: widget.customTitle ?? 'Ses Dünyası',
+          title: widget.customTitle ?? 'Ses Koleksiyonu',
         ),
         body: Stack(
           children: [
             ListView.builder(
               controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
+              physics: const BouncingScrollPhysics(), // ⚡ Daha performanslı
+              cacheExtent: 500, // ⚡ Ön belleğe al
               padding: EdgeInsets.only(
                 top: topPadding + kToolbarHeight + AppSpacing.medium,
                 bottom: 120,
                 left: 0,
                 right: 0,
               ),
-              itemCount: categories.length,
+              itemCount: categories.length + 1, // +1 for banner ad
               itemBuilder: (context, index) {
-                final category = categories[index];
+                // İlk item banner reklam
+                if (index == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 0, vertical: AppSpacing.small),
+                    child: const AdContainer(
+                      placement: 'sounds_screen',
+                      margin: EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+                    ),
+                  );
+                }
+                
+                // Diğer itemlar kategori bölümleri
+                final categoryIndex = index - 1;
+                final category = categories[categoryIndex];
                 if (category.sounds.isEmpty) return const SizedBox.shrink();
                 return _CategorySection(
                   category: category,
@@ -123,7 +167,7 @@ class _SoundsScreenState extends State<SoundsScreen> {
                 );
               },
             ),
-            const Positioned(
+            Positioned(
               bottom: 0,
               left: 0,
               right: 0,
@@ -163,6 +207,7 @@ class _CategorySection extends StatelessWidget {
             child: ListView.builder(
               physics: const BouncingScrollPhysics(),
               scrollDirection: Axis.horizontal,
+              cacheExtent: 1000, // ⚡ Horizontal scroll için cache
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.medium),
               itemCount: category.sounds.length,
               itemBuilder: (context, index) {
@@ -171,12 +216,10 @@ class _CategorySection extends StatelessWidget {
                   padding: const EdgeInsets.only(right: AppSpacing.medium),
                   child: SizedBox(
                     width: cardWidth,
-                    child: Consumer<AudioProvider>(
-                      builder: (context, audioProvider, child) {
-                        return SoundCard(
-                          sound: sound,
-                        );
-                      },
+                    // ⚡ PERFORMANS: Consumer kaldırıldı - SoundCard kendi içinde dinliyor
+                    child: SoundCard(
+                      sound: sound,
+                      onTap: onSoundTap,
                     ),
                   ),
                 );

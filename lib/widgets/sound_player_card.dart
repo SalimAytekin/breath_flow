@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
-import 'package:provider/provider.dart';
 import '../models/sound_item.dart';
-import '../providers/audio_provider.dart';
-import '../constants/app_colors.dart';
 import '../constants/app_typography.dart';
 import '../constants/app_spacing.dart';
+import '../constants/app_colors.dart';
+import '../providers/premium_provider.dart';
+import 'package:provider/provider.dart';
 
 class SoundPlayerCard extends StatelessWidget {
   final SoundItem sound;
@@ -55,6 +55,40 @@ class SoundPlayerCard extends StatelessWidget {
                 ),
               ),
             ),
+            // Premium lock overlay
+            if (sound.isPremium)
+              Consumer<PremiumProvider>(
+                builder: (context, premiumProvider, child) {
+                  if (premiumProvider.isPremiumUser) return const SizedBox.shrink();
+                  
+                  return Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppSpacing.medium - 2.5),
+                      color: Colors.black.withOpacity(0.6),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            FeatherIcons.lock,
+                            color: AppColors.warning,
+                            size: 32,
+                          ),
+                          const SizedBox(height: AppSpacing.small),
+                          Text(
+                            'Premium',
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: AppColors.warning,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             // Content
             Padding(
               padding: const EdgeInsets.all(AppSpacing.medium),

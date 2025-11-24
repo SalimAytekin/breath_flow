@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
-import 'package:provider/provider.dart';
-import 'dart:ui';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
-import '../constants/app_typography.dart';
 import '../widgets/global_background.dart';
 import '../widgets/professional_app_bar.dart';
-import '../providers/sleep_provider.dart';
+import 'package:provider/provider.dart';
+import '../providers/premium_provider.dart';
+import '../widgets/smart_premium_dialog.dart';
+import '../models/premium_trigger.dart';
+import 'package:intl/intl.dart';
+import '../ui/components/ad_container.dart';
 
 /// 📝 Premium Uyku Günlüğü Ekranı
 /// Kullanıcıların uyku notları, rüyalar ve gözlemlerini kaydetmesini sağlar
@@ -108,22 +110,27 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
 
   @override
   Widget build(BuildContext context) {
-    return GlobalBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        extendBodyBehindAppBar: true,
-        appBar: ProfessionalAppBar(
-          scrollController: _scrollController,
-          title: 'Uyku Günlüğü',
-          actions: [
-            IconButton(
-              icon: Icon(FeatherIcons.list, color: Colors.white),
-              onPressed: () => _showJournalHistory(context),
-              tooltip: 'Geçmiş Kayıtlar',
-            ),
-          ],
-        ),
-        body: AnimatedBuilder(
+    return GestureDetector(
+      onTap: () {
+        // Klavyeyi kapat
+        FocusScope.of(context).unfocus();
+      },
+      child: GlobalBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBodyBehindAppBar: true,
+          appBar: ProfessionalAppBar(
+            scrollController: _scrollController,
+            title: 'Uyku Günlüğü',
+            actions: [
+              IconButton(
+                icon: Icon(FeatherIcons.list, color: Colors.white),
+                onPressed: () => _showJournalHistory(context),
+                tooltip: 'Geçmiş Kayıtlar',
+              ),
+            ],
+          ),
+          body: AnimatedBuilder(
           animation: _fadeAnimation,
           builder: (context, child) {
             return Opacity(
@@ -146,6 +153,15 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
                       _buildPremiumHeader(),
                       
                       const SizedBox(height: AppSpacing.xLarge),
+                      
+                      // 💰 Banner Reklam - Natural placement (header sonrası)
+                      // Kullanıcı engage olmuş, eCPM daha yüksek olacak
+                      const AdContainer(
+                        placement: 'sleep_journal',
+                        margin: EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+                      ),
+                      
+                      const SizedBox(height: AppSpacing.large),
                       
                       // Date Selection
                       _buildDateSection(),
@@ -182,6 +198,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
               ),
             );
           },
+        ),
         ),
       ),
     );
@@ -404,8 +421,10 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
             children: _moods.map((mood) {
               final isSelected = selectedMood == mood['id'];
               return GestureDetector(
@@ -797,6 +816,10 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
       initialDate: selectedDate,
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now(),
+      locale: const Locale('tr', 'TR'), // Türkçe dil desteği
+      confirmText: 'Tamam',
+      cancelText: 'İptal',
+      helpText: 'Tarih Seç',
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -805,6 +828,11 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
               onPrimary: Colors.white,
               surface: AppColors.surface,
               onSurface: Colors.white,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+              ),
             ),
           ),
           child: child!,
@@ -819,6 +847,26 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
   }
 
   Future<void> _saveJournal() async {
+    // Premium olmayanlar için aylık 5 kayıt limiti
+    final premiumProvider = context.read<PremiumProvider>();
+    if (!premiumProvider.isPremiumUser) {
+      final now = DateTime.now();
+      final countThisMonth = _journalEntries.where((e) {
+        final d = e['date'] as DateTime;
+        return d.year == now.year && d.month == now.month;
+      }).length;
+
+      final isNewEntry = _editingIndex == null; // Yeni kayıt mı?
+      // Premium sistemi askıya alındı - limit kontrolü devre dışı
+      // if (isNewEntry && countThisMonth >= 5) {
+      //   final trigger = PremiumTrigger.predefinedTriggers.firstWhere(
+      //     (t) => t.targetFeatures.contains('premium_sleep') || t.targetFeatures.contains('all_features'),
+      //     orElse: () => PremiumTrigger.predefinedTriggers.first,
+      //   );
+      //   SmartPremiumDialog.show(context, trigger);
+      //   return;
+      // }
+    }
     if (_noteController.text.isEmpty && _dreamController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -837,6 +885,51 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
         ),
       );
       return;
+    }
+
+    // Aynı tarihte kayıt var mı kontrol et (düzenleme modu değilse)
+    if (_editingIndex == null) {
+      final existingIndex = _journalEntries.indexWhere((e) {
+        final entryDate = e['date'] as DateTime;
+        return entryDate.year == selectedDate.year &&
+               entryDate.month == selectedDate.month &&
+               entryDate.day == selectedDate.day;
+      });
+
+      if (existingIndex != -1) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppColors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Text(
+              'Bu Tarihte Kayıt Var',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: Text(
+              '${_formatDate(selectedDate)} tarihinde zaten bir günlük kaydınız var. Üzerine yazmak ister misiniz?',
+              style: TextStyle(color: Colors.white.withOpacity(0.8)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('İptal', style: TextStyle(color: Colors.white)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text('Üzerine Yaz', style: TextStyle(color: AppColors.primary)),
+              ),
+            ],
+          ),
+        );
+
+        if (confirmed != true) return;
+        
+        // Eski kaydı sil
+        _journalEntries.removeAt(existingIndex);
+      }
     }
 
     // Kayıt oluştur veya güncelle
@@ -872,7 +965,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
         ),
         backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 2),
+        duration: Duration(seconds: 4),
       ),
     );
 
@@ -891,138 +984,184 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
       orElse: () => _moods[2],
     );
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
+    final isLargeScreen = screenWidth > 600;
+    
     showDialog(
       context: context,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
-        child: Container(
+        child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
-            maxWidth: MediaQuery.of(context).size.width * 0.9,
+            maxWidth: isLargeScreen ? 500 : screenWidth * 0.95,
+            maxHeight: MediaQuery.of(context).size.height * 0.75,
+            minHeight: 200,
           ),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    Text(
-                      mood['emoji'],
-                      style: TextStyle(fontSize: 28),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _formatDate(entry['date']),
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Text(
-                            mood['label'],
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: mood['color'] as Color,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1,
               ),
-              
-              // Content (Scrollable)
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Row(
                     children: [
-                      if (entry['dream'].isNotEmpty) ...[
-                        Text(
-                          '💭 Rüya Notları',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.sleep,
-                          ),
+                      Text(
+                        mood['emoji'],
+                        style: TextStyle(fontSize: isSmallScreen ? 24 : 28),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _formatDate(entry['date']),
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 16 : 18,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              mood['label'],
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 12 : 14,
+                                color: mood['color'] as Color,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          entry['dream'],
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      if (entry['note'].isNotEmpty) ...[
-                        Text(
-                          '📝 Genel Notlar',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.energy,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          entry['note'],
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
+                      ),
                     ],
                   ),
                 ),
-              ),
-              
-              // Actions
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    TextButton.icon(
-                      icon: Icon(FeatherIcons.trash2, color: AppColors.error, size: 18),
-                      label: Text('Sil', style: TextStyle(color: AppColors.error)),
-                      onPressed: () => _deleteEntry(index),
+                
+                // Content (Scrollable)
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (entry['dream'].isNotEmpty) ...[
+                          Text(
+                            '💭 Rüya Notları',
+                            style: TextStyle(
+                              fontSize: isSmallScreen ? 12 : 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.sleep,
+                            ),
+                          ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          child: SelectableText(
+                            entry['dream'],
+                            style: TextStyle(
+                              fontSize: isSmallScreen ? 12 : 14,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                          ),
+                        ),
+                          const SizedBox(height: 16),
+                        ],
+                        if (entry['note'].isNotEmpty) ...[
+                          Text(
+                            '📝 Genel Notlar',
+                            style: TextStyle(
+                              fontSize: isSmallScreen ? 12 : 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.energy,
+                            ),
+                          ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          child: SelectableText(
+                            entry['note'],
+                            style: TextStyle(
+                              fontSize: isSmallScreen ? 12 : 14,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                          ),
+                        ),
+                          const SizedBox(height: 16),
+                        ],
+                      ],
                     ),
-                    TextButton.icon(
-                      icon: Icon(FeatherIcons.edit, color: AppColors.primary, size: 18),
-                      label: Text('Düzenle', style: TextStyle(color: AppColors.primary)),
-                      onPressed: () => _editEntry(entry, index),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('Kapat', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+                
+                // Actions
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => _deleteEntry(index),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(FeatherIcons.trash2, color: AppColors.error, size: 16),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text('Sil', style: TextStyle(color: AppColors.error, fontSize: 12)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => _editEntry(entry, index),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(FeatherIcons.edit, color: AppColors.primary, size: 16),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text('Düzenle', style: TextStyle(color: AppColors.primary, fontSize: 12)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          child: Text('Kapat', style: TextStyle(color: Colors.white, fontSize: 12)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1030,8 +1169,9 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
   }
 
   void _editEntry(Map<String, dynamic> entry, int index) {
-    // Önce modal'ı kapat
-    Navigator.pop(context);
+    // Tüm modal'ları kapat (detay + geçmiş kayıtlar)
+    Navigator.pop(context); // Detay dialog
+    Navigator.pop(context); // Geçmiş kayıtlar modal
     
     // Form alanlarını doldur
     _noteController.text = entry['note'];
@@ -1042,18 +1182,30 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
       _editingIndex = index; // Kayıt modunu düzenleme olarak işaretle
     });
 
+    // Scroll to top
+    _scrollController.animateTo(
+      0,
+      duration: Duration(milliseconds: 500),
+      curve: Curves.easeOut,
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
             Icon(FeatherIcons.edit, color: Colors.white),
             const SizedBox(width: 12),
-            Text('Düzenleme modu - Değişiklikleri kaydet'),
+            Expanded(child: Text('Düzenleme modu - Formu düzenleyip kaydedin')),
           ],
         ),
         backgroundColor: AppColors.primary,
         behavior: SnackBarBehavior.floating,
         duration: Duration(seconds: 3),
+        action: SnackBarAction(
+          label: 'Tamam',
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
       ),
     );
   }
@@ -1110,6 +1262,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
           ),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 4),
         ),
       );
     }

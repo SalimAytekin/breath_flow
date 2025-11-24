@@ -124,4 +124,106 @@ class AppStrings {
   static const String moreSounds = 'Daha Fazla Ses';
   static const String advancedBreathing = 'Gelişmiş Nefes Teknikleri';
   static const String aiRecommendations = 'AI Önerileri';
+  
+  // 🏠 Home Screen
+  static const String morningGreeting = 'Günaydın';
+  static const String afternoonGreeting = 'Tünaydın';
+  static const String eveningGreeting = 'İyi Akşamlar';
+  static const String nightGreeting = 'İyi Geceler';
+  
+  // Hero Cards
+  static const String energeticStart = 'Güne Enerjik Başla';
+  static const String energeticStartDesc = 'Sabah nefes egzersizi ile güne zindelikle başla';
+  static const String lunchBreak = 'Öğle Molası';
+  static const String lunchBreakDesc = '5 dakikalık nefes egzersizi ile zihni dinlendir';
+  static const String eveningRelax = 'Akşam Rahatlama';
+  static const String eveningRelaxDesc = 'Günü 5 dakikalık derin nefes ile tamamla';
+  static const String sleepPrep = 'Uykuya Hazırlan';
+  static const String sleepPrepDesc = 'Huzurlu bir uyku için rahatlatıcı nefes egzersizi';
+  
+  // Discover Section
+  static const String discover = 'Keşfedebileceklerin';
+  static const String boxBreathingTitle = 'Box Breathing';
+  static const String boxBreathingSubtitle = '4-4-4-4 ritmi ile odaklan';
+  static const String forestSounds = 'Orman Sesleri';
+  static const String forestSoundsSubtitle = 'Doğanın huzuruyla dinlen';
+  static const String binauralBeats = 'Binaural Beats';
+  static const String binauralBeatsSubtitle = 'Derin odaklanma için';
+  
+  // Weekly Summary
+  static const String thisWeek = 'Bu Hafta';
+  static const String activitySummary = 'Aktivite özeti';
+  static const String sessions = 'Seans';
+  static const String breath = 'Nefes';
+  static const String sound = 'Ses';
+  
+  // Motivational
+  static const String todaysInspiration = 'Bugünün İlhamı';
+  
+  // Time Labels
+  static const String fiveMinutes = '5 dakika';
+  
+  // 🆕 Home Screen - Mood Selector
+  static const String whatDoYouWantToDo = 'Ne yapmak istersin?';
+  static const String relaxationMood = 'Rahatlama';
+  static const String calmnessMood = 'Sakinleşme';
+  static const String sleepMood = 'Uyku';
+  static const String personalRecommendations = 'Sana Özel Öneriler';
+  
+  // 🆕 Motivational Messages
+  static const String letsStart = 'Hadi başlayalım!';
+  static const String firstSessionPrompt = 'İlk {activity} seansını yap 🌟';
+  static const String greatStart = 'Harika başlangıç! Devam et 💪';
+  static const String goingSuperb = 'Süper gidiyorsun! 🚀';
+  static const String amazingWeek = 'İnanılmaz! Harika bir hafta geçirdin! 🎉';
+  
+  // 🆕 Breathing Exercises
+  static const String awarenessBreath = 'Farkındalık Nefesi';
+  static const String awarenessBreathDesc = 'Rahatlatıcı nefes egzersizi';
+  static const String forestSoundsTitle = 'Orman Sesleri';
+  static const String forestSoundsDesc = 'Doğanın huzuru';
+  static const String extendedExhale = 'Uzunca Nefes Ver (4-6)';
+  static const String extendedExhaleDesc = 'Sakinleştirici ritim';
+  static const String heavyRainTitle = 'Sağanak Yağmur';
+  static const String heavyRainDesc = 'Huzurlu dinlenme';
+  static const String slowingBreath = 'Yavaşlatıcı Nefes';
+  static const String slowingBreathDesc = 'Huzurlu uykuya dalış';
+  static const String nightCrickets = 'Gece Böcekleri';
+  static const String nightCricketsDesc = 'Doğal uyku sesleri';
+  
+  // 🆕 Breathing Screen
+  static const String howManyCycles = 'Kaç tekrar yapmak istiyorsun?';
+  static const String cycles = 'tekrar';
+  static const String startCycles = 'Başlat ({count} tekrar)';
+  static const String backgroundSound = 'Arkaplan Sesi Seç';
+  static const String silence = 'Sessizlik';
+  
+  // 🆕 Weekly Summary Details
+  static const String session = 'Seans';
+  static const String breathActivity = 'Nefes';
+  static const String soundActivity = 'Ses';
+  
+  // 🆕 Error Messages
+  static const String connectionError = 'Bağlantı Hatası';
+  static const String checkConnection = 'İnternet bağlantınızı kontrol edin ve tekrar deneyin.';
+  static const String audioPlaybackError = 'Ses Oynatma Hatası';
+  static const String audioFailedToPlay = '{sound} çalınamadı. Lütfen tekrar deneyin.';
+  static const String tryAgain = 'Tekrar Dene';
+  
+  // 🆕 Breathing Categories
+  static const String focusAndConcentration = 'Odaklanma & Konsantrasyon';
+  static const String focusAndConcentrationDesc = 'Dikkatini tek bir noktaya yönlendir, düşüncelerini toparla';
+  static const String relaxationAndPeace = 'Rahatlama & Huzur';
+  static const String relaxationAndPeaceDesc = 'Derin bir nefesle gerginliği bırak ve bedenini gevşet';
+  static const String peacefulSleep = 'Huzurlu Uyku';
+  static const String peacefulSleepDesc = 'Bedenini ve zihnini dinlendir, yavaşça gevşe';
+  static const String energyAndVitality = 'Enerji & Zindelik';
+  static const String energyAndVitalityDesc = 'İçindeki enerjiyi uyandır ve günün tadını çıkar';
+  
+  // 🆕 Statistics
+  static const String dailyStreak = 'Günlük Seri';
+  static const String weeklyGoalLabel = 'Haftalık Hedef';
+  static const String completed = 'tamamlandı';
+  static const String goingGreat = 'Harika gidiyorsun!';
+  static const String letsGetStarted = 'Başlayalım!';
 } 

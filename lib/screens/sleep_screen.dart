@@ -1,20 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:animate_do/animate_do.dart';
-import '../constants/app_strings.dart';
 import '../constants/app_colors.dart';
 import '../models/sound_item.dart';
-import '../models/breathing_exercise.dart';
 import '../providers/audio_provider.dart';
-import '../providers/breathing_provider.dart';
-import '../providers/theme_provider.dart';
-import '../providers/sleep_provider.dart';
-import '../providers/story_provider.dart';
 import '../widgets/sound_player_card.dart';
-import '../widgets/sleep_stats_widget.dart';
-import '../widgets/story_series_card.dart';
-import '../screens/sleep_input_screen.dart';
-import '../screens/story_series_detail_screen.dart';
 import 'package:breathe_flow/widgets/professional_button.dart';
 import 'package:breathe_flow/widgets/professional_card.dart';
 import 'package:breathe_flow/constants/app_spacing.dart';
@@ -160,6 +149,9 @@ class _SleepScreenState extends State<SleepScreen> {
 
   Widget _buildSoundGrid(BuildContext context) {
     final audioProvider = context.watch<AudioProvider>();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
+    
     // Uykuya uygun sesleri night, nature ve ambient kategorilerinden birleştir
     final sleepCategories = SoundItem.allCategories.where((cat) =>
       cat.id == 'night' || cat.id == 'nature' || cat.id == 'ambient').toList();
@@ -169,11 +161,11 @@ class _SleepScreenState extends State<SleepScreen> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: AppSpacing.medium,
-        mainAxisSpacing: AppSpacing.medium,
-        childAspectRatio: 0.85,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: isSmallScreen ? 2 : 2,
+        crossAxisSpacing: isSmallScreen ? AppSpacing.small : AppSpacing.medium,
+        mainAxisSpacing: isSmallScreen ? AppSpacing.small : AppSpacing.medium,
+        childAspectRatio: isSmallScreen ? 0.9 : 0.85,
       ),
       itemCount: sleepSounds.length,
       itemBuilder: (context, index) {

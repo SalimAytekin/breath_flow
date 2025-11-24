@@ -29,7 +29,7 @@ class GlobalBackground extends StatelessWidget {
           ),
         ),
 
-        // 2. Floating aurora-like orbs for ambient light
+        // 2. Floating aurora-like orbs for ambient light (2 orb - performans için)
         Positioned(
           top: -50,
           left: -100,
@@ -39,11 +39,6 @@ class GlobalBackground extends StatelessWidget {
           bottom: -80,
           right: -80,
           child: _buildOrb(250, const Color(0xFF6B46C1), 0.12),
-        ),
-        Positioned(
-          top: 200,
-          right: 50,
-          child: _buildOrb(180, const Color(0xFF4C6EF5), 0.08),
         ),
 
         // 3. Subtle animated shimmer overlay for a touch of magic
@@ -63,20 +58,17 @@ class GlobalBackground extends StatelessWidget {
           ),
         ),
 
-        // 4. Gentle blur layer for depth and to soften the orbs
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.02),
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.03),
-                ],
-              ),
+        // 4. Gentle overlay for depth (BackdropFilter kaldırıldı - performans için)
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withOpacity(0.02),
+                Colors.transparent,
+                Colors.black.withOpacity(0.03),
+              ],
             ),
           ),
         ),

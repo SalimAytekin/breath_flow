@@ -1,5 +1,6 @@
 import 'package:breathe_flow/services/auth_service.dart';
 import 'package:breathe_flow/screens/signup_screen.dart';
+import 'package:breathe_flow/screens/main_navigation_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:breathe_flow/constants/app_colors.dart';
 import 'package:breathe_flow/constants/app_typography.dart';
@@ -26,19 +27,40 @@ class _LoginScreenState extends State<LoginScreen> {
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
       
-      final result = await _authService.signInWithEmail(email, password);
+      try {
+        final result = await _authService.signInWithEmail(email, password);
 
-      if (result == null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Giriş başarısız. Lütfen bilgilerinizi kontrol edin.'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+        if (result != null && mounted) {
+          // Giriş başarılı, ana sayfaya yönlendir
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+          );
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Giriş başarısız. Lütfen bilgilerinizi kontrol edin.'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Giriş hatası: $e'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
       }
+      
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -55,6 +77,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
 
     return Scaffold(
       body: Container(
@@ -65,7 +89,9 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: EdgeInsets.symmetric(
+              horizontal: isSmallScreen ? 16.0 : 24.0,
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -75,8 +101,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 // App icon
                 Center(
                   child: Container(
-                    width: 80,
-                    height: 80,
+                    width: isSmallScreen ? 70 : 80,
+                    height: isSmallScreen ? 70 : 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: AppColors.primaryGradient,
@@ -88,21 +114,22 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.self_improvement,
-                      size: 40,
+                      size: isSmallScreen ? 35 : 40,
                       color: Colors.white,
                     ),
                   ),
                 ),
                 
-                const SizedBox(height: 32),
+                SizedBox(height: isSmallScreen ? 24 : 32),
                 
                 Text(
                   'Tekrar Hoş Geldin',
                   style: AppTypography.displayMedium.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
+                    fontSize: isSmallScreen ? 22 : 28,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -122,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 // Login form
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(isSmallScreen ? 20 : 24),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceElevated.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(24),

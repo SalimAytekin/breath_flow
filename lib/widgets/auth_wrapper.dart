@@ -10,27 +10,22 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
 
-    return StreamBuilder<AppUser?>(
-      stream: authService.user,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
+    if (authProvider.isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
-        if (snapshot.hasData && snapshot.data != null) {
-          // User is logged in, show the main app
-          return const HomeScreen(); // Or your main navigation screen
-        } else {
-          // User is not logged in, show the login screen
-          return const LoginScreen();
-        }
-      },
-    );
+    if (authProvider.isAuthenticated && authProvider.user != null) {
+      // User is logged in, show the main app
+      return const HomeScreen(); // Or your main navigation screen
+    } else {
+      // User is not logged in, show the login screen
+      return const LoginScreen();
+    }
   }
 } 

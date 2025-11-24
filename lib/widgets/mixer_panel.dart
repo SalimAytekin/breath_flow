@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import '../providers/audio_provider.dart';
-import '../providers/premium_provider.dart';
 import '../models/sound_item.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
@@ -21,6 +20,8 @@ class MixerPanel extends StatefulWidget {
 class _MixerPanelState extends State<MixerPanel> with TickerProviderStateMixin {
   bool _isExpanded = false;
   late final AnimationController _animationController;
+  AudioProvider? _audioProvider; // Provider referansını sakla
+  int _previousMixerCount = 0; // Önceki mixer ses sayısı
 
   @override
   void initState() {
@@ -32,8 +33,26 @@ class _MixerPanelState extends State<MixerPanel> with TickerProviderStateMixin {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Provider referansını güvenli şekilde al
+    _audioProvider = Provider.of<AudioProvider>(context, listen: false);
+  }
+
+  @override
   void dispose() {
     _animationController.dispose();
+    
+    // 🎵 Mixer panel dispose edilirken sesleri durdur
+    // NOT: Context kullanmıyoruz, sadece önceden alınmış provider referansını kullanıyoruz
+    try {
+      if (_audioProvider != null && _audioProvider!.isMixerActive) {
+        _audioProvider!.stopAllSounds();
+      }
+    } catch (e) {
+      // Hata sessizce yoksayılır
+    }
+    
     super.dispose();
   }
 
@@ -56,6 +75,20 @@ class _MixerPanelState extends State<MixerPanel> with TickerProviderStateMixin {
     if (mixerSounds.isEmpty) {
       return const SizedBox.shrink();
     }
+
+    // İlk ses eklendiğinde veya ses sayısı artınca panel'i otomatik aç
+    final currentCount = mixerSounds.length;
+    if (currentCount > _previousMixerCount && !_isExpanded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_isExpanded) {
+          setState(() {
+            _isExpanded = true;
+            _animationController.forward();
+          });
+        }
+      });
+    }
+    _previousMixerCount = currentCount;
 
     return Positioned(
       bottom: 0,

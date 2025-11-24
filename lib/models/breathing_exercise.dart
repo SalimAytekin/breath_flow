@@ -1,5 +1,4 @@
-import '../constants/app_strings.dart';
-import 'package:flutter/material.dart';
+import '../services/asset_manager.dart';
 
 enum BreathingType {
   boxBreathing,
@@ -46,8 +45,9 @@ class BreathingExercise {
   final ExerciseDifficulty difficulty;
   final int defaultDuration; // dakika cinsinden
   final bool isPremium;
+  final String imagePath;
 
-  const BreathingExercise({
+  BreathingExercise({
     required this.type,
     required this.name,
     required this.description,
@@ -55,6 +55,7 @@ class BreathingExercise {
     required this.steps,
     required this.category,
     required this.difficulty,
+    required this.imagePath,
     this.defaultDuration = 5,
     this.isPremium = false,
   });
@@ -63,17 +64,25 @@ class BreathingExercise {
     final relevantSteps = steps
         .where((s) =>
             s.type == BreathingStepType.inhale ||
-            s.type == BreathingStepType.hold ||
-            s.type == BreathingStepType.exhale ||
-            s.type == BreathingStepType.holdAfterExhale)
+            s.type == BreathingStepType.exhale)
         .toList();
-    return relevantSteps
-        .map((step) => '${step.duration}sn ${_getStepName(step.type)}')
-        .join(' · ');
+    
+    if (relevantSteps.isEmpty) return '';
+    
+    final inhaleStep = relevantSteps.firstWhere(
+      (s) => s.type == BreathingStepType.inhale,
+      orElse: () => relevantSteps.first,
+    );
+    final exhaleStep = relevantSteps.firstWhere(
+      (s) => s.type == BreathingStepType.exhale,
+      orElse: () => relevantSteps.last,
+    );
+    
+    return '${inhaleStep.duration}sn ${_getStepTypeText(inhaleStep.type)} - ${exhaleStep.duration}sn ${_getStepTypeText(exhaleStep.type)}';
   }
 
-  String _getStepName(BreathingStepType type) {
-    switch (type) {
+  String _getStepTypeText(BreathingStepType stepType) {
+    switch (stepType) {
       case BreathingStepType.inhale:
         return 'al';
       case BreathingStepType.hold:
@@ -87,14 +96,14 @@ class BreathingExercise {
     }
   }
 
-  /// Bir döngünün toplam süresini saniye cinsinden döndürür
+  /// Bir tekrarnün toplam süresini saniye cinsinden döndürür
   int get totalDuration {
     return steps.fold<int>(0, (total, step) => total + step.duration);
   }
 
   static List<BreathingExercise> get allExercises => [
         // =========== ODAKLANMA VE DİKKAT ===========
-        const BreathingExercise(
+        BreathingExercise(
           type: BreathingType.boxBreathing,
           name: 'Kutu Nefesi (4-4-4-4)',
           description:
@@ -108,8 +117,9 @@ class BreathingExercise {
           ],
           category: BreathingCategory.odaklanma,
           difficulty: ExerciseDifficulty.beginner,
+          imagePath: AssetManager.kutuNefesi,
         ),
-        const BreathingExercise(
+        BreathingExercise(
           type: BreathingType.custom,
           name: 'Basit Sayma Nefesi',
           description:
@@ -121,8 +131,10 @@ class BreathingExercise {
           ],
           category: BreathingCategory.odaklanma,
           difficulty: ExerciseDifficulty.beginner,
+          imagePath: AssetManager.basitSaymaNefesi,
+          isPremium: true, // Premium egzersiz
         ),
-        const BreathingExercise(
+        BreathingExercise(
           type: BreathingType.deepBreathing,
           name: 'Farkındalık Nefesi',
           description:
@@ -134,10 +146,12 @@ class BreathingExercise {
           ],
           category: BreathingCategory.odaklanma,
           difficulty: ExerciseDifficulty.beginner,
+          imagePath: AssetManager.farkindalikNefesi,
+          isPremium: true, // Premium egzersiz
         ),
 
         // =========== SAKİNLEŞME VE STRES AZALTMA ===========
-        const BreathingExercise(
+        BreathingExercise(
           type: BreathingType.extendedExhale,
           name: 'Uzunca Nefes Ver (4-6)',
           description:
@@ -149,8 +163,9 @@ class BreathingExercise {
           ],
           category: BreathingCategory.kaygiVeStres,
           difficulty: ExerciseDifficulty.beginner,
+          imagePath: AssetManager.uzuncaNefesVer,
         ),
-        const BreathingExercise(
+        BreathingExercise(
           type: BreathingType.diaphragmaticBreathing,
           name: 'Diyafram Nefesi',
           description:
@@ -162,94 +177,105 @@ class BreathingExercise {
           ],
           category: BreathingCategory.kaygiVeStres,
           difficulty: ExerciseDifficulty.beginner,
+          imagePath: AssetManager.diyaframNefesi,
+          isPremium: true, // Premium egzersiz
         ),
-        const BreathingExercise(
+        BreathingExercise(
           type: BreathingType.samaVritti,
           name: 'Eşit Nefes',
           description:
-              'Nefesi aynı sürede alıp ver. Zihinsel denge ve iç huzur sağlar.',
-          purpose: 'Zihinsel Denge',
+              'Nefes alma ve verme sürelerini eşitleyerek sinir sistemini dengeleyin.',
+          purpose: 'Sistem Dengesi',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: '4 saniyede nefes al'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 4, instruction: 'Aynı sürede bırak'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 5, instruction: 'Eşit bir nefes al (5 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 5, instruction: 'Eşit bir nefes ver (5 sn)'),
           ],
           category: BreathingCategory.kaygiVeStres,
           difficulty: ExerciseDifficulty.beginner,
+          imagePath: AssetManager.esitNefes,
+          isPremium: true, // Premium egzersiz
         ),
 
         // =========== UYKU VE RAHATLAMA ===========
-        const BreathingExercise(
-          type: BreathingType.custom,
+        BreathingExercise(
+          type: BreathingType.moonBreathing,
           name: 'Yavaşlatıcı Nefes',
           description:
-              'Her nefeste ritmi biraz daha yavaşlat. Bedenini uykuya hazırlar.',
-          purpose: 'Uyku Hazırlığı',
+              'Nefes ritmini yavaşlatarak kalp atış hızını düşürür ve uykuya hazırlar.',
+          purpose: 'Uykuya Hazırlık',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 5, instruction: 'Nefesini yavaşça al (5 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 7, instruction: 'Şimdi daha yavaş şekilde bırak (7 sn)'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 4, instruction: 'Yavaşça nefes al (4 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 8, instruction: 'Çok yavaşça ve uzun bırak (8 sn)'),
           ],
           category: BreathingCategory.uykuVeRahatlama,
           difficulty: ExerciseDifficulty.beginner,
+          imagePath: AssetManager.yavaslaticiNefes,
         ),
-        const BreathingExercise(
+        BreathingExercise(
           type: BreathingType.bodyScan,
           name: 'Beden Farkındalığı Nefesi',
           description:
-              'Nefes alırken bedenine odaklan. Gerginlikleri fark et ve bırak.',
-          purpose: 'Vücut Farkındalığı',
+              'Nefes alırken bedenin farklı bölgelerine odaklanarak gerginliği serbest bırakır.',
+          purpose: 'Beden Gevşetme',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 5, instruction: 'Nefesine odaklan, bedenini hisset (5 sn)'),
-            BreathingStep(type: BreathingStepType.hold, duration: 2, instruction: 'Kısa bir an nefesini tut ve hisset (2 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 6, instruction: 'Şimdi bırak gitsin, rahatla (6 sn)'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 5, instruction: 'Nefes alırken bedenini tarayın (5 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 5, instruction: 'Gerginliği bırakarak verin (5 sn)'),
           ],
           category: BreathingCategory.uykuVeRahatlama,
           difficulty: ExerciseDifficulty.beginner,
+          imagePath: AssetManager.bedenFarkindaligiNefesi,
+          isPremium: true, // Premium egzersiz
         ),
-        const BreathingExercise(
-          type: BreathingType.diaphragmaticBreathing,
-          name: 'Gevşeme Nefesi (3-6)',
+        BreathingExercise(
+          type: BreathingType.progressiveRelaxation,
+          name: 'Gevşeme Nefesi',
           description:
-              'Kısa nefes al, uzun nefes ver. Vücudun derin rahatlama yaşar.',
+              'Derin bir rahatlama hissi yaratır ve uykuya geçişi kolaylaştırır.',
           purpose: 'Derin Gevşeme',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 3, instruction: 'Kısa bir nefes al (3 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 6, instruction: 'Uzunca bırak, gevşemene izin ver (6 sn)'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 6, instruction: 'Derin bir nefes al (6 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 6, instruction: 'Tüm gerginliği bırak (6 sn)'),
           ],
           category: BreathingCategory.uykuVeRahatlama,
           difficulty: ExerciseDifficulty.beginner,
+          imagePath: AssetManager.gevseemeNefesi,
+          isPremium: true, // Premium egzersiz
         ),
 
-        // =========== ENERJİ VE CANLANMA ===========
-        const BreathingExercise(
+        // =========== ENERJİ VE CANLILIK ===========
+        BreathingExercise(
           type: BreathingType.diaphragmaticBreathing,
           name: 'Canlandırıcı Diyafram',
           description:
               'Diyaframdan derin nefes alıp vermek bedene enerji kazandırır.',
-          purpose: 'Doğal Canlanma',
+          purpose: 'Enerji Artırma',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 5, instruction: 'Karnından derin bir nefes al (5 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 5, instruction: 'Aynı derinlikte bırak (5 sn)'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 5, instruction: 'Diyaframdan derin nefes al (5 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 5, instruction: 'Enerjiyle bırak gitsin (5 sn)'),
           ],
           category: BreathingCategory.enerjiVeCanlilik,
           difficulty: ExerciseDifficulty.beginner,
+          imagePath: AssetManager.canlandiriciDiyafram,
         ),
-        const BreathingExercise(
-          type: BreathingType.deepBreathing,
+        BreathingExercise(
+          type: BreathingType.stimulatingBreath,
           name: 'Sabah Nefesi',
           description:
               'Güne derin ve canlı nefeslerle başla. Sabah enerjini yükseltir.',
-          purpose: 'Güne Başlama',
+          purpose: 'Sabah Enerjisi',
           steps: [
-            BreathingStep(type: BreathingStepType.inhale, duration: 6, instruction: 'Derin bir nefesle sabahı içine çek (6 sn)'),
-            BreathingStep(type: BreathingStepType.hold, duration: 2, instruction: 'Biraz bekle, enerjiyi hisset (2 sn)'),
-            BreathingStep(type: BreathingStepType.exhale, duration: 4, instruction: 'Şimdi nefesini canlı bir şekilde bırak (4 sn)'),
+            BreathingStep(type: BreathingStepType.inhale, duration: 6, instruction: 'Sabah enerjisiyle nefes al (6 sn)'),
+            BreathingStep(type: BreathingStepType.hold, duration: 2, instruction: 'Enerjiyi içinde tut (2 sn)'),
+            BreathingStep(type: BreathingStepType.exhale, duration: 4, instruction: 'Canlılıkla bırak (4 sn)'),
           ],
           category: BreathingCategory.enerjiVeCanlilik,
           difficulty: ExerciseDifficulty.beginner,
+          imagePath: AssetManager.sabahNefesi,
+          isPremium: true, // Premium egzersiz
         ),
-        const BreathingExercise(
+        BreathingExercise(
           type: BreathingType.resonanceBreathing,
-          name: 'Güne Başlama Nefesi (6-4)',
+          name: 'Güne Başlama Nefesi',
           description:
               'Pozitif enerjiyle nefes al, hafif şekilde ver. Güne hazırlar.',
           purpose: 'Pozitif Enerji',
@@ -259,6 +285,8 @@ class BreathingExercise {
           ],
           category: BreathingCategory.enerjiVeCanlilik,
           difficulty: ExerciseDifficulty.beginner,
+          imagePath: AssetManager.guneBaslamaNefesi,
+          isPremium: true, // Premium egzersiz
         ),
       ];
 
@@ -289,4 +317,4 @@ enum BreathingState {
   running,
   paused,
   completed,
-} 
+}

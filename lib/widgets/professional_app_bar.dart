@@ -18,12 +18,14 @@ class ProfessionalAppBar extends StatefulWidget implements PreferredSizeWidget {
   final ScrollController scrollController;
   final String title;
   final List<Widget>? actions;
+  final VoidCallback? onBackPressed;
 
   const ProfessionalAppBar({
     super.key,
     required this.scrollController,
     required this.title,
     this.actions,
+    this.onBackPressed,
   });
 
   @override
@@ -64,6 +66,9 @@ class _ProfessionalAppBarState extends State<ProfessionalAppBar> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
+    
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
@@ -72,12 +77,17 @@ class _ProfessionalAppBarState extends State<ProfessionalAppBar> {
           elevation: 0,
           centerTitle: true,
           title: Text(
-            widget.title, 
-            style: AppTypography.headlineSmall.copyWith(color: Colors.white)
+            widget.title,
+            style: AppTypography.headlineSmall.copyWith(
+              color: Colors.white,
+              fontSize: isSmallScreen ? 18 : 20,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           leading: IconButton(
             icon: const Icon(FeatherIcons.arrowLeft, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: widget.onBackPressed ?? () => Navigator.of(context).pop(),
           ),
           actions: widget.actions?.map((action) {
             if (action is IconButton) {
