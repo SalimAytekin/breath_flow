@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+import '../constants/app_strings.dart';
 
 /// A/B Test sistemi - Premium fiyatlandırma optimizasyonu
 class ABTestService {
@@ -74,34 +75,34 @@ class ABTestService {
     switch (variant) {
       case 'A':
         return {
-          'monthly': '₺19,99/ay',
-          'yearly': '₺199,99/yıl',
-          'trial': '7 gün ücretsiz',
-          'discount': '₺9,99/ay',
+          'monthly': '₺19,99${AppStrings.priceMonthly}',
+          'yearly': '₺199,99${AppStrings.priceYearly}',
+          'trial': AppStrings.priceTrial7Days,
+          'discount': '₺9,99${AppStrings.priceMonthly}',
           'original': '₺19,99',
         };
       case 'B':
         return {
-          'monthly': '₺14,99/ay',
-          'yearly': '₺149,99/yıl',
-          'trial': '7 gün ücretsiz',
-          'discount': '₺7,99/ay',
+          'monthly': '₺14,99${AppStrings.priceMonthly}',
+          'yearly': '₺149,99${AppStrings.priceYearly}',
+          'trial': AppStrings.priceTrial7Days,
+          'discount': '₺7,99${AppStrings.priceMonthly}',
           'original': '₺14,99',
         };
       case 'C':
         return {
-          'monthly': '₺29,99/ay',
-          'yearly': '₺299,99/yıl',
-          'trial': '7 gün ücretsiz',
-          'discount': '₺14,99/ay',
+          'monthly': '₺29,99${AppStrings.priceMonthly}',
+          'yearly': '₺299,99${AppStrings.priceYearly}',
+          'trial': AppStrings.priceTrial7Days,
+          'discount': '₺14,99${AppStrings.priceMonthly}',
           'original': '₺29,99',
         };
       default:
         return {
-          'monthly': '₺19,99/ay',
-          'yearly': '₺199,99/yıl',
-          'trial': '7 gün ücretsiz',
-          'discount': '₺9,99/ay',
+          'monthly': '₺19,99${AppStrings.priceMonthly}',
+          'yearly': '₺199,99${AppStrings.priceYearly}',
+          'trial': AppStrings.priceTrial7Days,
+          'discount': '₺9,99${AppStrings.priceMonthly}',
           'original': '₺19,99',
         };
     }

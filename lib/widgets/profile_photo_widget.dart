@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../constants/app_strings.dart';
 import 'package:breathe_flow/services/auth_service.dart';
 import 'package:breathe_flow/constants/app_colors.dart';
 import 'package:breathe_flow/constants/app_typography.dart';
@@ -233,7 +234,7 @@ class _ProfilePhotoWidgetState extends State<ProfilePhotoWidget> {
             const SizedBox(height: 24),
             
                          Text(
-               'Profil Fotoğrafı',
+               AppStrings.profilePhotoTitle,
                style: AppTypography.headlineSmall.copyWith(
                  color: AppColors.textPrimary,
                ),
@@ -243,7 +244,7 @@ class _ProfilePhotoWidgetState extends State<ProfilePhotoWidget> {
             // Kameradan çek
             _buildOptionTile(
               icon: Icons.camera_alt,
-              title: 'Kameradan Çek',
+              title: AppStrings.takeFromCamera,
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.camera);
@@ -255,7 +256,7 @@ class _ProfilePhotoWidgetState extends State<ProfilePhotoWidget> {
             // Galeriden seç
             _buildOptionTile(
               icon: Icons.photo_library,
-              title: 'Galeriden Seç',
+              title: AppStrings.chooseFromGallery,
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
@@ -267,7 +268,7 @@ class _ProfilePhotoWidgetState extends State<ProfilePhotoWidget> {
               // Fotoğrafı sil
               _buildOptionTile(
                 icon: Icons.delete,
-                title: 'Fotoğrafı Sil',
+                title: AppStrings.deletePhoto,
                 onTap: () {
                   Navigator.pop(context);
                   _deletePhoto();

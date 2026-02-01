@@ -8,9 +8,9 @@ import 'package:breathe_flow/providers/premium_provider.dart';
 import 'package:breathe_flow/providers/sleep_provider.dart';
 import 'package:breathe_flow/providers/user_preferences_provider.dart';
 import 'package:breathe_flow/providers/exercise_tracking_provider.dart';
-// 📦 FUTURE: Auth sistemi için
-// import 'package:breathe_flow/screens/auth_wrapper.dart';
-import 'package:breathe_flow/screens/main_navigation_screen.dart';
+import 'package:breathe_flow/providers/journal_provider.dart';
+import 'package:breathe_flow/providers/auth_provider.dart';
+import 'package:breathe_flow/screens/auth_wrapper.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +18,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -74,6 +75,9 @@ void main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     
+    // 🌍 Easy Localization başlat
+    await EasyLocalization.ensureInitialized();
+    
     // ⚡ Sadece Firebase'i bekle - UI'yı bloklamadan
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     
@@ -89,7 +93,18 @@ void main() async {
 
     // 🌐 HEMEN UYGULAMAYI BAŞLAT - Splash screen göster
     // Splash screen'de diğer servisler yüklenecek
-    runApp(const MyApp());
+    runApp(
+      EasyLocalization(
+        supportedLocales: const [
+          Locale('tr', 'TR'),
+          Locale('en', 'US'),
+        ],
+        path: 'assets/translations',
+        fallbackLocale: const Locale('tr', 'TR'),
+        useOnlyLangCode: false, // tr-TR.json formatı için
+        child: const MyApp(),
+      ),
+    );
   }, (error, stack) {
     // 🚨 Zone içindeki uncaught error'ları yakala
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
@@ -125,6 +140,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SeamlessAudioProvider()),
         ChangeNotifierProvider(create: (_) => BreathingProvider()),
         ChangeNotifierProvider(create: (_) => SleepProvider()),
+        ChangeNotifierProvider(create: (_) => JournalProvider()),
         ChangeNotifierProvider(create: (_) => PremiumProvider()),
         ChangeNotifierProvider(create: (_) => ExerciseTrackingProvider()),
         // ChangeNotifierProvider(create: (_) {
@@ -138,8 +154,8 @@ class MyApp extends StatelessWidget {
           provider.initialize();
           return provider;
         }),
-        // 📦 FUTURE: Auth sistemi - Şimdilik devre dışı (local-only data)
-        // ChangeNotifierProvider(create: (_) => AuthProvider()),
+        // 🔐 Auth sistemi aktif
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -164,17 +180,10 @@ class MyApp extends StatelessWidget {
                     : child!,
               );
             },
-            // Türkçe dil desteği
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [
-              Locale('tr', 'TR'),
-              Locale('en', 'US'),
-            ],
-            locale: const Locale('tr', 'TR'),
+            // 🌍 Çoklu dil desteği - easy_localization
+            localizationsDelegates: context.localizationDelegates,
+            supportedLocales: context.supportedLocales,
+            locale: context.locale,
           );
         },
       ),
@@ -219,7 +228,10 @@ class _AppInitializerState extends State<AppInitializer> {
         if (kDebugMode) debugPrint('⚠️ Servis yükleme hatası: $e');
       });
       
-      // 🔙 DİĞER SERVİSLERİ HEMEN ARKA PLANDA YÜKLE (non-blocking)
+      // � Firestore sync callback'lerini ayarla
+      _setupSyncCallbacks();
+      
+      // �🔙 DİĞER SERVİSLERİ HEMEN ARKA PLANDA YÜKLE (non-blocking)
       _initializeNonCriticalServices();
       
     } catch (e) {
@@ -229,6 +241,87 @@ class _AppInitializerState extends State<AppInitializer> {
         setState(() => _isInitialized = true);
       }
     }
+  }
+  
+  // 🔄 Firestore sync callback'lerini ayarla
+  void _setupSyncCallbacks() {
+    try {
+      // Provider'ları al
+      final userPrefsProvider = Provider.of<UserPreferencesProvider>(context, listen: false);
+      final premiumProvider = Provider.of<PremiumProvider>(context, listen: false);
+      final sleepProvider = Provider.of<SleepProvider>(context, listen: false);
+      final journalProvider = Provider.of<JournalProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      // 🔄 Kullanıcı giriş yaptığında
+      authProvider.setOnUserLoggedIn((String userId) async {
+        if (kDebugMode) debugPrint('🔄 Kullanıcı giriş yaptı - Full sync başlatılıyor... (userId: $userId)');
+        
+        // 🔐 PaymentService'e kullanıcı ID'sini bildir
+        PaymentService.instance.setCurrentUserId(userId);
+        
+        // Firestore sync
+        await Future.wait([
+          userPrefsProvider.performFullSync(),
+          premiumProvider.performFullSync(),
+          sleepProvider.performFullSync(),
+          journalProvider.performFullSync(),
+        ]);
+        
+        // 🔄 Google Play'den premium durumunu restore et (tek çağrı)
+        await premiumProvider.restorePurchases();
+        
+        if (kDebugMode) debugPrint('✅ Full sync tamamlandı');
+      });
+      
+      // 👋 Kullanıcı çıkış yaptığında - GÜVENLİK: Tüm kullanıcı verilerini temizle
+      authProvider.setOnUserLoggedOut(() async {
+        if (kDebugMode) debugPrint('👋 Kullanıcı çıkış yaptı - Tüm veriler temizleniyor...');
+        
+        // 🔐 PaymentService'e kullanıcı çıkışını bildir
+        PaymentService.instance.setCurrentUserId(null);
+        
+        // 🔒 GÜVENLİK: Tüm kullanıcı verilerini temizle
+        // Böylece yeni giriş yapan kullanıcı önceki kullanıcının verilerini göremez
+        await Future.wait([
+          premiumProvider.clearAllDataOnLogout(),
+          userPrefsProvider.clearAllDataOnLogout(),
+          sleepProvider.clearAllDataOnLogout(),
+          journalProvider.clearAllDataOnLogout(),
+        ]);
+        
+        if (kDebugMode) debugPrint('✅ Çıkış tamamlandı - Tüm veriler temizlendi');
+      });
+      
+      if (kDebugMode) {
+        debugPrint('🔄 Sync callbacks hazır - Auth aktif!');
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Sync callback hatası: $e');
+    }
+  }
+  
+  // 🔄 Otomatik Premium Restore - Sadece giriş yapılmamışsa çalışır
+  void _autoRestorePremium() {
+    Future.microtask(() async {
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        
+        // Kullanıcı giriş yapmışsa login callback zaten restore yapıyor
+        if (authProvider.isAuthenticated) {
+          if (kDebugMode) debugPrint('🔄 Kullanıcı giriş yapmış - login callback restore yapacak');
+          return;
+        }
+        
+        // Giriş yapılmamışsa local restore yap
+        final premiumProvider = Provider.of<PremiumProvider>(context, listen: false);
+        await premiumProvider.restorePurchases();
+        
+        if (kDebugMode) debugPrint('🔄 Otomatik Premium Restore tamamlandı');
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ Otomatik premium restore hatası: $e');
+      }
+    });
   }
   
   // 🌐 Kritik olmayan servisleri arka planda yükle
@@ -253,6 +346,9 @@ class _AppInitializerState extends State<AppInitializer> {
         }
         
         debugPrint('✅ Arka plan servisleri hazır!');
+        
+        // 🔄 Otomatik Premium Restore - Uygulama açılışında
+        _autoRestorePremium();
       } catch (e) {
         debugPrint('⚠️ Arka plan servis hatası: $e');
       }
@@ -265,11 +361,8 @@ class _AppInitializerState extends State<AppInitializer> {
       return const BeautifulSplashScreen();
     }
 
-    // 📦 FUTURE: Auth sistemi aktif olduğunda AuthWrapper kullanılacak
-    // return const AuthWrapper();
-    
-    // 🚀 Şimdilik direkt ana ekrana geç (local-only data için)
-    return const MainNavigationScreen();
+    // 🔐 Auth sistemi aktif - Giriş kontrolü
+    return const AuthWrapper();
   }
 }
 

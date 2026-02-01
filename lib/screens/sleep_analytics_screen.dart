@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:ui';
 import 'dart:math' as math;
 
 import '../constants/app_colors.dart';
+import '../constants/app_strings.dart';
 import '../constants/app_typography.dart';
 import '../providers/sleep_provider.dart';
 import '../widgets/global_background.dart';
@@ -193,7 +195,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
             ),
           ),
           title: Text(
-            'Uyku Analizi',
+            AppStrings.sleepAnalysisMainTitle,
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -259,7 +261,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
           const SizedBox(height: 40),
           
           Text(
-            'Uyku Analiziniz Hazırlanıyor',
+            AppStrings.preparingAnalysis,
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w800,
@@ -272,7 +274,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
           const SizedBox(height: 16),
           
           Text(
-            'Uyku düzeninizi analiz etmeye başlamak için\nilk verinizi girin ve kişiselleştirilmiş\nönerilerinizi keşfedin.',
+            AppStrings.startAnalysisDesc,
             style: TextStyle(
               fontSize: 16,
               color: Colors.white.withOpacity(0.7),
@@ -309,7 +311,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
             child: ElevatedButton.icon(
               icon: Icon(FeatherIcons.plus, color: Colors.white, size: 20),
               label: Text(
-                'İlk Uykunu Kaydet',
+                AppStrings.recordFirstSleep,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -348,39 +350,197 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Uyku Takip Özeti (Tıklanabilir)
+          // Uyku Takip Özeti (Tıklanabilir) - Herkese açık
           _buildPremiumStatsCard(context, sleepProvider),
           
           const SizedBox(height: 24),
           
-          // Sleep Debt Card with improved logic
+          // Sleep Debt Card - Herkese açık
           _buildPremiumSleepDebtCard(context, sleepProvider),
-          
-          // Sağlık Durumu Kartı artık her zaman 8 saat standarda göre çalışır
-          // Bu bölüm kaldırıldı çünkü artık hedef belirleme yok
           
           const SizedBox(height: 24),
           
-          // Weekly Overview Cards (basic visible for all)
+          // Weekly Overview Cards - Herkese açık
           _buildPremiumOverviewCards(context, sleepProvider),
           
           const SizedBox(height: 24),
           
-          // Weekly Trend Chart - Premium sistemi askıya alındı, herkese açık
-          _buildPremiumTrendChart(context, sleepProvider),
+          // 🔒 Weekly Trend Chart - Premium özellik
+          if (isPremium)
+            _buildPremiumTrendChart(context, sleepProvider)
+          else
+            _buildPremiumLockedCard(
+              context,
+              title: AppStrings.weeklyTrendChart,
+              description: AppStrings.trackTrendsVisually,
+              icon: FeatherIcons.trendingUp,
+              featureId: PremiumProvider.featureSleepAnalytics,
+            ),
            
           const SizedBox(height: 24),
            
-          // Monthly Summary Card - Premium sistemi askıya alındı, herkese açık
-          _buildMonthlySummaryCard(context, sleepProvider),
+          // 🔒 Monthly Summary Card - Premium özellik
+          if (isPremium)
+            _buildMonthlySummaryCard(context, sleepProvider)
+          else
+            _buildPremiumLockedCard(
+              context,
+              title: AppStrings.monthlySummaryTitle,
+              description: AppStrings.monthlyStatsDesc,
+              icon: FeatherIcons.calendar,
+              featureId: PremiumProvider.featureSleepAnalytics,
+            ),
            
           const SizedBox(height: 24),
            
-          // Sleep Records - Premium sistemi askıya alındı, herkese açık
+          // Sleep Records - Herkese açık (son 7 kayıt)
           _buildPremiumSleepRecords(context, sleepProvider),
            
           const SizedBox(height: 100), // Extra space for FAB
         ],
+      ),
+    );
+  }
+  
+  // 🔒 Premium Kilitli Kart
+  Widget _buildPremiumLockedCard(
+    BuildContext context, {
+    required String title,
+    required String description,
+    required IconData icon,
+    required String featureId,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        final trigger = PremiumTrigger.predefinedTriggers.firstWhere(
+          (t) => t.targetFeatures.contains(featureId),
+          orElse: () => PremiumTrigger.predefinedTriggers.first,
+        );
+        SmartPremiumDialog.show(context, trigger);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withOpacity(0.08),
+              Colors.white.withOpacity(0.04),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.premium.withOpacity(0.3),
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.premium.withOpacity(0.3),
+                        AppColors.premium.withOpacity(0.15),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: AppColors.premium, size: 24),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.premium.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.diamond, color: Colors.white, size: 12),
+                                const SizedBox(width: 4),
+                                Text(
+                                  AppStrings.pro,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        description,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  FeatherIcons.lock,
+                  color: AppColors.premium.withOpacity(0.7),
+                  size: 24,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.premium,
+                    AppColors.premium.withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.diamond, color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    AppStrings.upgradeToPremiumBtn,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -456,7 +616,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Uyku Takip Özeti',
+                    AppStrings.sleepTrackingSummary,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
@@ -466,7 +626,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '$daysWithData gün aktif • $totalEntries toplam kayıt',
+                    AppStrings.daysActiveFormat(daysWithData, totalEntries),
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.white.withOpacity(0.8),
@@ -475,7 +635,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Tüm kayıtlarını görmek için tıkla',
+                    AppStrings.clickToSeeAll,
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.white.withOpacity(0.6),
@@ -546,7 +706,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Uyku Kayıtlarım',
+                          AppStrings.mySleepRecordsText,
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -555,7 +715,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Detay görmek için kayda tıkla',
+                          AppStrings.clickForDetailsText,
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.white.withOpacity(0.6),
@@ -578,7 +738,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
               child: provider.sleepEntries.isEmpty
               ? Center(
                   child: Text(
-                    'Henüz kayıt yok',
+                    AppStrings.noRecordsYetShort,
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                 )
@@ -629,7 +789,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                                         ),
                                       ),
                                       Text(
-                                        isHealthy ? 'İdeal Uyku ✓' : 'Yetersiz Uyku',
+                                        isHealthy ? AppStrings.idealSleepStatusText : AppStrings.insufficientSleepStatusText,
                                         style: TextStyle(
                                           color: isHealthy ? AppColors.success : AppColors.warning,
                                           fontSize: 12,
@@ -644,13 +804,13 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildDetailRow(FeatherIcons.moon, 'Uyku Süresi', '${hours}s ${minutes}dk'),
+                                _buildDetailRow(FeatherIcons.moon, AppStrings.sleepDuration, AppStrings.hoursMinFormat(hours, minutes)),
                                 const SizedBox(height: 12),
-                                _buildDetailRow(FeatherIcons.target, 'Hedef', '8s 0dk'),
+                                _buildDetailRow(FeatherIcons.target, AppStrings.target, AppStrings.targetSleepTime),
                                 const SizedBox(height: 12),
-                                _buildDetailRow(FeatherIcons.sunset, 'Yatma Saati', _formatTime(entry.bedTime)),
+                                _buildDetailRow(FeatherIcons.sunset, AppStrings.bedTimeLabelText, _formatTime(entry.bedTime)),
                                 const SizedBox(height: 12),
-                                _buildDetailRow(FeatherIcons.sunrise, 'Uyanma Saati', _formatTime(entry.wakeTime)),
+                                _buildDetailRow(FeatherIcons.sunrise, AppStrings.wakeTimeLabelText, _formatTime(entry.wakeTime)),
                                 const SizedBox(height: 16),
                                 // Sağlık durumu açıklaması
                                 Container(
@@ -674,10 +834,10 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                                       Expanded(
                                         child: Text(
                                           isHealthy 
-                                            ? 'Harika! İdeal uyku süresinde uyudun. Böyle devam et! 💪'
+                                            ? AppStrings.idealSleepMessage
                                             : hours < 7 
-                                              ? 'Az uyudun! Sağlığın için daha fazla uyuman önemli. Kendine daha fazla zaman ayır 💙'
-                                              : 'Çok fazla uyudun! Aşırı uyku da yorgunluk yapabilir. Uyku düzenini ayarla ⏰',
+                                              ? AppStrings.tooLittleSleepMessage
+                                              : AppStrings.tooMuchSleepMessage,
                                           style: TextStyle(
                                             color: Colors.white.withOpacity(0.9),
                                             fontSize: 11,
@@ -695,7 +855,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                             actions: [
                               TextButton.icon(
                                 icon: Icon(FeatherIcons.trash2, color: AppColors.error, size: 18),
-                                label: Text('Sil', style: TextStyle(color: AppColors.error)),
+                                label: Text(AppStrings.deleteButtonText, style: TextStyle(color: AppColors.error)),
                                 onPressed: () async {
                                   Navigator.pop(context);
                                   final confirmed = await showDialog<bool>(
@@ -705,19 +865,19 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(20),
                                       ),
-                                      title: Text('Kaydı Sil?', style: TextStyle(color: Colors.white)),
+                                      title: Text(AppStrings.deleteRecord, style: TextStyle(color: Colors.white)),
                                       content: Text(
-                                        'Bu uyku kaydını silmek istediğinize emin misiniz?',
+                                        AppStrings.confirmDeleteSleep,
                                         style: TextStyle(color: AppColors.textSecondary),
                                       ),
                                       actions: [
                                         TextButton(
                                           onPressed: () => Navigator.pop(context, false),
-                                          child: Text('İptal', style: TextStyle(color: Colors.white)),
+                                          child: Text(AppStrings.cancel, style: TextStyle(color: Colors.white)),
                                         ),
                                         TextButton(
                                           onPressed: () => Navigator.pop(context, true),
-                                          child: Text('Sil', style: TextStyle(color: AppColors.error)),
+                                          child: Text(AppStrings.deleteButtonText, style: TextStyle(color: AppColors.error)),
                                         ),
                                       ],
                                     ),
@@ -730,7 +890,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                                       // Consumer sayesinde liste otomatik güncellenecek
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
-                                          content: Text('Kayıt silindi'),
+                                          content: Text(AppStrings.recordDeleted),
                                           backgroundColor: AppColors.success,
                                         ),
                                       );
@@ -740,7 +900,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                               ),
                               TextButton.icon(
                                 icon: Icon(FeatherIcons.edit2, color: AppColors.primary, size: 18),
-                                label: Text('Düzenle', style: TextStyle(color: AppColors.primary)),
+                                label: Text(AppStrings.editButtonText, style: TextStyle(color: AppColors.primary)),
                                 onPressed: () {
                                   Navigator.pop(context);
                                   Navigator.pop(context);
@@ -757,7 +917,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                               ),
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
-                                child: Text('Kapat', style: TextStyle(color: Colors.white)),
+                                child: Text(AppStrings.closeButtonText, style: TextStyle(color: Colors.white)),
                               ),
                             ],
                           ),
@@ -814,7 +974,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                                       Icon(FeatherIcons.moon, color: AppColors.textSecondary, size: 14),
                                       const SizedBox(width: 6),
                                       Text(
-                                        '${hours}s ${minutes}dk',
+                                        AppStrings.hoursMinFormat(hours, minutes),
                                         style: TextStyle(
                                           color: AppColors.textSecondary,
                                           fontSize: 13,
@@ -825,7 +985,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                                       Icon(FeatherIcons.target, color: AppColors.textSecondary, size: 14),
                                       const SizedBox(width: 6),
                                       Text(
-                                        'Hedef: 8s',
+                                        AppStrings.targetHours,
                                         style: TextStyle(
                                           color: AppColors.textSecondary,
                                           fontSize: 13,
@@ -836,10 +996,10 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                                   const SizedBox(height: 6),
                                   Text(
                                     isHealthy 
-                                      ? '✓ İdeal uyku süresi' 
+                                      ? AppStrings.idealSleepDurationText 
                                       : hours < 7 
-                                        ? '⚠️ Daha fazla uyumaya çalış'
-                                        : '⚠️ Çok fazla uyudun',
+                                        ? AppStrings.tryToSleepMore
+                                        : AppStrings.sleptTooMuch,
                                     style: TextStyle(
                                       color: isHealthy ? AppColors.success : AppColors.warning,
                                       fontSize: 11,
@@ -869,8 +1029,8 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
   }
 
   String _formatDateForDialog(DateTime date) {
-    const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-    const days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+    const months = [AppStrings.monthJan, AppStrings.monthFeb, AppStrings.monthMar, AppStrings.monthApr, AppStrings.monthMay2, AppStrings.monthJun, AppStrings.monthJul, AppStrings.monthAug, AppStrings.monthSep, AppStrings.monthOct, AppStrings.monthNov, AppStrings.monthDec];
+    const days = [AppStrings.dayMon, AppStrings.dayTue, AppStrings.dayWed, AppStrings.dayThu, AppStrings.dayFri, AppStrings.daySat, AppStrings.daySun];
     return '${date.day} ${months[date.month - 1]} - ${days[date.weekday - 1]}';
   }
 
@@ -935,23 +1095,23 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
     if (daysWithData == 0) {
       color = AppColors.primary;
       icon = FeatherIcons.clock;
-      title = 'Veri Bekleniyor';
-      description = 'Uyku borcu hesaplamak için veri girin.';
+      title = 'waitingForData'.tr();
+      description = 'enterDataForDebt'.tr();
     } else if (isBalanced) {
       color = AppColors.success;
       icon = FeatherIcons.checkCircle;
-      title = 'Süpersin! Tam dengede uyuyorsun 🎯';
-      description = 'Uyku süren hedefinde. Uyku düzenin harika, böyle devam et 🌟';
+      title = 'perfectBalance'.tr();
+      description = 'perfectBalanceDesc'.tr();
     } else if (isNegative) {
       color = AppColors.error;
       icon = FeatherIcons.arrowDownCircle;
-      title = 'Biraz yorgun görünüyorsun 😴';
-      description = 'Bu hafta biraz uykun eksik kalmış. Yarın biraz erken yatmayı dene, kendini daha dinç hissedeceksin!';
+      title = 'lookingTired'.tr();
+      description = 'lookingTiredDesc'.tr();
     } else {
       color = AppColors.warning;
       icon = FeatherIcons.arrowUpCircle;
-      title = 'Çok mu uyuyorsun? 🛌';
-      description = 'Fazla uyku bazen daha çok yorar, 8 saat civarı tutmaya çalış';
+      title = 'sleepingTooMuch'.tr();
+      description = 'sleepingTooMuchDesc'.tr();
     }
 
     return Container(
@@ -1080,7 +1240,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Haftalık uyku borcun (Pzt-Paz). Günlük ortalama 8 saat hedefe göre hesaplanır.',
+                      AppStrings.weeklyDebtInfoText,
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.white.withOpacity(0.7),
@@ -1108,21 +1268,21 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
           children: [
             Expanded(
               child: _buildPremiumStatCard(
-                'Haftalık Ortalama',
+                AppStrings.weeklyAverage,
                 sleepProvider.formatDuration(weeklyAverage),
                 AppColors.primary,
                 FeatherIcons.clock,
-                'Bu hafta (Pzt-Paz)',
+                AppStrings.thisWeekRangeText,
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: _buildPremiumStatCard(
-                'Kalite Skoru',
+                AppStrings.qualityScore,
                 '$qualityScore/100',
                 _getQualityColor(qualityScore),
                 FeatherIcons.star,
-                'Hedefe yakınlık',
+                AppStrings.proximityToTargetText,
               ),
             ),
           ],
@@ -1148,7 +1308,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Kalite skoru, 8 saat hedefe ne kadar yakın olduğunu gösterir.',
+                  AppStrings.qualityScoreInfo,
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.white.withOpacity(0.7),
@@ -1283,7 +1443,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Haftalık Uyku Grafiği',
+                      AppStrings.weeklyChartTitle,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -1293,7 +1453,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Son 7 günün uyku performansı',
+                      AppStrings.last7DaysPerformanceText,
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.white.withOpacity(0.6),
@@ -1312,9 +1472,9 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
             spacing: 8,
             runSpacing: 8,
             children: [
-              _buildLegendItem('İdeal', AppColors.success),
-              _buildLegendItem('Orta', AppColors.warning),
-              _buildLegendItem('Yetersiz', AppColors.error),
+              _buildLegendItem(AppStrings.legendIdealText, AppColors.success),
+              _buildLegendItem(AppStrings.legendModerateText, AppColors.warning),
+              _buildLegendItem(AppStrings.legendInsufficientText, AppColors.error),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -1338,7 +1498,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Hedef: 8s',
+                      AppStrings.targetHoursLabel,
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.focus,
@@ -1376,7 +1536,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
     if (weeklyEntries.isEmpty) {
       return Center(
         child: Text(
-          'Henüz veri yok',
+          AppStrings.noDataYet,
           style: TextStyle(
             color: Colors.white.withOpacity(0.6),
             fontSize: 14,
@@ -1396,7 +1556,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
               final entry = weeklyEntries[groupIndex];
               if (entry.actualSleep.inMinutes == 0) {
                 return BarTooltipItem(
-                  'Veri yok',
+                  AppStrings.noDataShort,
                   TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -1407,7 +1567,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
               final hours = entry.actualSleep.inHours;
               final minutes = entry.actualSleep.inMinutes % 60;
               return BarTooltipItem(
-                '${hours}s ${minutes}dk',
+                AppStrings.hoursMinFormat(hours, minutes),
                 TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -1450,7 +1610,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                 // Sadece hedef çizgisini (8 saat) göster
                 if (value == 8.0) {
                   return Text(
-                    '8s',
+                    AppStrings.hoursShortLabel,
                     style: TextStyle(
                       color: AppColors.focus,
                       fontSize: 11,
@@ -1527,7 +1687,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
   }
 
   String _getDayName(int weekday) {
-    const days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+    final days = [AppStrings.dayMonText, AppStrings.dayTueText, AppStrings.dayWedText, AppStrings.dayThuText, AppStrings.dayFriText, AppStrings.daySatText, AppStrings.daySunText];
     return days[weekday - 1];
   }
 
@@ -1567,7 +1727,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
     final isHealthy = monthlyHours >= 7 && monthlyHours <= 9;
     Color color = isHealthy ? AppColors.success : AppColors.warning;
     IconData icon = isHealthy ? FeatherIcons.trendingUp : FeatherIcons.alertTriangle;
-    String status = isHealthy ? 'Sağlıklı' : 'Geliştirilmeli';
+    String status = isHealthy ? AppStrings.healthyStatusText : AppStrings.needsImprovementStatusText;
     
     return Container(
       padding: const EdgeInsets.all(24),
@@ -1623,7 +1783,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Aylık Uyku Durumu',
+                      AppStrings.monthlySleepStatusTitle,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -1633,7 +1793,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Son 30 gün • $monthlyDays gün aktif',
+                      AppStrings.last30Days.replaceAll('{0}', monthlyDays.toString()),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.white.withOpacity(0.7),
@@ -1658,7 +1818,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                   child: Column(
                     children: [
                       Text(
-                        'Ortalama Uyku',
+                        AppStrings.averageSleepLabelText,
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.white.withOpacity(0.7),
@@ -1666,7 +1826,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${monthlyHours}s ${monthlyMinutes}dk',
+                        AppStrings.hoursMinFormat(monthlyHours, monthlyMinutes),
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
@@ -1688,7 +1848,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                   child: Column(
                     children: [
                       Text(
-                        'Durum',
+                        AppStrings.statusLabelText,
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.white.withOpacity(0.7),
@@ -1731,10 +1891,10 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                 Expanded(
                   child: Text(
                     monthlyDays < 7 
-                        ? 'Daha doğru analiz için en az 7 gün veri gir.'
+                        ? AppStrings.needMoreDataForAnalysisText
                         : isHealthy
-                            ? 'Aylık uyku düzenin harika! Böyle devam et 🌟'
-                            : 'Her gün 8 saat uyumaya çalış, vücudun sana teşekkür edecek!',
+                            ? AppStrings.monthlyHealthyMessage
+                            : AppStrings.monthlyNeedsImprovementMessage,
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.white.withOpacity(0.7),
@@ -1804,7 +1964,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Uyku Rekorları',
+                      AppStrings.sleepRecordsTitleText,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -1814,7 +1974,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'En iyi ve en kötü uyku performansın',
+                      AppStrings.bestAndWorstPerformanceText,
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.white.withOpacity(0.6),
@@ -1838,8 +1998,8 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                 children: [
                   Text(
                     entries.isEmpty 
-                        ? 'Henüz hiç uyku verisi yok.' 
-                        : 'Karşılaştırma için daha fazla veri gerekli.',
+                        ? AppStrings.noSleepDataYet 
+                        : AppStrings.needMoreDataForComparison,
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.6),
                       fontSize: 14,
@@ -1849,7 +2009,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'En az 2 gün veri girdiğinde rekorlarını görebilirsin',
+                    AppStrings.seeRecordsAfter2Days,
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.4),
                       fontSize: 11,
@@ -1868,7 +2028,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                 children: [
                   Expanded(
                     child: _buildRecordCard(
-                      'En Uzun Uyku',
+                      AppStrings.longestSleepLabel,
                       sleepProvider.formatDuration(longestSleep),
                       AppColors.success,
                       FeatherIcons.trendingUp,
@@ -1877,7 +2037,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildRecordCard(
-                      'En Kısa Uyku',
+                      AppStrings.shortestSleepLabel,
                       sleepProvider.formatDuration(shortestSleep),
                       AppColors.error,
                       FeatherIcons.trendingDown,
@@ -1961,23 +2121,23 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
     if (totalDays == 0) {
       color = AppColors.warning;
       icon = FeatherIcons.alertCircle;
-      title = 'Sağlık Uyarısı ⚠️';
-      description = 'Standart hedef 8 saat. Veri girdikçe sağlık durumunu görebilirsin.';
+      title = AppStrings.healthWarningTitle;
+      description = AppStrings.standardTarget8Hours;
     } else if (healthPercentage >= 80) {
       color = AppColors.success;
       icon = FeatherIcons.heart;
-      title = 'Sağlıklı Uyuyorsun! 💚';
-      description = 'Bu hafta $healthyDays gün sağlıklı uyudun. Böyle devam et!';
+      title = AppStrings.healthySleeping;
+      description = AppStrings.healthySleepingDesc.replaceAll('{0}', healthyDays.toString());
     } else if (healthPercentage >= 50) {
       color = AppColors.warning;
       icon = FeatherIcons.alertTriangle;
-      title = 'Dikkat: Sağlıksız Uyku ⚠️';
-      description = '$unhealthyDays gün sağlık aralığının dışında uyudun. 8 saat hedefi için çaba göster.';
+      title = AppStrings.unhealthySleepWarning;
+      description = AppStrings.unhealthySleepDesc.replaceAll('{0}', unhealthyDays.toString());
     } else {
       color = AppColors.error;
       icon = FeatherIcons.alertCircle;
-      title = 'Acil: Sağlığını Düşün! 🚨';
-      description = 'Bu hafta çok sağlıksız uyudun. Sağlığın için 8 saat uyku hedefle!';
+      title = AppStrings.urgentSleepWarning;
+      description = AppStrings.urgentSleepDesc;
     }
     
     return Container(
@@ -2036,7 +2196,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                     Row(
                       children: [
                         Text(
-                          'Sağlık Durumu',
+                          AppStrings.healthStatus,
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.white.withOpacity(0.6),
@@ -2085,7 +2245,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                       ),
                     ),
                     Text(
-                      'Sağlıklı',
+                      AppStrings.healthyStatusText,
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.white.withOpacity(0.6),
@@ -2116,7 +2276,7 @@ class _SleepAnalyticsScreenState extends State<SleepAnalyticsScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Standart hedef 8 saattir. Sağlığın için bu hedefe ulaşmaya çalış.',
+                    AppStrings.standardTargetMessage,
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.white.withOpacity(0.7),

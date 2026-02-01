@@ -7,6 +7,7 @@ import '../providers/audio_provider.dart';
 import '../models/sound_item.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
+import '../constants/app_strings.dart';
 import '../constants/app_typography.dart';
 import 'professional_button.dart';
 
@@ -164,7 +165,7 @@ class _MixerPanelState extends State<MixerPanel> with TickerProviderStateMixin {
             ...sounds.map((sound) => _buildVolumeSlider(sound, audioProvider)).toList(),
             const SizedBox(height: AppSpacing.large),
             ProfessionalButton(
-              text: 'Tümünü Durdur',
+              text: AppStrings.stopAllButton,
               onPressed: () {
                 audioProvider.stopAllSounds();
                 _toggleExpanded();

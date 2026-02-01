@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_strings.dart';
 import '../constants/app_spacing.dart';
 import '../constants/app_typography.dart';
 import 'professional_button.dart';
@@ -111,11 +112,11 @@ class EmptyFavoritesState extends StatelessWidget {
     
     return EmptyState(
       icon: FeatherIcons.heart,
-      title: isSounds ? 'Henüz favori ses yok' : 'Henüz favori egzersiz yok',
+      title: isSounds ? AppStrings.emptyFavoriteSoundTitle : AppStrings.emptyFavoriteExerciseTitle,
       message: isSounds 
-          ? 'Keşfet sekmesinden beğendiğin sesleri favorilerine ekleyebilirsin'
-          : 'Nefes egzersizlerinden favorilerini seç ve hızlıca erişebilsin',
-      actionText: 'Keşfet\'e Git',
+          ? AppStrings.emptyFavoriteSoundMessage
+          : AppStrings.emptyFavoriteExerciseMessage,
+      actionText: AppStrings.exploreGoButton,
       onAction: onExplore,
       color: AppColors.relaxation,
     );
@@ -135,9 +136,9 @@ class NoActivityState extends StatelessWidget {
   Widget build(BuildContext context) {
     return EmptyState(
       icon: FeatherIcons.activity,
-      title: 'Henüz aktivite yok',
-      message: 'İlk nefes egzersizini veya ses dinleme seansını başlat',
-      actionText: 'Hemen Başla',
+      title: AppStrings.noActivityTitle,
+      message: AppStrings.noActivityMessage,
+      actionText: AppStrings.startNowButton,
       onAction: onStartSession,
       color: AppColors.energy,
     );

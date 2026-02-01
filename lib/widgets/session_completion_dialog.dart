@@ -4,6 +4,7 @@ import 'package:lottie/lottie.dart';
 import 'package:animate_do/animate_do.dart';
 import 'dart:math';
 import '../constants/app_colors.dart';
+import '../constants/app_strings.dart';
 import '../constants/app_typography.dart';
 import '../constants/app_spacing.dart';
 import '../services/asset_manager.dart';
@@ -270,7 +271,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog>
                 ),
                 SizedBox(height: isSmallScreen ? 12 : 16),
                 Text(
-                  'Kendine zaman ayırdığın için teşekkürler',
+                  AppStrings.thankYouMessage,
                   style: TextStyle(
                     fontSize: isSmallScreen ? 13 : (isMediumScreen ? 14 : 15),
                     color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
@@ -320,7 +321,7 @@ class _SessionCompletionDialogState extends State<SessionCompletionDialog>
               ),
               SizedBox(width: isSmallScreen ? 6 : 8),
               Text(
-                'Devam Et',
+                AppStrings.continueButton,
                 style: TextStyle(
                   fontSize: isSmallScreen ? 14 : (isMediumScreen ? 15 : 16),
                   fontWeight: FontWeight.w600,

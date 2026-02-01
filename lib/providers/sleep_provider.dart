@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/sleep_entry.dart';
+import '../constants/app_strings.dart';
 import '../core/analytics/analytics_service.dart';
 import '../core/crashlytics/crashlytics_service.dart';
+import '../services/user_data_sync_service.dart';
 
 class SleepProvider extends ChangeNotifier {
+  // 🔄 Firestore sync servisi
+  final UserDataSyncService _syncService = UserDataSyncService();
+  bool _isSyncing = false;
+  
   List<SleepEntry> _sleepEntries = [];
   
   // Getters
@@ -31,6 +38,11 @@ class SleepProvider extends ChangeNotifier {
       _sleepEntries.sort((a, b) => b.date.compareTo(a.date));
       
       notifyListeners();
+      
+      // 🔄 Firestore'dan sync et (arka planda)
+      if (_syncService.isUserLoggedIn) {
+        _syncFromFirestore();
+      }
     } catch (e, stackTrace) {
       await CrashlyticsService.instance.recordError(
         e,
@@ -105,6 +117,9 @@ class SleepProvider extends ChangeNotifier {
         'wake_time': entry.wakeTime.toIso8601String(),
       });
       
+      // 🔄 Firestore'a sync et
+      _syncToFirestore();
+      
       notifyListeners();
     } catch (e, stackTrace) {
       await CrashlyticsService.instance.recordError(
@@ -147,6 +162,9 @@ class SleepProvider extends ChangeNotifier {
         'deleted_date': date.toIso8601String(),
         'remaining_entries': _sleepEntries.length.toString(),
       });
+      
+      // 🔄 Firestore'a sync et
+      _syncToFirestore();
       
       notifyListeners();
     } catch (e, stackTrace) {
@@ -374,41 +392,141 @@ class SleepProvider extends ChangeNotifier {
     return chartData;
   }
 
-  /// Uyku borcunu formatla
+  /// Uyku borcunu formatla (lokalize)
   String formatSleepDebt(Duration debt) {
     if (debt.isNegative) {
       final positive = -debt;
       final hours = positive.inHours;
       final minutes = positive.inMinutes % 60;
       
-      if (hours > 0) {
-        return '${hours}s ${minutes}dk eksik';
-      } else {
-        return '${minutes}dk eksik';
-      }
+      final duration = hours > 0 
+          ? AppStrings.hoursMinFormat(hours, minutes)
+          : '${minutes}m';
+      return AppStrings.deficitFormat(duration);
     } else if (debt.inMinutes > 0) {
       final hours = debt.inHours;
       final minutes = debt.inMinutes % 60;
       
-      if (hours > 0) {
-        return '${hours}s ${minutes}dk fazla';
-      } else {
-        return '${minutes}dk fazla';
-      }
+      final duration = hours > 0 
+          ? AppStrings.hoursMinFormat(hours, minutes)
+          : '${minutes}m';
+      return AppStrings.surplusFormat(duration);
     } else {
-      return 'Hedefinde';
+      return AppStrings.onTargetText;
     }
   }
   
-  /// Uyku süresini formatla
+  /// Uyku süresini formatla (lokalize)
   String formatDuration(Duration duration) {
     final hours = duration.inHours;
     final minutes = duration.inMinutes % 60;
     
     if (hours > 0) {
-      return '${hours}s ${minutes}dk';
+      return AppStrings.hoursMinFormat(hours, minutes);
     } else {
-      return '${minutes}dk';
+      // Sadece dakika için
+      final locale = 'tr'.tr(); // Locale kontrolü
+      return locale.startsWith('tr') ? '${minutes}dk' : '${minutes}m';
     }
+  }
+  
+  // ================================
+  // 🔄 FIRESTORE SYNC METODLARI
+  // ================================
+  
+  /// Firestore'dan uyku verilerini yükle ve local ile birleştir
+  Future<void> _syncFromFirestore() async {
+    if (_isSyncing || !_syncService.isUserLoggedIn) return;
+    _isSyncing = true;
+    
+    try {
+      debugPrint('🔄 Sleep Firestore sync başlatılıyor...');
+      
+      final remoteEntries = await _syncService.loadSleepEntries();
+      
+      if (remoteEntries.isNotEmpty) {
+        // Tarih bazlı birleştirme
+        final entryMap = <String, SleepEntry>{};
+        
+        // Local kayıtları ekle
+        for (final entry in _sleepEntries) {
+          final key = entry.date.toIso8601String().split('T')[0];
+          entryMap[key] = entry;
+        }
+        
+        // Remote kayıtları ekle/güncelle
+        for (final entry in remoteEntries) {
+          final key = entry.date.toIso8601String().split('T')[0];
+          if (!entryMap.containsKey(key)) {
+            // Yeni kayıt
+            entryMap[key] = entry;
+          }
+          // Eğer varsa local'i koruyoruz (local öncelikli)
+        }
+        
+        _sleepEntries = entryMap.values.toList();
+        _sleepEntries.sort((a, b) => b.date.compareTo(a.date));
+        
+        await _saveSleepData();
+        notifyListeners();
+        
+        debugPrint('✅ Sleep Firestore sync tamamlandı (${remoteEntries.length} kayıt)');
+      }
+    } catch (e) {
+      debugPrint('❌ Sleep Firestore sync hatası: $e');
+    } finally {
+      _isSyncing = false;
+    }
+  }
+  
+  /// Uyku verilerini Firestore'a kaydet
+  Future<void> _syncToFirestore() async {
+    if (!_syncService.isUserLoggedIn) return;
+    
+    // Arka planda sync et
+    _syncService.syncSleepEntries(_sleepEntries).catchError((e) {
+      debugPrint('❌ Sleep sync hatası: $e');
+    });
+  }
+  
+  /// Manuel full sync (kullanıcı giriş yaptığında çağrılır)
+  Future<void> performFullSync() async {
+    debugPrint('🔄 Sleep full sync başlatılıyor...');
+    
+    // Önce Firestore'dan yükle
+    await _syncFromFirestore();
+    
+    // Sonra local verileri Firestore'a gönder
+    await _syncToFirestore();
+    
+    debugPrint('✅ Sleep full sync tamamlandı');
+  }
+  
+  // ================================
+  // 🚪 OTURUM KAPATMA - VERİ TEMİZLEME
+  // ================================
+  
+  /// Oturum kapatıldığında TÜM uyku verilerini temizle
+  /// Yeni kullanıcı giriş yaptığında Firestore'dan kendi verilerini çekecek
+  Future<void> clearAllDataOnLogout() async {
+    debugPrint('🚪 Sleep verileri temizleniyor...');
+    
+    // 1. Memory'deki verileri temizle
+    _sleepEntries.clear();
+    
+    // 2. SharedPreferences'tan temizle
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('sleep_entries');
+      
+      debugPrint('✅ Sleep SharedPreferences temizlendi');
+    } catch (e) {
+      debugPrint('❌ Sleep temizleme hatası: $e');
+    }
+    
+    // 3. UI'ı güncelle
+    notifyListeners();
+    
+    debugPrint('✅ Sleep verileri temizlendi');
   }
 } 

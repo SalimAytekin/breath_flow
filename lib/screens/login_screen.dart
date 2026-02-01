@@ -1,10 +1,24 @@
-import 'package:breathe_flow/services/auth_service.dart';
 import 'package:breathe_flow/screens/signup_screen.dart';
 import 'package:breathe_flow/screens/main_navigation_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:breathe_flow/constants/app_colors.dart';
+import 'package:breathe_flow/constants/app_strings.dart';
 import 'package:breathe_flow/constants/app_typography.dart';
 import 'package:breathe_flow/widgets/professional_button.dart';
+import '../providers/auth_provider.dart';
+
+/// 🚶 Misafir Modu Wrapper - Kayıt olmadan kullanım
+class _GuestModeWrapper extends StatelessWidget {
+  const _GuestModeWrapper();
+
+  @override
+  Widget build(BuildContext context) {
+    // Misafir modunda direkt ana ekranı göster
+    return const MainNavigationScreen();
+  }
+}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,54 +31,159 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final AuthService _authService = AuthService();
-  bool _isLoading = false;
   bool _obscurePassword = true;
 
   void _submitForm() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isLoading = true);
+    if (!mounted) return;
+    
+    final isValid = _formKey.currentState?.validate() ?? false;
+    
+    if (isValid) {
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
       
-      try {
-        final result = await _authService.signInWithEmail(email, password);
-
-        if (result != null && mounted) {
-          // Giriş başarılı, ana sayfaya yönlendir
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-          );
-        } else if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Giriş başarısız. Lütfen bilgilerinizi kontrol edin.'),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Giriş hatası: $e'),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
-        }
-      }
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      // signInWithEmail çağır - hata mesajı AuthProvider'da saklanacak
+      // Consumer widget otomatik olarak güncellenecek
+      await authProvider.signInWithEmail(email, password);
+      
+      // Başarılı giriş durumunda AuthWrapper otomatik yönlendirecek
     }
+  }
+
+  void _showForgotPasswordDialog() {
+    final resetEmailController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Şifre Sıfırlama',
+          style: AppTypography.headlineSmall.copyWith(color: AppColors.textPrimary),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.',
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: resetEmailController,
+              keyboardType: TextInputType.emailAddress,
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'E-posta adresiniz',
+                hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textTertiary),
+                filled: true,
+                fillColor: AppColors.surfaceElevated,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textTertiary),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: AppColors.warning, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'E-posta gelmezse spam/gereksiz klasörünü kontrol edin.',
+                      style: AppTypography.bodySmall.copyWith(color: AppColors.warning),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'İptal',
+              style: AppTypography.labelLarge.copyWith(color: AppColors.textSecondary),
+            ),
+          ),
+          Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              return TextButton(
+                onPressed: authProvider.isLoading
+                    ? null
+                    : () async {
+                        final email = resetEmailController.text.trim();
+                        if (email.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('Lütfen e-posta adresinizi girin'),
+                              backgroundColor: AppColors.error,
+                              behavior: SnackBarBehavior.floating,
+                              margin: const EdgeInsets.all(16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                          return;
+                        }
+                        
+                        final success = await authProvider.sendPasswordResetEmail(email);
+                        
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                success
+                                    ? 'Şifre sıfırlama bağlantısı gönderildi!'
+                                    : authProvider.errorMessage ?? 'Bir hata oluştu',
+                              ),
+                              backgroundColor: success ? AppColors.success : AppColors.error,
+                              behavior: SnackBarBehavior.floating,
+                              margin: const EdgeInsets.all(16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                        }
+                      },
+                child: authProvider.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        'Gönder',
+                        style: AppTypography.labelLarge.copyWith(color: AppColors.primaryAccent),
+                      ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 🚶 Misafir olarak devam et - kayıt olmadan uygulamayı kullan
+  void _continueAsGuest() {
+    // Direkt ana ekrana git (AuthWrapper'ı bypass et)
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const _GuestModeWrapper(),
+      ),
+    );
   }
 
   @override
@@ -125,7 +244,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: isSmallScreen ? 24 : 32),
                 
                 Text(
-                  'Tekrar Hoş Geldin',
+                  AppStrings.welcomeBack,
                   style: AppTypography.displayMedium.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
@@ -137,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
                 
                 Text(
-                  'Sakinliğe doğru yolculuğuna kaldığın yerden devam et',
+                  AppStrings.continueJourney,
                   style: AppTypography.bodyLarge.copyWith(
                     color: AppColors.textSecondary,
                     height: 1.5,
@@ -165,16 +284,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         _buildTextField(
                           controller: _emailController,
-                          labelText: 'E-posta Adresiniz',
-                          hintText: 'ornek@email.com',
+                          labelText: AppStrings.emailAddress,
+                          hintText: AppStrings.emailPlaceholder,
                           icon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
                             if (value?.isEmpty ?? true) {
-                              return 'E-posta adresi gerekli';
+                              return AppStrings.emailRequired;
                             }
                             if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!)) {
-                              return 'Geçerli bir e-posta adresi girin';
+                              return AppStrings.emailInvalid;
                             }
                             return null;
                           },
@@ -184,8 +303,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         
                         _buildTextField(
                           controller: _passwordController,
-                          labelText: 'Şifreniz',
-                          hintText: '••••••••',
+                          labelText: AppStrings.password,
+                          hintText: AppStrings.passwordPlaceholder,
                           icon: Icons.lock_outline,
                           obscureText: _obscurePassword,
                           suffixIcon: IconButton(
@@ -201,10 +320,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           validator: (value) {
                             if (value?.isEmpty ?? true) {
-                              return 'Şifre gerekli';
+                              return AppStrings.passwordRequired;
                             }
                             if (value!.length < 6) {
-                              return 'Şifre en az 6 karakter olmalı';
+                              return AppStrings.passwordMinLength;
                             }
                             return null;
                           },
@@ -212,14 +331,57 @@ class _LoginScreenState extends State<LoginScreen> {
                         
                         const SizedBox(height: 12),
                         
+                        // Hata mesajı gösterimi - Consumer ile AuthProvider'dan direkt oku
+                        Consumer<AuthProvider>(
+                          builder: (context, authProvider, child) {
+                            final errorMsg = authProvider.errorMessage;
+                            if (errorMsg == null || errorMsg.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            return Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: AppColors.error.withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.error_outline,
+                                        color: AppColors.error,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          errorMsg,
+                                          style: AppTypography.bodyMedium.copyWith(
+                                            color: AppColors.error,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                            );
+                          },
+                        ),
+                        
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () {
-                              // TODO: Implement forgot password
-                            },
+                            onPressed: () => _showForgotPasswordDialog(),
                             child: Text(
-                              'Şifremi Unuttum',
+                              AppStrings.forgotPassword,
                               style: AppTypography.labelMedium.copyWith(
                                 color: AppColors.primaryAccent,
                                 fontWeight: FontWeight.w500,
@@ -230,14 +392,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         
                         const SizedBox(height: 24),
                         
-                        if (_isLoading)
-                          const Center(
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryAccent),
-                            ),
-                          )
-                        else
-                          Container(
+                        Consumer<AuthProvider>(
+                          builder: (context, authProvider, child) {
+                            if (authProvider.isLoading) {
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryAccent),
+                                ),
+                              );
+                            }
+                            
+                            return Container(
                             height: 56,
                             decoration: BoxDecoration(
                               gradient: AppColors.primaryGradient,
@@ -260,14 +425,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               child: Text(
-                                'Giriş Yap',
+                                AppStrings.loginButton,
                                 style: AppTypography.buttonText.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
-                          ),
+                          );
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -283,13 +450,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: Text.rich(
                       TextSpan(
-                        text: 'Henüz hesabın yok mu? ',
+                        text: AppStrings.noAccountYet,
                         style: AppTypography.bodyMedium.copyWith(
                           color: AppColors.textSecondary,
                         ),
                         children: [
                           TextSpan(
-                            text: 'Kayıt Ol',
+                            text: AppStrings.signUpButton,
                             style: AppTypography.bodyMedium.copyWith(
                               color: AppColors.primaryAccent,
                               fontWeight: FontWeight.w600,
@@ -298,6 +465,56 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                     ),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 🚶 Misafir olarak devam et
+                Center(
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: Divider(color: AppColors.textTertiary.withOpacity(0.3))),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'veya',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textTertiary,
+                              ),
+                            ),
+                          ),
+                          Expanded(child: Divider(color: AppColors.textTertiary.withOpacity(0.3))),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton.icon(
+                        onPressed: () => _continueAsGuest(),
+                        icon: Icon(
+                          Icons.person_outline,
+                          color: AppColors.textSecondary,
+                          size: 20,
+                        ),
+                        label: Text(
+                          'continueAsGuest'.tr(),
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: AppColors.textTertiary.withOpacity(0.3),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 

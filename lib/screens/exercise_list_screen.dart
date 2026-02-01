@@ -1,6 +1,8 @@
 import 'dart:ui';
 
 import 'package:breathe_flow/providers/premium_provider.dart';
+import 'package:breathe_flow/widgets/smart_premium_dialog.dart';
+import 'package:breathe_flow/models/premium_trigger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +11,7 @@ import 'package:animate_do/animate_do.dart';
 
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
+import '../constants/app_strings.dart';
 import '../constants/app_typography.dart';
 import '../models/breathing_exercise.dart';
 import '../providers/breathing_provider.dart';
@@ -65,13 +68,13 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   String _getCategoryTitle(BreathingCategory category) {
     switch (category) {
       case BreathingCategory.odaklanma:
-        return 'Odaklanma & Konsantrasyon';
+        return AppStrings.focusAndConcentrationTitle;
       case BreathingCategory.kaygiVeStres:
-        return 'Rahatlama & Huzur';
+        return AppStrings.relaxationAndPeaceTitle;
       case BreathingCategory.uykuVeRahatlama:
-        return 'Huzurlu Uyku';
+        return AppStrings.peacefulSleepTitle;
       case BreathingCategory.enerjiVeCanlilik:
-        return 'Enerji & Zindelik';
+        return AppStrings.energyAndVitalityTitle;
     }
   }
 
@@ -91,72 +94,45 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   String _getCategoryDescription(BreathingCategory category) {
     switch (category) {
       case BreathingCategory.odaklanma:
-        return 'Dikkatini tek bir noktaya yönlendir, düşüncelerini toparla. Zihnini netleştir ve anın tadını çıkar.';
+        return AppStrings.focusConcentrationDesc;
       case BreathingCategory.kaygiVeStres:
-        return 'Derin bir nefesle gerginliği bırak ve bedenini yavaşça gevşet. İç huzurunu hisset ve günün stresini geride bırak.';
+        return AppStrings.relaxationPeaceDesc;
       case BreathingCategory.uykuVeRahatlama:
-        return 'Bedenini ve zihnini dinlendir, yavaşça gevşe. Gözlerini kapat ve huzurlu bir uykuya doğru yol al.';
+        return AppStrings.peacefulSleepDesc;
       case BreathingCategory.enerjiVeCanlilik:
-        return 'İçindeki enerjiyi uyandır ve günün tadını çıkar. Taze bir nefesle kendini zinde ve motive hisset.';
+        return AppStrings.energyVitalityDesc;
     }
   }
 
   String _getExerciseShortDescription(BreathingExercise exercise) {
-    switch (exercise.name) {
-      case 'Kutu Nefesi (4-4-4-4)':
-        return 'Nefesini dört aşamada düzenle: al, tut, ver ve bekle. Zihinsel dengeyi artırır.';
-      case 'Basit Sayma Nefesi':
-        return 'Nefes alırken ve verirken sayılara odaklan. Zihni toparlamaya yardımcı olur.';
-      case 'Farkındalık Nefesi':
-        return 'Nefesini doğal akışında gözlemle. Değiştirmeden sadece fark et.';
-      case 'Uzunca Nefes Ver (4-6)':
-        return 'Kısa al, uzun ver. Bu ritim sinir sistemini sakinleştirir.';
-      case 'Diyafram Nefesi':
-        return 'Nefesi karına doğru al. Göğüsten değil karından nefes almak stresi azaltır.';
-      case 'Eşit Nefes':
-        return 'Nefesi aynı sürede alıp ver. Zihinsel denge ve iç huzur sağlar.';
-      case 'Yavaşlatıcı Nefes':
-        return 'Her nefeste ritmi biraz daha yavaşlat. Bedenini uykuya hazırlar.';
-      case 'Beden Farkındalığı Nefesi':
-        return 'Nefes alırken bedenine odaklan. Gerginlikleri fark et ve bırak.';
-      case 'Gevşeme Nefesi (3-6)':
-        return 'Kısa nefes al, uzun nefes ver. Vücudun derin rahatlama yaşar.';
-      case 'Canlandırıcı Diyafram':
-        return 'Diyaframdan derin nefes alıp vermek bedene enerji kazandırır.';
-      case 'Sabah Nefesi':
-        return 'Güne derin ve canlı nefeslerle başla. Sabah enerjini yükseltir.';
-      case 'Güne Başlama Nefesi (6-4)':
-        return 'Pozitif enerjiyle nefes al, hafif şekilde ver. Güne hazırlar.';
-      default:
-        return exercise.purpose;
-    }
+    // Egzersiz description'ı zaten lokalize - direkt kullan
+    return exercise.description;
   }
 
   IconData _getExerciseIcon(BreathingExercise exercise) {
-    switch (exercise.name) {
-      case 'Kutu Nefesi (4-4-4-4)':
+    // Type'a göre ikon belirle (dil bağımsız)
+    switch (exercise.type) {
+      case BreathingType.boxBreathing:
         return FeatherIcons.square;
-      case 'Basit Sayma Nefesi':
+      case BreathingType.custom: // Basit Sayma Nefesi
         return FeatherIcons.hash;
-      case 'Farkındalık Nefesi':
+      case BreathingType.deepBreathing: // Farkındalık Nefesi
         return FeatherIcons.eye;
-      case 'Uzun Verme Nefesi (4-6)':
+      case BreathingType.extendedExhale:
         return FeatherIcons.wind;
-      case 'Diyafram Nefesi':
+      case BreathingType.diaphragmaticBreathing:
         return FeatherIcons.circle;
-      case 'Eşit Nefes':
+      case BreathingType.samaVritti: // Eşit Nefes
         return FeatherIcons.minimize2;
-      case 'Yavaşlatıcı Nefes':
+      case BreathingType.moonBreathing: // Yavaşlatıcı Nefes
         return FeatherIcons.moon;
-      case 'Vücut Tarama ile Nefes':
+      case BreathingType.bodyScan: // Beden Farkındalığı
         return FeatherIcons.search;
-      case 'Gevşeme Nefesi (3-6)':
+      case BreathingType.progressiveRelaxation: // Gevşeme Nefesi
         return FeatherIcons.sunset;
-      case 'Canlandırıcı Diyafram':
-        return FeatherIcons.sun;
-      case 'Sabah Nefesi':
+      case BreathingType.energizing: // Sabah Nefesi
         return FeatherIcons.sunrise;
-      case 'Güne Başlama Nefesi (6-4)':
+      case BreathingType.vitalizing: // Güne Başlangıç
         return FeatherIcons.zap;
       default:
         return FeatherIcons.wind;
@@ -281,10 +257,18 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
     
     return GestureDetector(
       onTap: () {
-        final premiumProvider = context.read<PremiumProvider>();
-        if (exercise.isPremium && !premiumProvider.canAccessFeature('advanced_breathing')) {
-          premiumProvider.showFeatureLimitTrigger('advanced_breathing');
-          return;
+        // 🔒 Premium egzersiz kontrolü
+        if (exercise.isPremium) {
+          final premiumProvider = context.read<PremiumProvider>();
+          if (!premiumProvider.canAccessPremiumContent(exercise.isPremium)) {
+            HapticFeedback.heavyImpact();
+            final trigger = PremiumTrigger.predefinedTriggers.firstWhere(
+              (t) => t.targetFeatures.contains(PremiumProvider.featurePremiumExercises),
+              orElse: () => PremiumTrigger.predefinedTriggers.first,
+            );
+            SmartPremiumDialog.show(context, trigger);
+            return;
+          }
         }
         _showCycleSelectionModal(context, provider, exercise, category);
       },
@@ -320,24 +304,29 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
             ),
           ],
         ),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Sol: Mini thumbnail
-              Center(child: _buildCompactThumbnail(exercise, category)),
+        child: Stack(
+          children: [
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Sol: Mini thumbnail
+                  Center(child: _buildCompactThumbnail(exercise, category)),
 
-              SizedBox(width: isSmallScreen ? AppSpacing.small : AppSpacing.medium),
+                  SizedBox(width: isSmallScreen ? AppSpacing.small : AppSpacing.medium),
 
-              // Orta: Bilgiler
-              Expanded(child: _buildCompactInfo(exercise, category)),
+                  // Orta: Bilgiler
+                  Expanded(child: _buildCompactInfo(exercise, category)),
 
-              SizedBox(width: isSmallScreen ? 4 : AppSpacing.small),
+                  SizedBox(width: isSmallScreen ? 4 : AppSpacing.small),
 
-              // Sağ: Favorite + Play
-              _buildCompactActions(exercise, category),
-            ],
-          ),
+                  // Sağ: Favorite + Play
+                  _buildCompactActions(exercise, category),
+                ],
+              ),
+            ),
+            // PRO Badge artık _buildCompactInfo içinde başlık yanında gösteriliyor
+          ],
         ),
       ),
     );
@@ -442,17 +431,59 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Başlık
-              Text(
-                exercise.name,
-                style: AppTypography.headlineSmall.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: titleFontSize,
-                  height: 1.25,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              // Başlık + PRO Badge
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(
+                      exercise.name,
+                      style: AppTypography.headlineSmall.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: titleFontSize,
+                        height: 1.25,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // 🔒 PRO Badge - Başlık yanında
+                  if (exercise.isPremium)
+                    Consumer<PremiumProvider>(
+                      builder: (context, premium, _) {
+                        if (premium.isPremiumUser) return const SizedBox.shrink();
+                        return Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.premium,
+                                AppColors.premium.withOpacity(0.8),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.diamond, color: Colors.white, size: 12),
+                              const SizedBox(width: 3),
+                              Text(
+                                'PRO',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                ],
               ),
               SizedBox(height: isSmallScreen ? 4 : 6),
               // Açıklama
@@ -492,13 +523,13 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   String _getStepLabel(BreathingStepType type) {
     switch (type) {
       case BreathingStepType.inhale:
-        return 'al';
+        return AppStrings.inhale;
       case BreathingStepType.hold:
-        return 'tut';
+        return AppStrings.hold;
       case BreathingStepType.exhale:
-        return 'ver';
+        return AppStrings.exhale;
       case BreathingStepType.holdAfterExhale:
-        return 'bekle';
+        return AppStrings.holdAfterExhale;
       default:
         return '';
     }
@@ -530,7 +561,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
             ),
           ),
           child: Text(
-            '${step.duration}sn $label',
+            '${step.duration}${AppStrings.secondsShort} $label',
             style: AppTypography.labelSmall.copyWith(
               color: color,
               fontWeight: FontWeight.w700,
@@ -692,7 +723,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                                 ),
                                 SizedBox(height: MediaQuery.of(context).size.width < 400 ? AppSpacing.tiny : AppSpacing.small),
                                 Text(
-                                  'Kaç tekrar yapmak istiyorsun?',
+                                  AppStrings.howManyCyclesQuestion,
                                   style: AppTypography.bodyLarge.copyWith(
                                     color: AppColors.textSecondary,
                                     fontSize: MediaQuery.of(context).size.width < 400 ? 14 : 16,
@@ -764,14 +795,14 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                                     ),
                                   ),
                                   Text(
-                                    'tekrar',
+                                    AppStrings.cyclesLabel,
                                     style: TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: MediaQuery.of(context).size.width < 400 ? 9 : 10,
                                     ),
                                   ),
                                   Text(
-                                    '~${estimatedMinutes}dk',
+                                    '~${estimatedMinutes}${AppStrings.minutesShort}',
                                     style: TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: MediaQuery.of(context).size.width < 400 ? 8 : 9,
@@ -814,7 +845,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                               SizedBox(width: MediaQuery.of(context).size.width < 400 ? AppSpacing.tiny : AppSpacing.small),
                               Flexible(
                                 child: Text(
-                                  'Başlat ($selectedCycles tekrar)',
+                                  AppStrings.startWithCyclesFormat(selectedCycles),
                                   style: AppTypography.bodyLarge.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: Colors.white,

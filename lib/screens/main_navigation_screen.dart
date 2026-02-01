@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_strings.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
-import '../providers/theme_provider.dart';
+import '../constants/app_typography.dart';
 import '../providers/audio_provider.dart';
 import '../ui/components/ad_container.dart';
-import '../widgets/smart_premium_dialog.dart';
 import '../providers/premium_provider.dart';
+import '../services/payment_service.dart';
+import '../widgets/premium_subscription_sheet.dart';
 import 'home_screen.dart';
 import 'explore_screen.dart';
 import 'profile_screen.dart';
@@ -30,6 +32,9 @@ with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   AudioProvider? _audioProvider; // Provider referansını sakla
+  
+  // 🔒 Dialog gösterildi bayrağı
+  bool _hasShownExpiredDialog = false;
 
   // ⚡ PERFORMANS: Sayfalar const olarak tanımlanıyor - gereksiz rebuild'leri engeller
   // RepaintBoundary ile her sayfa izole ediliyor - bir sayfadaki değişiklik diğerlerini etkilemiyor
@@ -55,6 +60,161 @@ with TickerProviderStateMixin {
       curve: AppSpacing.easeOutQuart,
     ));
     _animationController.forward();
+    
+    // 🔔 Premium süresi doldu kontrolü (uygulama açılışında)
+    _checkPremiumExpired();
+    
+    // 🔔 Premium süresi doldu callback'ini dinle (runtime'da)
+    PaymentService.instance.onPremiumExpired = () {
+      if (mounted) {
+        final premiumProvider = Provider.of<PremiumProvider>(context, listen: false);
+        
+        // 🔒 Dialog gösterildi kontrolü
+        if (_hasShownExpiredDialog) {
+          if (kDebugMode) print('🔔 Expired callback ama dialog zaten gösterildi - atlanıyor');
+          return;
+        }
+        
+        // 🔔 YENİ MANTIK: Sadece gerçekten premium değilse dialog göster
+        if (!premiumProvider.isPremiumUser) {
+          if (kDebugMode) print('🔔 Premium expired callback - Dialog gösteriliyor');
+          _hasShownExpiredDialog = true;
+          _showPremiumExpiredDialog();
+        } else {
+          if (kDebugMode) print('🔔 Premium expired callback ama kullanıcı premium - dialog gösterilmiyor');
+        }
+      }
+    };
+  }
+  
+  /// Premium süresi dolmuş mu kontrol et ve dialog göster
+  void _checkPremiumExpired() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final paymentService = PaymentService.instance;
+      final premiumProvider = Provider.of<PremiumProvider>(context, listen: false);
+      
+      // 🔒 Dialog gösterildi kontrolü
+      if (_hasShownExpiredDialog) {
+        if (kDebugMode) print('🔔 Expired dialog zaten gösterildi - atlanıyor');
+        paymentService.clearPremiumExpiredFlag(); // Flag'i temizle
+        return;
+      }
+      
+      // 🔔 YENİ MANTIK: Hem PaymentService hem PremiumProvider durumunu kontrol et
+      // Sadece her ikisi de premium değilse expired dialog göster
+      if (paymentService.premiumExpired && !premiumProvider.isPremiumUser) {
+        if (kDebugMode) print('🔔 Premium süresi doldu - Dialog gösteriliyor');
+        _hasShownExpiredDialog = true;
+        _showPremiumExpiredDialog();
+        paymentService.clearPremiumExpiredFlag();
+      } else if (paymentService.premiumExpired && premiumProvider.isPremiumUser) {
+        // Premium durum düzeltilmiş - flag'i sadece temizle
+        if (kDebugMode) print('🔔 Premium expired flag var ama kullanıcı premium - sadece temizleniyor');
+        paymentService.clearPremiumExpiredFlag();
+      }
+    });
+  }
+  
+  /// Premium süresi doldu dialog'u
+  void _showPremiumExpiredDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.access_time_rounded,
+                color: AppColors.warning,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Premium Süreniz Doldu',
+                style: AppTypography.headlineSmall.copyWith(
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Premium aboneliğiniz sona erdi. Tüm premium özelliklere erişmeye devam etmek için aboneliğinizi yenileyin.',
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primaryAccent.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.star_rounded,
+                    color: AppColors.primaryAccent,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Reklamsız deneyim, tüm egzersizler ve daha fazlası!',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.primaryAccent,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Daha Sonra',
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Premium abonelik sheet'ini göster
+              PremiumSubscriptionSheet.show(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child: const Text('Yenile'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -103,27 +263,36 @@ with TickerProviderStateMixin {
 Widget build(BuildContext context) {
   return Consumer<PremiumProvider>(
     builder: (context, premiumProvider, child) {
-      // Premium tetikleyici kontrolü - ASKIYA ALINDI
-      // WidgetsBinding.instance.addPostFrameCallback((_) {
-      //   if (premiumProvider.currentActiveTrigger != null) {
-      //     SmartPremiumDialog.show(
-      //       context,
-      //       premiumProvider.currentActiveTrigger!,
-      //       onPurchase: () {
-      //         // Premium satın alma başarılı
-      //         ScaffoldMessenger.of(context).showSnackBar(
-      //           const SnackBar(
-      //             content: Text('Premium aktifleştirildi! 🎉'),
-      //             backgroundColor: Colors.green,
-      //           ),
-      //         );
-      //       },
-      //       onDismiss: () {
-      //         // Tetikleyici dismiss edildi
-      //       },
-      //     );
-      //   }
-      // });
+      // 🎉 Satın alma başarılı olduğunda snackbar göster
+      if (premiumProvider.justPurchased) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.amber, size: 24),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Premium aktifleştirildi! Tüm özelliklerin kilidi açıldı 🎉',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: AppColors.success,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 4),
+                margin: const EdgeInsets.all(16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            );
+            // Bildirimi temizle
+            premiumProvider.clearPurchaseNotification();
+          }
+        });
+      }
 
       return PopScope(
         canPop: false, // Geri tuşu davranışını kontrol et
@@ -206,9 +375,9 @@ Widget build(BuildContext context) {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: <Widget>[
-                _buildNavItem(FeatherIcons.home, 'Ana Sayfa', 0),
-                _buildNavItem(FeatherIcons.compass, 'Keşfet', 1),
-                _buildNavItem(FeatherIcons.user, 'Profil', 2),
+                _buildNavItem(FeatherIcons.home, AppStrings.navHome, 0),
+                _buildNavItem(FeatherIcons.compass, AppStrings.navExplore, 1),
+                _buildNavItem(FeatherIcons.user, AppStrings.navProfile, 2),
               ],
             ),
           ),

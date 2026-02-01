@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
+import '../constants/app_strings.dart';
 import '../models/sound_item.dart';
 import '../constants/app_typography.dart';
 import '../constants/app_spacing.dart';
@@ -77,7 +78,7 @@ class SoundPlayerCard extends StatelessWidget {
                           ),
                           const SizedBox(height: AppSpacing.small),
                           Text(
-                            'Premium',
+                            AppStrings.premiumLabel,
                             style: AppTypography.bodyMedium.copyWith(
                               color: AppColors.warning,
                               fontWeight: FontWeight.bold,

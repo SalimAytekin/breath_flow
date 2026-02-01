@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_strings.dart';
 import '../constants/app_theme.dart';
 import '../providers/sleep_provider.dart';
 import '../screens/sleep_input_screen.dart';
@@ -57,7 +58,7 @@ class SleepStatsWidget extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Uyku Borcu',
+                    AppStrings.sleepDebt,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -121,7 +122,7 @@ class SleepStatsWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Uyku Analizi',
+                        AppStrings.sleepAnalysis,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -155,7 +156,7 @@ class SleepStatsWidget extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   context,
-                  'Uyku Borcu',
+                  AppStrings.sleepDebt,
                   sleepProvider.formatSleepDebt(sleepProvider.weeklyDebt),
                   sleepProvider.weeklyDebt.isNegative ? AppColors.error : AppColors.success,
                   sleepProvider.weeklyDebt.isNegative ? FeatherIcons.trendingDown : FeatherIcons.trendingUp,
@@ -165,7 +166,7 @@ class SleepStatsWidget extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   context,
-                  'Ortalama Uyku',
+                  AppStrings.averageSleep,
                   sleepProvider.formatDuration(sleepProvider.weeklyAverageSleep),
                   AppColors.primary,
                   FeatherIcons.clock,
@@ -192,7 +193,7 @@ class SleepStatsWidget extends StatelessWidget {
               Expanded(
                 child: _buildActionButton(
                   context,
-                  'Bugünü Kaydet',
+                  AppStrings.saveTodayButton,
                   FeatherIcons.plus,
                   AppColors.primary,
                   () => _navigateToSleepInput(context),
@@ -202,7 +203,7 @@ class SleepStatsWidget extends StatelessWidget {
               Expanded(
                 child: _buildActionButton(
                   context,
-                  'Analiz Gör',
+                  AppStrings.viewAnalysisButton,
                   FeatherIcons.barChart2,
                   AppColors.focus,
                   () => _navigateToSleepAnalytics(context),
@@ -259,13 +260,13 @@ class SleepStatsWidget extends StatelessWidget {
     
     if (qualityScore >= 80) {
       qualityColor = AppColors.success;
-      qualityText = 'Mükemmel';
+      qualityText = AppStrings.qualityPerfect;
     } else if (qualityScore >= 60) {
       qualityColor = AppColors.warning;
-      qualityText = 'İyi';
+      qualityText = AppStrings.qualityGood;
     } else {
       qualityColor = AppColors.error;
-      qualityText = 'Geliştirilmeli';
+      qualityText = AppStrings.qualityNeedsWork;
     }
     
     return Container(
@@ -300,7 +301,7 @@ class SleepStatsWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Uyku Kalitesi',
+                  AppStrings.sleepQuality,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -335,7 +336,7 @@ class SleepStatsWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Haftalık Uyku Grafiği',
+          AppStrings.weeklySleepChart,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -400,9 +401,9 @@ class SleepStatsWidget extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildLegendItem('Hedefte', AppColors.success),
+            _buildLegendItem(AppStrings.onTarget, AppColors.success),
             const SizedBox(width: 16),
-            _buildLegendItem('Eksik', AppColors.error),
+            _buildLegendItem(AppStrings.insufficient, AppColors.error),
           ],
         ),
       ],
@@ -473,7 +474,15 @@ class SleepStatsWidget extends StatelessWidget {
   }
   
   String _getDayAbbreviation(DateTime date) {
-    final days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+    final days = [
+      AppStrings.dayMonShort,
+      AppStrings.dayTueShort,
+      AppStrings.dayWedShort,
+      AppStrings.dayThuShort,
+      AppStrings.dayFriShort,
+      AppStrings.daySatShort,
+      AppStrings.daySunShort,
+    ];
     return days[date.weekday - 1];
   }
 } 

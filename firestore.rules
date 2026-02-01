@@ -41,6 +41,31 @@ service cloud.firestore {
       allow write: if false; // Sadece admin panel üzerinden yönetilecek
     }
     
+    // 🔄 YENİ: Kullanıcı tercihleri (preferences)
+    match /users/{userId}/preferences/{doc} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // 🔄 YENİ: Kullanıcı istatistikleri (stats)
+    match /users/{userId}/stats/{doc} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // 🔄 YENİ: Kullanıcı favorileri (favorites)
+    match /users/{userId}/favorites/{doc} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // 🔄 YENİ: Haftalık aktiviteler (activities)
+    match /users/{userId}/activities/{activityId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // 🔄 YENİ: Premium durumu (premium)
+    match /users/{userId}/premium/{doc} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
     // Kullanıcı gizli verileri (günlük girişleri)
     match /users/{userId}/journal_entries/{entryId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
@@ -82,19 +107,19 @@ service cloud.firestore {
   }
 }
 
-// Veri doğrulama fonksiyonları
-function isValidEmail(emailValue) {
-  return emailValue.matches('.*@.*\\..*');
-}
+// Veri doğrulama fonksiyonları (gelecekte kullanılabilir)
+// function isValidEmail(emailValue) {
+//   return emailValue.matches('.*@.*\\..*');
+// }
 
-function isValidTimestamp(timeValue) {
-  return timeValue is timestamp;
-}
+// function isValidTimestamp(timeValue) {
+//   return timeValue is timestamp;
+// }
 
-function isValidUserData(userData) {
-  return userData.keys().hasAll(['email', 'createdAt', 'lastLoginAt', 'isPremium'])
-    && isValidEmail(userData.email)
-    && isValidTimestamp(userData.createdAt)
-    && isValidTimestamp(userData.lastLoginAt)
-    && userData.isPremium is bool;
-} 
+// function isValidUserData(userData) {
+//   return userData.keys().hasAll(['email', 'createdAt', 'lastLoginAt', 'isPremium'])
+//     && isValidEmail(userData.email)
+//     && isValidTimestamp(userData.createdAt)
+//     && isValidTimestamp(userData.lastLoginAt)
+//     && userData.isPremium is bool;
+// }

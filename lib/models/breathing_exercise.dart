@@ -1,4 +1,5 @@
 import '../services/asset_manager.dart';
+import '../data/breathing_exercises_loader.dart';
 
 enum BreathingType {
   boxBreathing,
@@ -19,6 +20,8 @@ enum BreathingType {
   moonBreathing,
   bodyScan,
   threePartBreath,
+  energizing,
+  vitalizing,
   custom,
 }
 
@@ -82,18 +85,8 @@ class BreathingExercise {
   }
 
   String _getStepTypeText(BreathingStepType stepType) {
-    switch (stepType) {
-      case BreathingStepType.inhale:
-        return 'al';
-      case BreathingStepType.hold:
-        return 'tut';
-      case BreathingStepType.exhale:
-        return 'ver';
-      case BreathingStepType.holdAfterExhale:
-        return 'bekle';
-      default:
-        return '';
-    }
+    // Çoklu dil desteği için lokalize loader'dan al
+    return BreathingExercisesLoader.getStepTypeText(stepType);
   }
 
   /// Bir tekrarnün toplam süresini saniye cinsinden döndürür
@@ -101,8 +94,14 @@ class BreathingExercise {
     return steps.fold<int>(0, (total, step) => total + step.duration);
   }
 
-  static List<BreathingExercise> get allExercises => [
-        // =========== ODAKLANMA VE DİKKAT ===========
+  /// Tüm nefes egzersizlerini döndürür (çoklu dil desteği - otomatik lokalize)
+  static List<BreathingExercise> get allExercises {
+    // Lokalize loader kullanarak seçili dile göre egzersizleri döndür
+    return BreathingExercisesLoader.getAllExercises();
+  }
+
+  // Eski hardcoded data kaldırıldı - artık lib/data/breathing_exercises_tr.dart dosyasında
+  /* static List<BreathingExercise> get allExercises => [
         BreathingExercise(
           type: BreathingType.boxBreathing,
           name: 'Kutu Nefesi (4-4-4-4)',
@@ -288,7 +287,7 @@ class BreathingExercise {
           imagePath: AssetManager.guneBaslamaNefesi,
           isPremium: true, // Premium egzersiz
         ),
-      ];
+      ]; */
 
   int get totalCycleTime => steps.fold(0, (sum, step) => sum + step.duration);
 }

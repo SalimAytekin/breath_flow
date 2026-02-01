@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
+import 'package:provider/provider.dart';
+import '../constants/app_strings.dart';
 import '../models/sound_item.dart';
+import '../models/premium_trigger.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
 import '../constants/app_typography.dart';
 import '../screens/immersive_sound_player_screen.dart';
 import '../providers/audio_provider.dart';
 import '../providers/user_preferences_provider.dart';
-import 'package:provider/provider.dart';
 import '../providers/premium_provider.dart';
+import '../widgets/smart_premium_dialog.dart';
 
 class SoundCard extends StatefulWidget {
   final SoundItem sound;
@@ -77,6 +80,21 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
 
   void _onCardTap() {
     HapticFeedback.mediumImpact();
+    
+    // 🔒 Premium içerik kontrolü
+    if (widget.sound.isPremium) {
+      final premiumProvider = Provider.of<PremiumProvider>(context, listen: false);
+      if (!premiumProvider.canAccessPremiumContent(widget.sound.isPremium)) {
+        HapticFeedback.heavyImpact();
+        final trigger = PremiumTrigger.predefinedTriggers.firstWhere(
+          (t) => t.targetFeatures.contains(PremiumProvider.featurePremiumSounds),
+          orElse: () => PremiumTrigger.predefinedTriggers.first,
+        );
+        SmartPremiumDialog.show(context, trigger);
+        return;
+      }
+    }
+    
     if (widget.onTap != null) {
       widget.onTap!(widget.sound);
       return;
@@ -104,6 +122,21 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
 
   void _onPlayPauseButtonTap() {
     HapticFeedback.mediumImpact();
+    
+    // 🔒 Premium içerik kontrolü
+    if (widget.sound.isPremium) {
+      final premiumProvider = Provider.of<PremiumProvider>(context, listen: false);
+      if (!premiumProvider.canAccessPremiumContent(widget.sound.isPremium)) {
+        HapticFeedback.heavyImpact();
+        final trigger = PremiumTrigger.predefinedTriggers.firstWhere(
+          (t) => t.targetFeatures.contains(PremiumProvider.featurePremiumSounds),
+          orElse: () => PremiumTrigger.predefinedTriggers.first,
+        );
+        SmartPremiumDialog.show(context, trigger);
+        return;
+      }
+    }
+    
     if (widget.onTap != null) {
       widget.onTap!(widget.sound);
       return;
@@ -193,10 +226,10 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
                     _buildGradientOverlay(),
                     _buildGlassmorphismOverlay(),
                     _buildContent(isThisSoundPlaying),
-                    // Premium badge kaldırıldı - Premium sistemi askıya alındı
-                    // if (widget.sound.isPremium) _buildProBadge(),
+                    // Sol üst: Favori butonu
                     _buildFavoriteButton(),
-                    _buildMixerButton(isPlayingInMixer),
+                    // Sağ üst: Premium badge (premium içerik ise) + Mix butonu
+                    _buildTopRightControls(isPlayingInMixer),
                   ],
                 ),
               ),
@@ -360,30 +393,126 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
     );
   }
 
-  // Premium badge kaldırıldı - Premium sistemi askıya alındı
-  // Widget _buildProBadge() {
-  //   return Positioned(
-  //     top: AppSpacing.medium,
-  //     left: AppSpacing.medium + 44, // Kalp ikonunun yanında
-  //     child: Container(
-  //       width: 28,
-  //       height: 28,
-  //       decoration: BoxDecoration(
-  //         color: Colors.black.withOpacity(0.6),
-  //         shape: BoxShape.circle,
-  //         border: Border.all(
-  //           color: AppColors.premium.withOpacity(0.8),
-  //           width: 1.5,
-  //         ),
-  //       ),
-  //       child: Icon(
-  //         Icons.diamond,
-  //         color: AppColors.premium,
-  //         size: 14,
-  //       ),
-  //     ),
-  //   );
-  // }
+  /// Sağ üst kontroller: Mix butonu (PRO badge sol üstte ayrı gösterilecek)
+  Widget _buildTopRightControls(bool isPlayingInMixer) {
+    return Positioned(
+      top: AppSpacing.medium,
+      right: AppSpacing.medium,
+      child: Consumer<PremiumProvider>(
+        builder: (context, premiumProvider, child) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Premium badge - Favori butonunun yanında göster
+              if (widget.sound.isPremium && !premiumProvider.isPremiumUser)
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.premium,
+                        AppColors.premium.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.premium.withOpacity(0.4),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.diamond,
+                        color: Colors.white,
+                        size: 11,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        'PRO',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              // Mix butonu
+              _buildMixButton(isPlayingInMixer, premiumProvider),
+            ],
+          );
+        },
+      ),
+    );
+  }
+  
+  /// Mix butonu
+  Widget _buildMixButton(bool isPlayingInMixer, PremiumProvider premiumProvider) {
+    return GestureDetector(
+      onTap: () {
+        final audioProvider = Provider.of<AudioProvider>(context, listen: false);
+        
+        // Mix limiti kontrolü - Merkezi sistem kullan
+        final canAdd = premiumProvider.canAddToMix(audioProvider.mixerSounds.length);
+        final isAlreadyInMix = audioProvider.mixerSounds.any((s) => s.id == widget.sound.id);
+        
+        if (!canAdd && !isAlreadyInMix) {
+          HapticFeedback.heavyImpact();
+          final trigger = PremiumTrigger.predefinedTriggers.firstWhere(
+            (t) => t.targetFeatures.contains(PremiumProvider.featureUnlimitedMixes),
+            orElse: () => PremiumTrigger.predefinedTriggers.first,
+          );
+          SmartPremiumDialog.show(context, trigger);
+          return;
+        }
+        
+        _onMixerButtonTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: isPlayingInMixer 
+              ? AppColors.secondaryAccent.withValues(alpha: 0.9) 
+              : Colors.black.withValues(alpha: 0.5),
+          border: Border.all(
+            color: isPlayingInMixer
+                ? AppColors.secondaryAccent
+                : Colors.white.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isPlayingInMixer ? FeatherIcons.check : FeatherIcons.plus,
+              color: Colors.white,
+              size: 16,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              AppStrings.mixButton,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildFavoriteButton() {
     return Consumer<UserPreferencesProvider>(
@@ -420,64 +549,4 @@ class _SoundCardState extends State<SoundCard> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildMixerButton(bool isPlayingInMixer) {
-    return Positioned(
-      top: AppSpacing.medium,
-      right: AppSpacing.medium,
-      child: GestureDetector(
-        onTap: () {
-          // Premium sistemi askıya alındı - mix limiti yok
-          // const maxFreeMixCount = 3; // 2 veya 3; burada 3 kullandık
-          // final isAtLimit = !premiumProvider.isPremiumUser &&
-          //     audioProvider.mixerSounds.length >= maxFreeMixCount &&
-          //     !audioProvider.mixerSounds.any((s) => s.id == widget.sound.id);
-
-          // if (isAtLimit) {
-          //   final trigger = PremiumTrigger.predefinedTriggers.firstWhere(
-          //     (t) => t.targetFeatures.contains('unlimited_mixes'),
-          //     orElse: () => PremiumTrigger.predefinedTriggers.first,
-          //   );
-          //   SmartPremiumDialog.show(context, trigger);
-          //   return;
-          // }
-          _onMixerButtonTap();
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: isPlayingInMixer 
-                ? AppColors.secondaryAccent.withOpacity(0.9) 
-                : Colors.black.withOpacity(0.5),
-            border: Border.all(
-              color: isPlayingInMixer
-                  ? AppColors.secondaryAccent
-                  : Colors.white.withOpacity(0.3),
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isPlayingInMixer ? FeatherIcons.check : FeatherIcons.plus,
-                color: Colors.white,
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Mix',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

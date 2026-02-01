@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_strings.dart';
 import '../models/sound_item.dart';
 import '../providers/audio_provider.dart';
 import '../widgets/sound_player_card.dart';
@@ -55,10 +56,10 @@ class _SleepScreenState extends State<SleepScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Uyku Sesleri', style: AppTypography.displaySmall),
+              Text(AppStrings.sleepSoundsTitle, style: AppTypography.displaySmall),
               const SizedBox(height: AppSpacing.small),
               Text(
-                'Rahatlatıcı seslerle daha hızlı uykuya dalın.',
+                AppStrings.sleepSoundsDesc,
                 style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.large),

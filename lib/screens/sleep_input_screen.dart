@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:intl/intl.dart';
 import 'dart:ui';
 import '../constants/app_colors.dart';
+import '../constants/app_strings.dart';
 import '../models/sleep_entry.dart';
 import '../providers/sleep_provider.dart';
 import '../providers/user_preferences_provider.dart';
@@ -204,7 +207,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
                 ),
               ),
               title: Text(
-                widget.existingEntry != null ? 'Uyku Verini Düzenle' : 'Uyku Verini Gir',
+                widget.existingEntry != null ? AppStrings.sleepDataEdit : AppStrings.sleepDataEntry,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -293,7 +296,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Uyku Takibi',
+                  AppStrings.sleepTracking,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
@@ -310,7 +313,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Kaliteli uyku için verilerinizi kaydedin',
+                  AppStrings.sleepTrackingDesc,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.white.withOpacity(0.9),
@@ -397,7 +400,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Tarih Seçin',
+                    AppStrings.selectDateLabel,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -448,7 +451,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
       children: [
         Expanded(
           child: _buildPremiumTimeCard(
-            title: 'Yatma',
+            title: AppStrings.bedTime,
             time: bedTime,
             icon: FeatherIcons.moon,
             color: AppColors.sleep,
@@ -458,7 +461,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
         const SizedBox(width: 16),
         Expanded(
           child: _buildPremiumTimeCard(
-            title: 'Uyanma',
+            title: AppStrings.wakeTime,
             time: wakeTime,
             icon: FeatherIcons.sun,
             color: AppColors.energy,
@@ -647,7 +650,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Uyku Özeti',
+                AppStrings.sleepSummary,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -664,7 +667,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
             children: [
               Expanded(
                 child: _buildPremiumSummaryCard(
-                  'Uyuduğun Süre',
+                  AppStrings.sleptDuration,
                   _formatDuration(actualSleep),
                   AppColors.primary,
                   FeatherIcons.clock,
@@ -673,7 +676,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: _buildPremiumSummaryCard(
-                  'Hedef',
+                  AppStrings.target,
                   '${SleepEntry.standardTargetHours}s 0dk',
                   AppColors.focus,
                   FeatherIcons.target,
@@ -771,31 +774,31 @@ class _SleepInputScreenState extends State<SleepInputScreen>
     if (isOnTarget && isHealthy) {
       color = AppColors.success;
       icon = FeatherIcons.checkCircle;
-      debtText = 'Mükemmel! Hedefinde uyudun 🎯';
+      debtText = AppStrings.perfectOnTarget;
     } else if (isOnTarget && !isHealthy) {
       color = AppColors.warning;
       icon = FeatherIcons.alertTriangle;
-      debtText = 'Hedefinde ama dikkat! ⚠️';
+      debtText = AppStrings.onTargetButWarning;
       if (actualHours < 7) {
-        healthWarning = 'Sağlığın için ${7 - actualHours} saat daha uyumalısın. Kendine iyi bak! 💙';
+        healthWarning = AppStrings.needMoreSleepHealth.replaceAll('{0}', (7 - actualHours).toString());
       } else {
-        healthWarning = 'Çok fazla uyku da yorgunluk yapabilir. Dengeli ol 😊';
+        healthWarning = AppStrings.tooMuchSleepWarning;
       }
     } else if (!isOnTarget && isHealthy) {
       color = AppColors.success;
       icon = FeatherIcons.checkCircle;
       final sleepProvider = context.read<SleepProvider>();
       debtText = sleepProvider.formatSleepDebt(debt);
-      healthWarning = 'Sağlıklı aralıkta uyudun, harika! ✨';
+      healthWarning = AppStrings.healthyRangeSleep;
     } else {
       color = AppColors.error;
       icon = FeatherIcons.trendingDown;
       final sleepProvider = context.read<SleepProvider>();
       debtText = sleepProvider.formatSleepDebt(debt);
       if (actualHours < 7) {
-        healthWarning = 'Sağlığın için ${7 - actualHours} saat daha uyumalısın. Sen buna layıksın! ❤️';
+        healthWarning = AppStrings.needMoreSleepDeserve.replaceAll('{0}', (7 - actualHours).toString());
       } else {
-        healthWarning = 'Hedefini aştın ve çok uyudun. Dengeli uyku önemli 🌙';
+        healthWarning = AppStrings.exceededTargetWarning;
       }
     }
     
@@ -849,7 +852,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Uyku Durumu',
+                      AppStrings.sleepStatus,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.white.withOpacity(0.8),
@@ -964,7 +967,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
                 ),
               ),
               label: Text(
-                widget.existingEntry != null ? 'Düzenle ve Analiz Et' : 'Kaydet ve Analiz Et',
+                widget.existingEntry != null ? AppStrings.editAndAnalyze : AppStrings.saveAndAnalyze,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -991,7 +994,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
                           Icon(FeatherIcons.alertCircle, color: Colors.white),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: Text('Uyku süresi en az 1 saat olmalıdır!'),
+                            child: Text(AppStrings.sleepMinimumError),
                           ),
                         ],
                       ),
@@ -1011,7 +1014,7 @@ class _SleepInputScreenState extends State<SleepInputScreen>
                           Icon(FeatherIcons.alertCircle, color: Colors.white),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: Text('Uyku süresi 16 saatten fazla olamaz!'),
+                            child: Text(AppStrings.sleepMaximumError),
                           ),
                         ],
                       ),
@@ -1094,10 +1097,10 @@ class _SleepInputScreenState extends State<SleepInputScreen>
       initialDate: selectedDate,
       firstDate: DateTime.now().subtract(const Duration(days: 30)),
       lastDate: DateTime.now(),
-      locale: const Locale('tr', 'TR'), // Türkçe dil desteği
-      confirmText: 'Tamam',
-      cancelText: 'İptal',
-      helpText: 'Tarih Seç',
+      locale: context.locale,
+      confirmText: AppStrings.ok,
+      cancelText: AppStrings.cancel,
+      helpText: AppStrings.selectDateLabel,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -1143,17 +1146,20 @@ class _SleepInputScreenState extends State<SleepInputScreen>
   }
   
   String _formatDate(DateTime date) {
-    final weekdays = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
-    final months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
-                    'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
-    
-    return '${date.day} ${months[date.month - 1]}, ${weekdays[date.weekday - 1]}';
+    final locale = context.locale.toString();
+    final formatter = DateFormat('d MMMM, EEEE', locale);
+    return formatter.format(date);
   }
   
   String _formatDuration(Duration duration) {
     final hours = duration.inHours;
     final minutes = duration.inMinutes % 60;
-    return '${hours}s ${minutes}dk';
+    final locale = context.locale.toString();
+    if (locale.startsWith('tr')) {
+      return '${hours}s ${minutes}dk';
+    } else {
+      return '${hours}h ${minutes}m';
+    }
   }
 
   Duration _calculateDuration() {

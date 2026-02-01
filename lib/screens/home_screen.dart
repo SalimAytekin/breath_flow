@@ -68,14 +68,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final now = DateTime.now();
     final hour = now.hour;
     String greeting;
-    if (hour < 12) {
-      greeting = AppStrings.morningGreeting;
-    } else if (hour < 17) {
-      greeting = AppStrings.afternoonGreeting;
-    } else if (hour < 22) {
-      greeting = AppStrings.eveningGreeting;
+    if (hour >= 5 && hour < 12) {
+      greeting = AppStrings.morningGreeting; // 05:00 - 11:59 Günaydın
+    } else if (hour >= 12 && hour < 17) {
+      greeting = AppStrings.afternoonGreeting; // 12:00 - 16:59 İyi Günler
+    } else if (hour >= 17 && hour < 22) {
+      greeting = AppStrings.eveningGreeting; // 17:00 - 21:59 İyi Akşamlar
     } else {
-      greeting = AppStrings.nightGreeting;
+      greeting = AppStrings.nightGreeting; // 22:00 - 04:59 İyi Geceler
     }
 
     return Scaffold(
@@ -180,28 +180,28 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       icon = FeatherIcons.sun;
       gradient = AppColors.energyGradient;
       exerciseType = BreathingType.deepBreathing;
-      exerciseName = 'Sabah Nefesi';
+      exerciseName = AppStrings.morningBreathName;
     } else if (hour < 17) {
       title = AppStrings.lunchBreak;
       description = AppStrings.lunchBreakDesc;
       icon = FeatherIcons.coffee;
       gradient = AppColors.focusGradient;
       exerciseType = BreathingType.boxBreathing;
-      exerciseName = 'Kutu Nefesi (4-4-4-4)';
+      exerciseName = AppStrings.boxBreathingName;
     } else if (hour < 22) {
       title = AppStrings.eveningRelax;
       description = AppStrings.eveningRelaxDesc;
       icon = FeatherIcons.sunset;
       gradient = AppColors.relaxationGradient;
       exerciseType = BreathingType.extendedExhale;
-      exerciseName = 'Uzunca Nefes Ver (4-6)';
+      exerciseName = AppStrings.longExhaleName;
     } else {
       title = AppStrings.sleepPrep;
       description = AppStrings.sleepPrepDesc;
       icon = FeatherIcons.moon;
       gradient = AppColors.sleepGradient;
       exerciseType = BreathingType.custom;
-      exerciseName = 'Yavaşlatıcı Nefes';
+      exerciseName = AppStrings.slowingBreathName;
     }
     
     return Semantics(
@@ -534,34 +534,35 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   /// 🎯 Mood'a Göre Önerileri Al - GÖRSEL VERSİYON
+  /// ✅ Tüm öneriler premium olmayan içeriklerden seçildi
   List<Map<String, dynamic>> _getMoodRecommendations() {
     switch (_selectedMood.value) { // ⚡ ValueNotifier value
       case 'rahatlama':
         return [
           {
-            'emoji': '🌬️',
-            'title': AppStrings.awarenessBreath,
-            'subtitle': AppStrings.awarenessBreathDesc,
+            'emoji': '🌙',
+            'title': AppStrings.slowingBreath, // Yavaşlatıcı Nefes - FREE
+            'subtitle': AppStrings.slowingBreathDesc,
             'color': AppColors.relaxation,
             'gradient': AppColors.relaxationGradient,
             'isBreathing': true,
-            'onTap': () => _showBreathingDurationDialog(context, BreathingType.deepBreathing, AppStrings.awarenessBreath),
+            'onTap': () => _showBreathingDurationDialog(context, BreathingType.moonBreathing, AppStrings.slowingBreath),
           },
           {
-            'emoji': '🌲',
-            'title': AppStrings.forestSoundsTitle,
-            'subtitle': AppStrings.forestSoundsDesc,
+            'emoji': '🔥',
+            'title': AppStrings.campfireTitle, // Kamp Ateşi - FREE
+            'subtitle': AppStrings.campfireDesc,
             'color': AppColors.relaxation,
             'gradient': AppColors.relaxationGradient,
             'isBreathing': false,
-            'onTap': () => _playSound(context, 'forest'),
+            'onTap': () => _playSound(context, 'campfire'),
           },
         ];
       case 'sakinlesme':
         return [
           {
             'emoji': '🫧',
-            'title': AppStrings.extendedExhale,
+            'title': AppStrings.extendedExhale, // Uzunca Nefes Ver - FREE
             'subtitle': AppStrings.extendedExhaleDesc,
             'color': AppColors.focus,
             'gradient': AppColors.focusGradient,
@@ -570,28 +571,28 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           },
           {
             'emoji': '🌧️',
-            'title': AppStrings.heavyRainTitle,
-            'subtitle': AppStrings.heavyRainDesc,
+            'title': AppStrings.lightRainTitle, // Hafif Yağmur - FREE
+            'subtitle': AppStrings.lightRainDesc,
             'color': AppColors.focus,
             'gradient': AppColors.focusGradient,
             'isBreathing': false,
-            'onTap': () => _playSound(context, 'heavy_rain'),
+            'onTap': () => _playSound(context, 'light_rain'),
           },
         ];
       case 'uyku':
         return [
           {
             'emoji': '🌙',
-            'title': AppStrings.slowingBreath,
+            'title': AppStrings.slowingBreath, // Yavaşlatıcı Nefes - FREE
             'subtitle': AppStrings.slowingBreathDesc,
             'color': AppColors.sleep,
             'gradient': AppColors.sleepGradient,
             'isBreathing': true,
-            'onTap': () => _showBreathingDurationDialog(context, BreathingType.custom, AppStrings.slowingBreath),
+            'onTap': () => _showBreathingDurationDialog(context, BreathingType.moonBreathing, AppStrings.slowingBreath),
           },
           {
             'emoji': '🦗',
-            'title': AppStrings.nightCrickets,
+            'title': AppStrings.nightCrickets, // Gece Böcekleri - FREE
             'subtitle': AppStrings.nightCricketsDesc,
             'color': AppColors.sleep,
             'gradient': AppColors.sleepGradient,
@@ -712,7 +713,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    isBreathing ? 'Nefes' : 'Ses',
+                                    isBreathing ? AppStrings.breathLabel : AppStrings.soundLabel,
                                     style: TextStyle(
                                       fontSize: 9,
                                       fontWeight: FontWeight.w600,
@@ -903,7 +904,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   ),
                                 ),
                                 Text(
-                                  '~${estimatedMinutes}dk',
+                                  '~${estimatedMinutes}${AppStrings.minutesShort}',
                                   style: TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: isSmallScreen ? 8 : 9,
@@ -960,7 +961,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             SizedBox(width: isSmallScreen ? AppSpacing.tiny : AppSpacing.small),
                             Flexible(
                               child: Text(
-                                'Başlat ($selectedCycles tekrar)',
+                                '${AppStrings.start} ($selectedCycles ${AppStrings.cyclesLabel})',
                                 style: AppTypography.bodyLarge.copyWith(
                                   fontWeight: FontWeight.bold,
                                   fontSize: isSmallScreen ? 14 : 16,
@@ -1042,7 +1043,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Her gün kaç dakika aktivite yapmak istiyorsun?',
+                AppStrings.dailyGoalQuestion,
                 style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -1056,7 +1057,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
                 ),
                 child: Text(
-                  '$selectedMinutes\ndakika',
+                  '$selectedMinutes\n${AppStrings.minutesUnit}',
                   style: AppTypography.displayMedium.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -1082,13 +1083,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '5 dk',
+                    AppStrings.fiveMinutes,
                     style: AppTypography.caption.copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
                   Text(
-                    '60 dk',
+                    AppStrings.sixtyMinutes,
                     style: AppTypography.caption.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -1102,7 +1103,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               children: [
                 Expanded(
                   child: ProfessionalButton(
-                    text: 'İptal',
+                    text: AppStrings.cancel,
                     onPressed: () => Navigator.of(context).pop(),
                     buttonType: ButtonType.ghost,
                     buttonSize: ButtonSize.medium,
@@ -1111,7 +1112,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 const SizedBox(width: AppSpacing.medium),
                 Expanded(
                   child: ProfessionalButton(
-                    text: 'Kaydet',
+                    text: AppStrings.saveButton,
                     onPressed: () {
                       userPrefs.setDailyGoalMinutes(selectedMinutes);
                       Navigator.of(context).pop();

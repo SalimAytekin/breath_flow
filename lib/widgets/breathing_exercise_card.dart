@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/breathing_exercise.dart';
+import '../models/premium_trigger.dart';
 import '../constants/app_colors.dart';
 import '../providers/user_preferences_provider.dart';
+import '../providers/premium_provider.dart';
+import '../widgets/smart_premium_dialog.dart';
 
 class BreathingExerciseCard extends StatelessWidget {
   final BreathingExercise exercise;
@@ -29,7 +32,7 @@ class BreathingExerciseCard extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
+        onTap: () => _handleTap(context),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -127,24 +130,47 @@ class BreathingExerciseCard extends StatelessWidget {
                       );
                     },
                   ),
-                  // PRO etiketi kaldırıldı - Premium sistemi askıya alındı
-                  // const SizedBox(width: 8),
-                  // if (exercise.isPremium)
-                  //   Container(
-                  //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  //     decoration: BoxDecoration(
-                  //       color: AppColors.warning.withOpacity(0.1),
-                  //       borderRadius: BorderRadius.circular(8),
-                  //     ),
-                  //     child: Text(
-                  //       'PRO',
-                  //       style: TextStyle(
-                  //         color: AppColors.warning,
-                  //         fontSize: 10,
-                  //         fontWeight: FontWeight.bold,
-                  //       ),
-                  //     ),
-                  //   ),
+                  // PRO etiketi - Sadece premium olmayan kullanıcılara göster
+                  if (exercise.isPremium)
+                    Consumer<PremiumProvider>(
+                      builder: (context, premium, _) {
+                        if (premium.isPremiumUser) return const SizedBox.shrink();
+                        return Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.premium.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.premium.withValues(alpha: 0.3),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.diamond,
+                                color: Colors.white,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'PRO',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -180,6 +206,26 @@ class BreathingExerciseCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// 🔒 Premium kontrollü tıklama işleyicisi
+  void _handleTap(BuildContext context) {
+    // Premium egzersiz kontrolü
+    if (exercise.isPremium) {
+      final premiumProvider = Provider.of<PremiumProvider>(context, listen: false);
+      if (!premiumProvider.canAccessPremiumContent(exercise.isPremium)) {
+        HapticFeedback.heavyImpact();
+        final trigger = PremiumTrigger.predefinedTriggers.firstWhere(
+          (t) => t.targetFeatures.contains(PremiumProvider.featurePremiumExercises),
+          orElse: () => PremiumTrigger.predefinedTriggers.first,
+        );
+        SmartPremiumDialog.show(context, trigger);
+        return;
+      }
+    }
+    
+    // Premium değilse veya erişim varsa normal onTap çağır
+    onTap();
   }
 
   Color _getExerciseColor() {

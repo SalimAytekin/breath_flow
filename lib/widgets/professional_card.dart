@@ -1,7 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
+import '../constants/app_strings.dart';
 import '../constants/app_typography.dart';
 
 /// -----------------------------------------------------------------
@@ -395,7 +397,7 @@ class _ProfessionalCardState extends State<ProfessionalCard> with SingleTickerPr
                 borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
               ),
               child: Text(
-                'PRO',
+                AppStrings.proBadge,
                 style: AppTypography.labelSmall.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),

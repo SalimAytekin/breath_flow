@@ -58,34 +58,34 @@ class ExploreScreen extends StatelessWidget {
                 child: _buildSection(
                   context,
                   icon: FeatherIcons.wind,
-                  title: 'Nefes Egzersizleri',
-                  subtitle: 'Stres azaltma ve odaklanma teknikleri',
+                  title: AppStrings.breathingExercisesTitle,
+                  subtitle: AppStrings.breathingExercisesSubtitle,
                   children: [
                     // Ana kart - Tüm egzersizler
                     _buildFeatureCard(
-                      title: 'Tüm Egzersizler',
-                      subtitle: 'Kategoriler ve tüm nefes teknikleri',
+                      title: AppStrings.allExercises,
+                      subtitle: AppStrings.allExercisesSubtitle,
                       imageUrl: AssetManager.coverMeditationBell,
                       onTap: () => _navigateToBreathing(context),
                     ),
                     // Popüler egzersizler - Direkt başlatma
                     _buildFeatureCard(
-                      title: 'Kutu Nefes',
-                      subtitle: '4-4-4-4 ritmi ile sakinleşme',
+                      title: AppStrings.boxBreathingShort,
+                      subtitle: AppStrings.boxBreathingShortDesc,
                       imageUrl: AssetManager.kutuNefesi,
-                      onTap: () => _navigateToDirectExercise(context, 'Kutu Nefesi (4-4-4-4)'),
+                      onTap: () => _navigateToDirectExercise(context, BreathingType.boxBreathing),
                     ),
                     _buildFeatureCard(
-                      title: 'Yavaşlatıcı Nefes',
-                      subtitle: 'Her nefeste ritmi yavaşlat, uykuya hazırlan',
+                      title: AppStrings.slowingBreathShort,
+                      subtitle: AppStrings.slowingBreathShortDesc,
                       imageUrl: AssetManager.yavaslaticiNefes,
-                      onTap: () => _navigateToDirectExercise(context, 'Yavaşlatıcı Nefes'),
+                      onTap: () => _navigateToDirectExercise(context, BreathingType.deepBreathing),
                     ),
                     _buildFeatureCard(
-                      title: 'Diyafram Nefesi',
-                      subtitle: 'Karnından nefes al, stresi azalt',
-                      imageUrl: AssetManager.diyaframNefesi,
-                      onTap: () => _navigateToDirectExercise(context, 'Diyafram Nefesi'),
+                      title: AppStrings.extendedExhale, // Uzunca Nefes Ver - FREE (Diyafram premium)
+                      subtitle: AppStrings.extendedExhaleDesc,
+                      imageUrl: AssetManager.uzuncaNefesVer,
+                      onTap: () => _navigateToDirectExercise(context, BreathingType.extendedExhale),
                     ),
                   ],
                 ),
@@ -100,42 +100,42 @@ class ExploreScreen extends StatelessWidget {
                 child: _buildSection(
                   context,
                   icon: FeatherIcons.music,
-                  title: 'Ses Koleksiyonu',
-                  subtitle: 'Rahatlatıcı sesler ve karıştırıcı',
+                  title: AppStrings.soundCollection,
+                  subtitle: AppStrings.soundCollectionSubtitle,
                   children: [
                     _buildFeatureCard(
-                      title: 'Tüm Sesler',
-                      subtitle: 'Tüm ses koleksiyonunu keşfet',
+                      title: AppStrings.allSounds,
+                      subtitle: AppStrings.allSoundsSubtitle,
                       imageUrl: AssetManager.coverOcean,
                       onTap: () => _navigateToSounds(context),
                     ),
                     _buildFeatureCard(
-                      title: 'Uyku İçin',
-                      subtitle: 'Derin uykuya dalmanıza yardımcı',
+                      title: AppStrings.forSleep,
+                      subtitle: AppStrings.forSleepSubtitle,
                       imageUrl: AssetManager.coverRain,
                       onTap: () => _navigateToSoundsFiltered(
                         context,
-                        title: 'Uyku İçin Sesler',
+                        title: AppStrings.sleepSoundsTitle,
                         tags: ['sleep'],
                       ),
                     ),
                     _buildFeatureCard(
-                      title: 'Meditasyon & Rahatlama',
-                      subtitle: 'Huzurlu anlar için sesler',
+                      title: AppStrings.meditationRelaxation,
+                      subtitle: AppStrings.meditationRelaxationSubtitle,
                       imageUrl: AssetManager.coverMeditationBell,
                       onTap: () => _navigateToSoundsFiltered(
                         context,
-                        title: 'Meditasyon & Rahatlama',
+                        title: AppStrings.meditationRelaxationTitle,
                         tags: ['meditation', 'relaxation'],
                       ),
                     ),
                     _buildFeatureCard(
-                      title: 'Odaklanma & Çalışma',
-                      subtitle: 'Konsantrasyonunuzu artırın',
+                      title: AppStrings.focusWork,
+                      subtitle: AppStrings.focusWorkSubtitle,
                       imageUrl: AssetManager.coverLofi,
                       onTap: () => _navigateToSoundsFiltered(
                         context,
-                        title: 'Odaklanma & Çalışma',
+                        title: AppStrings.focusWorkTitle,
                         tags: ['focus'],
                       ),
                     ),
@@ -152,24 +152,24 @@ class ExploreScreen extends StatelessWidget {
                 child: _buildSection(
                   context,
                   icon: FeatherIcons.moon,
-                  title: 'Uyku Takibi',
-                  subtitle: 'Uyku kalitenizi takip edin ve analiz edin',
+                  title: AppStrings.sleepTracking,
+                  subtitle: AppStrings.sleepTrackingSubtitle,
                   children: [
                     _buildFeatureCard(
-                      title: 'Uyku Kaydı',
-                      subtitle: 'Ne kadar uyuduğunu kaydet',
+                      title: AppStrings.addSleepData,
+                      subtitle: AppStrings.recordSleepData,
                       imageUrl: AssetManager.sleepRecord,
                       onTap: () => _navigateToSleepInput(context),
                     ),
                     _buildFeatureCard(
-                      title: 'Uyku İstatistikleri',
-                      subtitle: 'Kalite ve trendlerini gör',
+                      title: AppStrings.sleepAnalysis,
+                      subtitle: AppStrings.sleepAnalysisSubtitle,
                       imageUrl: AssetManager.sleepStats,
                       onTap: () => _navigateToSleepAnalytics(context),
                     ),
                     _buildFeatureCard(
-                      title: 'Uyku Günlüğü',
-                      subtitle: 'Rüyalarını ve notlarını kaydet',
+                      title: AppStrings.sleepJournal,
+                      subtitle: AppStrings.sleepJournalSubtitle,
                       imageUrl: AssetManager.sleepJournal,
                       onTap: () => _navigateToSleepJournal(context),
                     ),
@@ -190,7 +190,7 @@ class ExploreScreen extends StatelessWidget {
   Widget _buildProfessionalHeader(BuildContext context) {
     return Semantics(
       header: true,
-      label: 'Keşfet sayfası',
+      label: AppStrings.explorePageLabel,
       child: ProfessionalCard(
         cardType: CardType.glass,
         padding: AppSpacing.cardPaddingAll,
@@ -225,14 +225,14 @@ class ExploreScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Keşfet',
+                    AppStrings.discover,
                     style: AppTypography.displaySmall.copyWith(
                       color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.tiny),
                   Text(
-                    'Tüm özellikler ve içerikler burada',
+                    AppStrings.allFeaturesHere,
                     style: AppTypography.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -379,11 +379,11 @@ class ExploreScreen extends StatelessWidget {
   }
 
   /// Direkt spesifik egzersizi başlat - Döngü seçimi ile
-  void _navigateToDirectExercise(BuildContext context, String exerciseName) {
+  void _navigateToDirectExercise(BuildContext context, BreathingType exerciseType) {
     try {
-      // Egzersizi bul
+      // Egzersizi type ile bul (lokalizasyondan bağımsız)
       final exercise = BreathingExercise.allExercises
-          .firstWhere((ex) => ex.name == exerciseName);
+          .firstWhere((ex) => ex.type == exerciseType);
       
       // Döngü seçim modalını göster
       _showCycleSelectionModal(context, exercise);
@@ -391,7 +391,7 @@ class ExploreScreen extends StatelessWidget {
       // Egzersiz bulunamadı - kullanıcıyı bilgilendir
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Egzersiz bulunamadı, tüm egzersizler sayfasına yönlendiriliyorsunuz'),
+          content: Text(AppStrings.exerciseNotFound),
           backgroundColor: AppColors.warning,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
@@ -448,7 +448,7 @@ class ExploreScreen extends StatelessWidget {
                               ),
                               SizedBox(height: isSmallScreen ? AppSpacing.tiny : AppSpacing.small),
                               Text(
-                                'Kaç tekrar yapmak istiyorsun?',
+                                AppStrings.howManyCycles,
                                 style: AppTypography.bodyLarge.copyWith(
                                   color: AppColors.textSecondary,
                                   fontSize: isSmallScreen ? 14 : 16,
@@ -520,14 +520,14 @@ class ExploreScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  'tekrar',
+                                  AppStrings.cycles,
                                   style: TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: isSmallScreen ? 9 : 10,
                                   ),
                                 ),
                                 Text(
-                                  '~${estimatedMinutes}dk',
+                                  '~$estimatedMinutes${AppStrings.minutesShort}',
                                   style: TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: isSmallScreen ? 8 : 9,
@@ -580,7 +580,7 @@ class ExploreScreen extends StatelessWidget {
                             SizedBox(width: isSmallScreen ? AppSpacing.tiny : AppSpacing.small),
                             Flexible(
                               child: Text(
-                                'Başlat ($selectedCycles tekrar)',
+                                '${AppStrings.start} ($selectedCycles ${AppStrings.cycles})',
                                 style: AppTypography.bodyLarge.copyWith(
                                   fontWeight: FontWeight.bold,
                                   fontSize: isSmallScreen ? 14 : 16,

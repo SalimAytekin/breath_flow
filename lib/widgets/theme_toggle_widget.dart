@@ -3,6 +3,7 @@ import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
+import '../constants/app_strings.dart';
 import '../constants/app_typography.dart';
 import '../providers/theme_provider.dart';
 
@@ -176,7 +177,7 @@ class _ThemeToggleWidgetState extends State<ThemeToggleWidget>
           ),
         ),
         label: Text(
-          widget.customLabel ?? (isDark ? 'Koyu Tema' : 'Açık Tema'),
+          widget.customLabel ?? (isDark ? AppStrings.darkTheme : AppStrings.lightTheme),
           style: AppTypography.labelMedium,
         ),
         style: ElevatedButton.styleFrom(
@@ -298,7 +299,7 @@ class _ThemeToggleWidgetState extends State<ThemeToggleWidget>
               if (widget.showLabel) ...[
                 const SizedBox(width: AppSpacing.small),
                 Text(
-                  widget.customLabel ?? (isDark ? 'Koyu Tema' : 'Açık Tema'),
+                  widget.customLabel ?? (isDark ? AppStrings.darkTheme : AppStrings.lightTheme),
                   style: AppTypography.labelMedium.copyWith(
                     color: isDark 
                         ? AppColors.textPrimary
@@ -354,7 +355,7 @@ class ThemeSelectionDialog extends StatelessWidget {
             ),
           ),
           title: Text(
-            'Tema Seçimi',
+            AppStrings.themeSelection,
             style: AppTypography.headlineSmall.copyWith(
               color: isDark 
                   ? AppColors.textPrimary
@@ -368,7 +369,7 @@ class ThemeSelectionDialog extends StatelessWidget {
                 context,
                 themeProvider,
                 ThemeMode.light,
-                'Açık Tema',
+                AppStrings.lightTheme,
                 FeatherIcons.sun,
                 isDark,
               ),
@@ -377,7 +378,7 @@ class ThemeSelectionDialog extends StatelessWidget {
                 context,
                 themeProvider,
                 ThemeMode.dark,
-                'Koyu Tema',
+                AppStrings.darkTheme,
                 FeatherIcons.moon,
                 isDark,
               ),
@@ -386,7 +387,7 @@ class ThemeSelectionDialog extends StatelessWidget {
                 context,
                 themeProvider,
                 ThemeMode.system,
-                'Sistem Ayarı',
+                AppStrings.systemSetting,
                 FeatherIcons.smartphone,
                 isDark,
               ),

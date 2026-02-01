@@ -376,13 +376,13 @@ class AssetManager {
 
   // --- Huzurlu Uyku ---
   static String get yavaslaticiNefes => image('sounds/yavaslatici_nefes.jpg');
-  static String get bedenFarkindaligiNefesi => image('sounds/beden_farkindaligi_nefesi.jpg');
-  static String get gevseemeNefesi => image('sounds/gevseeme_nefesi.jpg');
+  static String get bedenFarkindaligi => image('sounds/beden_farkindaligi.jpg');
+  static String get gevsemeNefesi => image('sounds/gevseme_nefesi.jpg');
 
   // --- Enerji ve Zindelik ---
   static String get canlandiriciDiyafram => image('sounds/canlandirici_diyafram.jpg');
   static String get sabahNefesi => image('sounds/sabah_nefesi.jpg');
-  static String get guneBaslamaNefesi => image('sounds/gune_baslama_nefesi.jpg');
+  static String get guneBaslangic => image('sounds/gune_baslama_nefesi.jpg');
 
   // ================================
   // SLEEP TRACKING IMAGES

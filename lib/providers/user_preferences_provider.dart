@@ -1,14 +1,22 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/mood_type.dart';
 import '../models/weekly_activity.dart';
 import '../services/notification_service.dart';
+import '../services/user_data_sync_service.dart';
+import '../models/user_preferences_data.dart';
+import '../models/user_stats_data.dart';
+import '../models/user_favorites_data.dart';
 
 // Yeni eklenen enum
 enum MindfulSessionType { none, breathing, sleep, hrv, meditation }
 
 class UserPreferencesProvider extends ChangeNotifier {
+  // 🔄 Firestore sync servisi
+  final UserDataSyncService _syncService = UserDataSyncService();
+  bool _isSyncing = false;
   bool _notificationsEnabled = true;
   TimeOfDay _reminderTime = const TimeOfDay(hour: 20, minute: 0);
   int _dailyGoalMinutes = 10; // AppConstants.dailyGoalMinutesDefault
@@ -78,6 +86,17 @@ class UserPreferencesProvider extends ChangeNotifier {
   
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
+    
+    // 🔄 ADIM 1: Local verileri yükle (hızlı başlangıç)
+    await _loadLocalPreferences(prefs);
+    
+    // 🔄 ADIM 2: Firestore'dan sync et (arka planda)
+    if (_syncService.isUserLoggedIn) {
+      _syncFromFirestore();
+    }
+  }
+  
+  Future<void> _loadLocalPreferences(SharedPreferences prefs) async {
     
     _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
     _dailyGoalMinutes = prefs.getInt('daily_goal_minutes') ?? 10;
@@ -192,6 +211,9 @@ class UserPreferencesProvider extends ChangeNotifier {
       await notificationService.cancelAllReminders();
     }
     
+    // 🔄 Firestore'a sync et
+    _syncPreferencesToFirestore();
+    
     notifyListeners();
   }
   
@@ -211,6 +233,9 @@ class UserPreferencesProvider extends ChangeNotifier {
       );
     }
     
+    // 🔄 Firestore'a sync et
+    _syncPreferencesToFirestore();
+    
     notifyListeners();
   }
   
@@ -218,6 +243,10 @@ class UserPreferencesProvider extends ChangeNotifier {
     _dailyGoalMinutes = minutes;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('daily_goal_minutes', minutes);
+    
+    // 🔄 Firestore'a sync et
+    _syncPreferencesToFirestore();
+    
     notifyListeners();
   }
   
@@ -225,6 +254,10 @@ class UserPreferencesProvider extends ChangeNotifier {
     _preferredMood = mood;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('preferred_mood', mood.name.toLowerCase());
+    
+    // 🔄 Firestore'a sync et
+    _syncPreferencesToFirestore();
+    
     notifyListeners();
   }
   
@@ -283,6 +316,9 @@ class UserPreferencesProvider extends ChangeNotifier {
     await prefs.remove('last_hrv_timestamp');
     await prefs.remove('last_sound_timestamp');
     // --- Bitiş: İstatistikleri Sıfırlama ---
+    
+    // 🔄 Firestore'a sync et
+    _syncStatsToFirestore();
     
     notifyListeners();
   }
@@ -344,7 +380,7 @@ class UserPreferencesProvider extends ChangeNotifier {
       
       return todayActivity.totalMinutes;
     } catch (e) {
-      debugPrint('❌ Bugünkü dakika hesaplama hatası: $e');
+      if (kDebugMode) debugPrint('❌ Bugünkü dakika hesaplama hatası: $e');
       return 0; // Hata durumunda 0 döndür
     }
   }
@@ -497,7 +533,7 @@ class UserPreferencesProvider extends ChangeNotifier {
     if (_lastSoundSessionTimestamp != null) {
       final diff = now.difference(_lastSoundSessionTimestamp!).inSeconds;
       if (diff >= 0 && diff < 120) {
-        debugPrint('🚫 Yinelenen ses seansı algılandı (diff=${diff}s), kayıt atlandı');
+        if (kDebugMode) debugPrint('🚫 Yinelenen ses seansı algılandı (diff=${diff}s), kayıt atlandı');
         return;
       }
     }
@@ -516,7 +552,7 @@ class UserPreferencesProvider extends ChangeNotifier {
       soundMinutes: durationMinutes, // 🆕
     );
     
-    debugPrint('🎵 Ses dinleme seansı kaydedildi: $durationMinutes dakika');
+    if (kDebugMode) debugPrint('🎵 Ses dinleme seansı kaydedildi: $durationMinutes dakika');
     notifyListeners();
   }
   // --- Bitiş: Yeni Kayıt Metotları ---
@@ -574,6 +610,10 @@ class UserPreferencesProvider extends ChangeNotifier {
     
     // Kaydet
     await _saveWeeklyActivities();
+    
+    // 🔄 Firestore'a sync et
+    _syncActivitiesToFirestore();
+    
     notifyListeners();
   }
   
@@ -590,9 +630,9 @@ class UserPreferencesProvider extends ChangeNotifier {
       }
       
       await prefs.setString('weekly_activities', jsonString);
-      debugPrint('✅ Haftalık aktiviteler kaydedildi (${_weeklyActivities.length} kayıt)');
+      if (kDebugMode) debugPrint('✅ Haftalık aktiviteler kaydedildi (${_weeklyActivities.length} kayıt)');
     } catch (e) {
-      debugPrint('❌ Haftalık aktivite kaydetme hatası: $e');
+      if (kDebugMode) debugPrint('❌ Haftalık aktivite kaydetme hatası: $e');
       // Don't throw - continue app execution
     }
   }
@@ -614,7 +654,7 @@ class UserPreferencesProvider extends ChangeNotifier {
                 loadedActivities.add(WeeklyActivity.fromJson(json));
               }
             } catch (itemError) {
-              debugPrint('⚠️ Tek aktivite parse edilemedi, atlanıyor: $itemError');
+              if (kDebugMode) debugPrint('⚠️ Tek aktivite parse edilemedi, atlanıyor: $itemError');
               // Continue with other items instead of losing all data
             }
           }
@@ -623,17 +663,17 @@ class UserPreferencesProvider extends ChangeNotifier {
           
           if (loadedActivities.isEmpty && activitiesJson.isNotEmpty) {
             // All items failed to parse - corrupted data
-            debugPrint('❌ Tüm aktivite verileri bozuk, yedekten geri yükleme deneniyor');
+            if (kDebugMode) debugPrint('❌ Tüm aktivite verileri bozuk, yedekten geri yükleme deneniyor');
             await _tryRestoreFromBackup(prefs);
           }
         } catch (e) {
-          debugPrint('❌ JSON parse hatası: $e');
+          if (kDebugMode) debugPrint('❌ JSON parse hatası: $e');
           // Try to restore from backup before giving up
           await _tryRestoreFromBackup(prefs);
         }
       }
     } catch (e) {
-      debugPrint('❌ Haftalık aktivite yükleme hatası: $e');
+      if (kDebugMode) debugPrint('❌ Haftalık aktivite yükleme hatası: $e');
       _weeklyActivities = [];
     }
   }
@@ -647,12 +687,12 @@ class UserPreferencesProvider extends ChangeNotifier {
         _weeklyActivities = backupJson
             .map((json) => WeeklyActivity.fromJson(json))
             .toList();
-        debugPrint('✅ Yedekten ${_weeklyActivities.length} aktivite geri yüklendi');
+        if (kDebugMode) debugPrint('✅ Yedekten ${_weeklyActivities.length} aktivite geri yüklendi');
       } else {
         _weeklyActivities = [];
       }
     } catch (e) {
-      debugPrint('❌ Yedek geri yükleme başarısız: $e');
+      if (kDebugMode) debugPrint('❌ Yedek geri yükleme başarısız: $e');
       _weeklyActivities = [];
     }
   }
@@ -670,6 +710,9 @@ class UserPreferencesProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('favorite_exercises', jsonEncode(_favoriteExerciseIds));
     
+    // 🔄 Firestore'a sync et
+    _syncFavoritesToFirestore();
+    
     notifyListeners();
   }
   
@@ -684,6 +727,9 @@ class UserPreferencesProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('favorite_sounds', jsonEncode(_favoriteSoundIds));
     
+    // 🔄 Firestore'a sync et
+    _syncFavoritesToFirestore();
+    
     notifyListeners();
   }
   
@@ -696,6 +742,309 @@ class UserPreferencesProvider extends ChangeNotifier {
     await prefs.remove('favorite_exercises');
     await prefs.remove('favorite_sounds');
     
+    _syncFavoritesToFirestore();
+    
     notifyListeners();
+  }
+  
+  // ================================
+  // 🔄 FIRESTORE SYNC METODLARI
+  // ================================
+  
+  /// Firestore'dan tüm verileri yükle ve local ile birleştir
+  Future<void> _syncFromFirestore() async {
+    if (_isSyncing) return;
+    _isSyncing = true;
+    
+    try {
+      if (kDebugMode) debugPrint('🔄 Firestore sync başlatılıyor...');
+      
+      // Paralel olarak tüm verileri yükle
+      final results = await Future.wait([
+        _syncService.loadPreferences(),
+        _syncService.loadStats(),
+        _syncService.loadFavorites(),
+        _syncService.loadWeeklyActivities(),
+      ]);
+      
+      final remotePrefs = results[0] as UserPreferencesData?;
+      final remoteStats = results[1] as UserStatsData?;
+      final remoteFavorites = results[2] as UserFavoritesData?;
+      final remoteActivities = results[3] as List<WeeklyActivity>;
+      
+      // Tercihleri birleştir
+      if (remotePrefs != null) {
+        _notificationsEnabled = remotePrefs.notificationsEnabled;
+        _reminderTime = TimeOfDay(
+          hour: remotePrefs.reminderHour,
+          minute: remotePrefs.reminderMinute,
+        );
+        _dailyGoalMinutes = remotePrefs.dailyGoalMinutes;
+        _preferredMood = MoodType.values.firstWhere(
+          (mood) => mood.name.toLowerCase() == remotePrefs.preferredMood.toLowerCase(),
+          orElse: () => MoodType.relaxation,
+        );
+        _isFirstLaunch = remotePrefs.isFirstLaunch;
+        
+        // Local'e de kaydet
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('notifications_enabled', _notificationsEnabled);
+        await prefs.setInt('reminder_hour', _reminderTime.hour);
+        await prefs.setInt('reminder_minute', _reminderTime.minute);
+        await prefs.setInt('daily_goal_minutes', _dailyGoalMinutes);
+        await prefs.setString('preferred_mood', _preferredMood.name.toLowerCase());
+        await prefs.setBool('is_first_launch', _isFirstLaunch);
+      }
+      
+      // İstatistikleri birleştir
+      if (remoteStats != null) {
+        // 🔄 Remote öncelikli birleştirme (cross-device sync için)
+        // En yüksek değerleri kullan (conflict resolution)
+        final shouldUseRemote = remoteStats.totalSessions > _totalSessions ||
+            (_totalSessions == 0 && remoteStats.totalSessions > 0);
+        
+        if (shouldUseRemote) {
+          _totalSessions = remoteStats.totalSessions;
+          _totalMinutes = remoteStats.totalMinutes;
+          _currentStreak = remoteStats.currentStreak;
+          _lastSessionDate = remoteStats.lastSessionDate;
+          
+          if (kDebugMode) debugPrint('📊 Remote stats alındı: sessions=$_totalSessions, streak=$_currentStreak');
+          
+          // Local'e kaydet
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('total_sessions', _totalSessions);
+          await prefs.setInt('total_minutes', _totalMinutes);
+          await prefs.setInt('current_streak', _currentStreak);
+          if (_lastSessionDate != null) {
+            await prefs.setString('last_session_date', _lastSessionDate!.toIso8601String());
+          }
+        }
+      }
+      
+      // Favorileri birleştir
+      if (remoteFavorites != null) {
+        // Birleştir (union)
+        final allExercises = {..._favoriteExerciseIds, ...remoteFavorites.exerciseIds}.toList();
+        final allSounds = {..._favoriteSoundIds, ...remoteFavorites.soundIds}.toList();
+        
+        _favoriteExerciseIds = allExercises;
+        _favoriteSoundIds = allSounds;
+        
+        // Local'e kaydet
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('favorite_exercises', jsonEncode(_favoriteExerciseIds));
+        await prefs.setString('favorite_sounds', jsonEncode(_favoriteSoundIds));
+      }
+      
+      // Haftalık aktiviteleri birleştir
+      if (remoteActivities.isNotEmpty) {
+        // 🔄 Tarih bazlı birleştirme - EN YÜKSEK değerleri kullan (duplicate önleme)
+        final activityMap = <String, WeeklyActivity>{};
+        
+        // Local aktiviteleri ekle
+        for (final activity in _weeklyActivities) {
+          final key = activity.date.toIso8601String().split('T')[0];
+          activityMap[key] = activity;
+        }
+        
+        // Remote aktiviteleri ekle/güncelle
+        for (final activity in remoteActivities) {
+          final key = activity.date.toIso8601String().split('T')[0];
+          if (activityMap.containsKey(key)) {
+            // 🔄 EN YÜKSEK değerleri kullan (duplicate önleme için toplama yerine max)
+            final existing = activityMap[key]!;
+            activityMap[key] = WeeklyActivity(
+              date: activity.date,
+              breathingSessions: existing.breathingSessions > activity.breathingSessions 
+                  ? existing.breathingSessions : activity.breathingSessions,
+              soundSessions: existing.soundSessions > activity.soundSessions 
+                  ? existing.soundSessions : activity.soundSessions,
+              sleepSessions: existing.sleepSessions > activity.sleepSessions 
+                  ? existing.sleepSessions : activity.sleepSessions,
+              totalMinutes: existing.totalMinutes > activity.totalMinutes 
+                  ? existing.totalMinutes : activity.totalMinutes,
+              breathingMinutes: existing.breathingMinutes > activity.breathingMinutes 
+                  ? existing.breathingMinutes : activity.breathingMinutes,
+              soundMinutes: existing.soundMinutes > activity.soundMinutes 
+                  ? existing.soundMinutes : activity.soundMinutes,
+              sleepMinutes: existing.sleepMinutes > activity.sleepMinutes 
+                  ? existing.sleepMinutes : activity.sleepMinutes,
+            );
+          } else {
+            activityMap[key] = activity;
+          }
+        }
+        
+        _weeklyActivities = activityMap.values.toList();
+        await _saveWeeklyActivities();
+        if (kDebugMode) debugPrint('📊 Haftalık aktiviteler birleştirildi: ${_weeklyActivities.length} gün');
+      }
+      
+      if (kDebugMode) debugPrint('✅ Firestore sync tamamlandı');
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Firestore sync hatası: $e');
+    } finally {
+      _isSyncing = false;
+    }
+  }
+  
+  /// Tercihleri Firestore'a kaydet
+  Future<void> _syncPreferencesToFirestore() async {
+    if (!_syncService.isUserLoggedIn) return;
+    
+    final data = UserPreferencesData.fromLocal(
+      notificationsEnabled: _notificationsEnabled,
+      reminderHour: _reminderTime.hour,
+      reminderMinute: _reminderTime.minute,
+      dailyGoalMinutes: _dailyGoalMinutes,
+      preferredMood: _preferredMood,
+      isFirstLaunch: _isFirstLaunch,
+    );
+    
+    // Arka planda sync et (await kullanma)
+    _syncService.syncPreferences(data).catchError((e) {
+      if (kDebugMode) debugPrint('❌ Tercih sync hatası: $e');
+    });
+  }
+  
+  /// İstatistikleri Firestore'a kaydet
+  Future<void> _syncStatsToFirestore() async {
+    if (!_syncService.isUserLoggedIn) return;
+    
+    final data = UserStatsData.fromLocal(
+      totalSessions: _totalSessions,
+      totalMinutes: _totalMinutes,
+      currentStreak: _currentStreak,
+      lastSessionDate: _lastSessionDate,
+    );
+    
+    // Arka planda sync et
+    _syncService.syncStats(data).catchError((e) {
+      if (kDebugMode) debugPrint('❌ İstatistik sync hatası: $e');
+    });
+  }
+  
+  /// Favorileri Firestore'a kaydet
+  Future<void> _syncFavoritesToFirestore() async {
+    if (!_syncService.isUserLoggedIn) return;
+    
+    final data = UserFavoritesData.fromLocal(
+      exerciseIds: _favoriteExerciseIds,
+      soundIds: _favoriteSoundIds,
+    );
+    
+    // Arka planda sync et
+    _syncService.syncFavorites(data).catchError((e) {
+      if (kDebugMode) debugPrint('❌ Favori sync hatası: $e');
+    });
+  }
+  
+  /// Haftalık aktiviteleri Firestore'a kaydet
+  Future<void> _syncActivitiesToFirestore() async {
+    if (!_syncService.isUserLoggedIn) return;
+    
+    // Arka planda sync et
+    _syncService.syncWeeklyActivities(_weeklyActivities).catchError((e) {
+      if (kDebugMode) debugPrint('❌ Aktivite sync hatası: $e');
+    });
+  }
+  
+  /// Manuel full sync (kullanıcı giriş yaptığında çağrılır)
+  Future<void> performFullSync() async {
+    if (kDebugMode) debugPrint('🔄 Full sync başlatılıyor...');
+    
+    // Önce Firestore'dan yükle
+    await _syncFromFirestore();
+    
+    // Sonra local verileri Firestore'a gönder
+    await Future.wait([
+      _syncPreferencesToFirestore(),
+      _syncStatsToFirestore(),
+      _syncFavoritesToFirestore(),
+      _syncActivitiesToFirestore(),
+    ]);
+    
+    if (kDebugMode) debugPrint('✅ Full sync tamamlandı');
+  }
+  
+  // ================================
+  // 🚪 OTURUM KAPATMA - VERİ TEMİZLEME
+  // ================================
+  
+  /// Oturum kapatıldığında TÜM kullanıcı verilerini temizle
+  /// Yeni kullanıcı giriş yaptığında Firestore'dan kendi verilerini çekecek
+  Future<void> clearAllDataOnLogout() async {
+    if (kDebugMode) debugPrint('🚪 UserPreferences verileri temizleniyor...');
+    
+    // 1. Memory'deki verileri varsayılana sıfırla
+    _notificationsEnabled = true;
+    _reminderTime = const TimeOfDay(hour: 20, minute: 0);
+    _dailyGoalMinutes = 10;
+    _preferredMood = MoodType.relaxation;
+    _isFirstLaunch = true;
+    
+    // İstatistikler
+    _totalSessions = 0;
+    _totalMinutes = 0;
+    _currentStreak = 0;
+    _lastSessionDate = null;
+    
+    // Akıllı öneri verileri
+    _lastSleepDurationHours = null;
+    _lastHrvScore = null;
+    _lastSessionType = MindfulSessionType.none;
+    _lastBreathingSessionTimestamp = null;
+    _lastSleepSessionTimestamp = null;
+    _lastHrvSessionTimestamp = null;
+    _lastSoundSessionTimestamp = null;
+    
+    // Haftalık aktiviteler ve favoriler
+    _weeklyActivities.clear();
+    _favoriteExerciseIds.clear();
+    _favoriteSoundIds.clear();
+    
+    // 2. SharedPreferences'tan temizle (DOĞRU KEY İSİMLERİ)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Tercihler (key isimleri _loadLocalPreferences ile eşleşmeli)
+      await prefs.remove('notifications_enabled');
+      await prefs.remove('reminder_hour');        // ✅ Doğru key
+      await prefs.remove('reminder_minute');      // ✅ Doğru key
+      await prefs.remove('daily_goal_minutes');
+      await prefs.remove('preferred_mood');
+      await prefs.remove('is_first_launch');
+      
+      // İstatistikler
+      await prefs.remove('total_sessions');
+      await prefs.remove('total_minutes');
+      await prefs.remove('current_streak');
+      await prefs.remove('last_session_date');
+      
+      // Akıllı öneri verileri (key isimleri _loadLocalPreferences ile eşleşmeli)
+      await prefs.remove('last_sleep_duration_hours');
+      await prefs.remove('last_hrv_score');
+      await prefs.remove('last_session_type');
+      await prefs.remove('last_breathing_timestamp');  // ✅ Doğru key
+      await prefs.remove('last_sleep_timestamp');      // ✅ Doğru key
+      await prefs.remove('last_hrv_timestamp');        // ✅ Doğru key
+      await prefs.remove('last_sound_timestamp');
+      
+      // Haftalık aktiviteler ve favoriler (key isimleri eşleşmeli)
+      await prefs.remove('weekly_activities');
+      await prefs.remove('favorite_exercises');   // ✅ Doğru key
+      await prefs.remove('favorite_sounds');      // ✅ Doğru key
+      
+      if (kDebugMode) debugPrint('✅ UserPreferences SharedPreferences temizlendi');
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ UserPreferences temizleme hatası: $e');
+    }
+    
+    // 3. UI'ı güncelle
+    notifyListeners();
+    
+    if (kDebugMode) debugPrint('✅ UserPreferences verileri temizlendi');
   }
 } 

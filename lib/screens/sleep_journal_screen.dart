@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
+import '../constants/app_strings.dart';
 import '../widgets/global_background.dart';
 import '../widgets/professional_app_bar.dart';
 import 'package:provider/provider.dart';
 import '../providers/premium_provider.dart';
+import '../providers/journal_provider.dart';
+import '../models/journal_entry.dart';
 import '../widgets/smart_premium_dialog.dart';
 import '../models/premium_trigger.dart';
 import 'package:intl/intl.dart';
@@ -42,11 +47,11 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
   List<Map<String, dynamic>> _journalEntries = [];
   
   final List<Map<String, dynamic>> _moods = [
-    {'id': 'great', 'emoji': '😊', 'label': 'Harika', 'color': AppColors.success},
-    {'id': 'good', 'emoji': '🙂', 'label': 'İyi', 'color': AppColors.primary},
-    {'id': 'neutral', 'emoji': '😐', 'label': 'Normal', 'color': AppColors.focus},
-    {'id': 'tired', 'emoji': '😴', 'label': 'Yorgun', 'color': AppColors.warning},
-    {'id': 'bad', 'emoji': '😔', 'label': 'Kötü', 'color': AppColors.error},
+    {'id': 'great', 'emoji': '😊', 'label': AppStrings.greatMoodText, 'color': AppColors.success},
+    {'id': 'good', 'emoji': '🙂', 'label': AppStrings.goodMoodText, 'color': AppColors.primary},
+    {'id': 'neutral', 'emoji': '😐', 'label': AppStrings.neutralMoodText, 'color': AppColors.focus},
+    {'id': 'tired', 'emoji': '😴', 'label': AppStrings.tiredMoodText, 'color': AppColors.warning},
+    {'id': 'bad', 'emoji': '😔', 'label': AppStrings.badMoodText, 'color': AppColors.error},
   ];
 
   @override
@@ -90,12 +95,62 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
       curve: Curves.easeInOut,
     ));
     
-    // Kayıtları yükle
+    // Kayıtları yükle (local + Firestore)
     _loadJournalEntries();
+    _syncFromJournalProvider(); // 🔄 Firestore'dan da çek
     
     // Start animations
     _animationController.forward();
     _pulseController.repeat(reverse: true);
+  }
+  
+  /// 🔄 JournalProvider'dan (Firestore) kayıtları çek ve local ile birleştir
+  Future<void> _syncFromJournalProvider() async {
+    try {
+      final journalProvider = context.read<JournalProvider>();
+      
+      // Önce Firestore'dan full sync yap
+      await journalProvider.performFullSync();
+      
+      // JournalProvider'daki kayıtları al
+      final providerEntries = journalProvider.entries;
+      
+      if (providerEntries.isEmpty) return;
+      
+      // Local'de olmayan kayıtları ekle
+      bool hasNewEntries = false;
+      for (final entry in providerEntries) {
+        final existsLocally = _journalEntries.any((local) {
+          final localDate = local['date'] as DateTime;
+          return localDate.year == entry.date.year &&
+                 localDate.month == entry.date.month &&
+                 localDate.day == entry.date.day;
+        });
+        
+        if (!existsLocally) {
+          _journalEntries.add({
+            'date': entry.date,
+            'mood': entry.mood,
+            'dream': entry.dream,
+            'note': entry.note,
+            'timestamp': entry.date,
+          });
+          hasNewEntries = true;
+        }
+      }
+      
+      if (hasNewEntries) {
+        // Tarihe göre sırala (en yeni önce)
+        _journalEntries.sort((a, b) => 
+          (b['date'] as DateTime).compareTo(a['date'] as DateTime));
+        
+        await _saveToStorage();
+        if (mounted) setState(() {});
+        if (kDebugMode) debugPrint('✅ JournalProvider → SleepJournal sync tamamlandı');
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ JournalProvider → SleepJournal sync hatası: $e');
+    }
   }
 
   @override
@@ -121,12 +176,12 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
           extendBodyBehindAppBar: true,
           appBar: ProfessionalAppBar(
             scrollController: _scrollController,
-            title: 'Uyku Günlüğü',
+            title: AppStrings.sleepJournalTitleText,
             actions: [
               IconButton(
                 icon: Icon(FeatherIcons.list, color: Colors.white),
                 onPressed: () => _showJournalHistory(context),
-                tooltip: 'Geçmiş Kayıtlar',
+                tooltip: AppStrings.pastRecordsTitleText,
               ),
             ],
           ),
@@ -271,7 +326,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Uyku Günlüğü',
+                  AppStrings.sleepJournalTitleText,
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
@@ -281,7 +336,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Rüyalarını ve uyku notlarını kaydet',
+                  AppStrings.recordDreamsAndNotesText,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.white.withOpacity(0.8),
@@ -340,7 +395,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Tarih',
+                    AppStrings.dateLabelText,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.white.withOpacity(0.7),
@@ -410,12 +465,16 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                'Uyandığında Nasıl Hissettin?',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+              Expanded(
+                child: Text(
+                  AppStrings.howDidYouFeel,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -522,7 +581,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Rüya Notları',
+                AppStrings.dreamNotesLabelText,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -544,7 +603,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
               fontSize: 14,
             ),
             decoration: InputDecoration(
-              hintText: 'Rüyanı buraya yaz...',
+              hintText: AppStrings.dreamNotesPlaceholderText,
               hintStyle: TextStyle(
                 color: Colors.white.withOpacity(0.4),
                 fontSize: 14,
@@ -618,7 +677,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Genel Notlar',
+                AppStrings.generalNotesLabelText,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -640,7 +699,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
               fontSize: 14,
             ),
             decoration: InputDecoration(
-              hintText: 'Uyku kaliteni, gece uyanma sayını veya diğer gözlemlerini yaz...',
+              hintText: AppStrings.generalNotesPlaceholderText,
               hintStyle: TextStyle(
                 color: Colors.white.withOpacity(0.4),
                 fontSize: 14,
@@ -700,7 +759,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'İpucu: Düzenli günlük tutmak uyku kaliteni anlamana yardımcı olur',
+              AppStrings.journalTipText,
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.white.withOpacity(0.8),
@@ -743,7 +802,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
           size: 20,
         ),
         label: Text(
-          _editingIndex != null ? 'Değişiklikleri Kaydet' : 'Günlüğü Kaydet',
+          _editingIndex != null ? AppStrings.saveChanges : AppStrings.saveJournalButtonText,
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -803,9 +862,12 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
 
   // Helper Methods
   String _formatDate(DateTime date) {
-    const months = [
-      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    // Lokalize ay isimleri
+    final months = [
+      'monthJanuary'.tr(), 'monthFebruary'.tr(), 'monthMarch'.tr(), 
+      'monthApril'.tr(), 'monthMay'.tr(), 'monthJune'.tr(),
+      'monthJuly'.tr(), 'monthAugust'.tr(), 'monthSeptember'.tr(), 
+      'monthOctober'.tr(), 'monthNovember'.tr(), 'monthDecember'.tr()
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
@@ -816,10 +878,10 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
       initialDate: selectedDate,
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now(),
-      locale: const Locale('tr', 'TR'), // Türkçe dil desteği
-      confirmText: 'Tamam',
-      cancelText: 'İptal',
-      helpText: 'Tarih Seç',
+      locale: context.locale, // Dinamik dil desteği
+      confirmText: AppStrings.ok,
+      cancelText: AppStrings.cancel,
+      helpText: AppStrings.selectDateTitle,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -847,7 +909,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
   }
 
   Future<void> _saveJournal() async {
-    // Premium olmayanlar için aylık 5 kayıt limiti
+    // 🔒 Premium olmayanlar için aylık 5 kayıt limiti
     final premiumProvider = context.read<PremiumProvider>();
     if (!premiumProvider.isPremiumUser) {
       final now = DateTime.now();
@@ -857,15 +919,15 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
       }).length;
 
       final isNewEntry = _editingIndex == null; // Yeni kayıt mı?
-      // Premium sistemi askıya alındı - limit kontrolü devre dışı
-      // if (isNewEntry && countThisMonth >= 5) {
-      //   final trigger = PremiumTrigger.predefinedTriggers.firstWhere(
-      //     (t) => t.targetFeatures.contains('premium_sleep') || t.targetFeatures.contains('all_features'),
-      //     orElse: () => PremiumTrigger.predefinedTriggers.first,
-      //   );
-      //   SmartPremiumDialog.show(context, trigger);
-      //   return;
-      // }
+      // Premium kontrolü aktif - aylık 5 kayıt limiti
+      if (isNewEntry && countThisMonth >= 5) {
+        final trigger = PremiumTrigger.predefinedTriggers.firstWhere(
+          (t) => t.targetFeatures.contains(PremiumProvider.featureSleepJournal),
+          orElse: () => PremiumTrigger.predefinedTriggers.first,
+        );
+        SmartPremiumDialog.show(context, trigger);
+        return;
+      }
     }
     if (_noteController.text.isEmpty && _dreamController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -875,7 +937,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
               Icon(FeatherIcons.alertCircle, color: Colors.white),
               const SizedBox(width: 12),
               Expanded(
-                child: Text('Lütfen rüya veya genel notlardan en az birini doldurun'),
+                child: Text(AppStrings.fillAtLeastOne),
               ),
             ],
           ),
@@ -905,7 +967,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
               borderRadius: BorderRadius.circular(20),
             ),
             title: Text(
-              'Bu Tarihte Kayıt Var',
+              AppStrings.recordExistsTitle,
               style: TextStyle(color: Colors.white),
             ),
             content: Text(
@@ -915,11 +977,11 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: Text('İptal', style: TextStyle(color: Colors.white)),
+                child: Text(AppStrings.cancel, style: TextStyle(color: Colors.white)),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: Text('Üzerine Yaz', style: TextStyle(color: AppColors.primary)),
+                child: Text(AppStrings.overwrite, style: TextStyle(color: AppColors.primary)),
               ),
             ],
           ),
@@ -953,6 +1015,9 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
     
     // Kalıcı olarak kaydet
     await _saveToStorage();
+    
+    // 🔄 Firestore'a sync et (cross-device senkronizasyon)
+    _syncToJournalProvider();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -960,7 +1025,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
           children: [
             Icon(FeatherIcons.checkCircle, color: Colors.white),
             const SizedBox(width: 12),
-            Text(_editingIndex != null ? 'Günlük güncellendi! ✏️' : 'Günlük kaydedildi! 📝'),
+            Text(_editingIndex != null ? AppStrings.journalUpdated : AppStrings.journalSaved),
           ],
         ),
         backgroundColor: AppColors.success,
@@ -976,6 +1041,30 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
       selectedMood = 'neutral';
       _editingIndex = null; // Düzenleme modunu kapat
     });
+  }
+  
+  /// 🔄 Tüm günlük kayıtlarını JournalProvider'a sync et (Firestore için)
+  void _syncToJournalProvider() {
+    try {
+      final journalProvider = context.read<JournalProvider>();
+      
+      // Her local kaydı JournalProvider'a ekle
+      for (final entry in _journalEntries) {
+        final journalEntry = JournalEntry(
+          date: entry['date'] as DateTime,
+          mood: entry['mood'] as String,
+          note: entry['note'] as String? ?? '',
+          dream: entry['dream'] as String? ?? '',
+        );
+        
+        // addOrUpdateEntry zaten Firestore'a sync ediyor
+        journalProvider.addOrUpdateEntry(journalEntry);
+      }
+      
+      if (kDebugMode) debugPrint('✅ SleepJournal → JournalProvider sync tamamlandı (${_journalEntries.length} kayıt)');
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ SleepJournal → JournalProvider sync hatası: $e');
+    }
   }
 
   void _showEntryDetail(BuildContext context, Map<String, dynamic> entry, int index) {
@@ -1059,7 +1148,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
                       children: [
                         if (entry['dream'].isNotEmpty) ...[
                           Text(
-                            '💭 Rüya Notları',
+                            AppStrings.dreamNotesIcon,
                             style: TextStyle(
                               fontSize: isSmallScreen ? 12 : 14,
                               fontWeight: FontWeight.w700,
@@ -1081,7 +1170,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
                         ],
                         if (entry['note'].isNotEmpty) ...[
                           Text(
-                            '📝 Genel Notlar',
+                            AppStrings.generalNotesIcon,
                             style: TextStyle(
                               fontSize: isSmallScreen ? 12 : 14,
                               fontWeight: FontWeight.w700,
@@ -1124,7 +1213,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
                               Icon(FeatherIcons.trash2, color: AppColors.error, size: 16),
                               const SizedBox(width: 4),
                               Flexible(
-                                child: Text('Sil', style: TextStyle(color: AppColors.error, fontSize: 12)),
+                                child: Text(AppStrings.deleteButton, style: TextStyle(color: AppColors.error, fontSize: 12)),
                               ),
                             ],
                           ),
@@ -1142,7 +1231,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
                               Icon(FeatherIcons.edit, color: AppColors.primary, size: 16),
                               const SizedBox(width: 4),
                               Flexible(
-                                child: Text('Düzenle', style: TextStyle(color: AppColors.primary, fontSize: 12)),
+                                child: Text(AppStrings.editButton, style: TextStyle(color: AppColors.primary, fontSize: 12)),
                               ),
                             ],
                           ),
@@ -1154,7 +1243,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                           ),
-                          child: Text('Kapat', style: TextStyle(color: Colors.white, fontSize: 12)),
+                          child: Text(AppStrings.closeButton, style: TextStyle(color: Colors.white, fontSize: 12)),
                         ),
                       ),
                     ],
@@ -1195,14 +1284,14 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
           children: [
             Icon(FeatherIcons.edit, color: Colors.white),
             const SizedBox(width: 12),
-            Expanded(child: Text('Düzenleme modu - Formu düzenleyip kaydedin')),
+            Expanded(child: Text(AppStrings.editMode)),
           ],
         ),
         backgroundColor: AppColors.primary,
         behavior: SnackBarBehavior.floating,
         duration: Duration(seconds: 3),
         action: SnackBarAction(
-          label: 'Tamam',
+          label: AppStrings.ok,
           textColor: Colors.white,
           onPressed: () {},
         ),
@@ -1222,31 +1311,43 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
           borderRadius: BorderRadius.circular(20),
         ),
         title: Text(
-          'Kaydı Sil',
+          AppStrings.deleteRecordTitle,
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
-          'Bu günlük kaydını silmek istediğinize emin misiniz?',
+          AppStrings.confirmDeleteJournal,
           style: TextStyle(color: Colors.white.withOpacity(0.8)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('İptal', style: TextStyle(color: Colors.white)),
+            child: Text(AppStrings.cancel, style: TextStyle(color: Colors.white)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Sil', style: TextStyle(color: AppColors.error)),
+            child: Text(AppStrings.deleteButton, style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
     );
 
     if (confirmed == true) {
+      // Silinen kaydın tarihini al (JournalProvider'dan da silmek için)
+      final deletedEntry = _journalEntries[index];
+      final deletedDate = deletedEntry['date'] as DateTime;
+      
       setState(() {
         _journalEntries.removeAt(index);
       });
       await _saveToStorage();
+      
+      // 🔄 JournalProvider'dan da sil (Firestore sync)
+      try {
+        final journalProvider = context.read<JournalProvider>();
+        journalProvider.deleteEntry(deletedDate);
+      } catch (e) {
+        if (kDebugMode) debugPrint('❌ JournalProvider silme hatası: $e');
+      }
 
       // Geçmiş kayıtlar modalını da kapat ve yenile
       Navigator.pop(context);
@@ -1257,7 +1358,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
             children: [
               Icon(FeatherIcons.trash2, color: Colors.white),
               const SizedBox(width: 12),
-              Text('Kayıt silindi'),
+              Text(AppStrings.recordDeleted),
             ],
           ),
           backgroundColor: AppColors.error,
@@ -1329,7 +1430,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Geçmiş Kayıtlar',
+                        AppStrings.pastRecordsTitle,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -1371,7 +1472,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              'Henüz Kayıt Yok',
+                              AppStrings.noRecordsYet,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
@@ -1380,7 +1481,7 @@ class _SleepJournalScreenState extends State<SleepJournalScreen>
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'İlk günlük kaydını oluştur',
+                              AppStrings.createFirstRecord,
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.white.withOpacity(0.6),

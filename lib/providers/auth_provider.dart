@@ -1,5 +1,6 @@
 import 'package:breathe_flow/models/user.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:breathe_flow/services/auth_service.dart';
 import 'package:breathe_flow/services/user_service.dart';
@@ -25,6 +26,21 @@ class AuthProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isPremium => _currentUser?.isActivePremium ?? false;
 
+  // Sync callback'leri
+  Function(String userId)? _onUserLoggedIn;
+  Function()? _onUserLoggedOut;
+  
+  /// Kullanıcı giriş yaptığında çağrılacak callback'i ayarla
+  /// Callback'e userId parametresi geçilir
+  void setOnUserLoggedIn(Function(String userId) callback) {
+    _onUserLoggedIn = callback;
+  }
+  
+  /// Kullanıcı çıkış yaptığında çağrılacak callback'i ayarla
+  void setOnUserLoggedOut(Function() callback) {
+    _onUserLoggedOut = callback;
+  }
+
   // Auth durumunu dinle
   void _initializeAuthState() {
     _authService.user.listen((User? firebaseUser) async {
@@ -33,9 +49,15 @@ class AuthProvider with ChangeNotifier {
         _currentUser = null;
         _userSubscription?.cancel();
         _userSubscription = null;
+        
+        // Çıkış callback'ini çağır
+        _onUserLoggedOut?.call();
       } else {
         // Kullanıcı giriş yaptı, Firestore'dan dinle
         await _listenToUserData(firebaseUser.uid);
+        
+        // Giriş callback'ini çağır - userId'yi parametre olarak geç
+        _onUserLoggedIn?.call(firebaseUser.uid);
       }
       notifyListeners();
     });
@@ -82,8 +104,23 @@ class AuthProvider with ChangeNotifier {
     } on FirebaseAuthException catch (e) {
       _setError(_getAuthErrorMessage(e));
       return false;
+    } on FirebaseException catch (e) {
+      _setError(_getFirebaseErrorMessage(e));
+      return false;
     } catch (e) {
-      _setError('Beklenmeyen bir hata oluştu: $e');
+      // Firebase bazen farklı exception türleri fırlatıyor
+      final errorString = e.toString().toLowerCase();
+      if (errorString.contains('email-already-in-use') || errorString.contains('already in use')) {
+        _setError('Bu e-posta adresi zaten kullanılıyor.');
+      } else if (errorString.contains('weak-password') || errorString.contains('weak password')) {
+        _setError('Şifre çok zayıf. En az 6 karakter olmalıdır.');
+      } else if (errorString.contains('invalid-email') || errorString.contains('invalid email')) {
+        _setError('Geçersiz e-posta adresi.');
+      } else if (errorString.contains('network')) {
+        _setError('İnternet bağlantınızı kontrol edin.');
+      } else {
+        _setError('Kayıt oluşturulamadı. Lütfen bilgilerinizi kontrol edin.');
+      }
       return false;
     } finally {
       _setLoading(false);
@@ -98,11 +135,27 @@ class AuthProvider with ChangeNotifier {
       
       UserCredential? result = await _authService.signInWithEmail(email, password);
       return result != null;
-    } on FirebaseAuthException catch (e) {
-      _setError(_getAuthErrorMessage(e));
-      return false;
     } catch (e) {
-      _setError('Beklenmeyen bir hata oluştu: $e');
+      // Tüm hataları yakala ve uygun mesajı göster
+      final errorString = e.toString().toLowerCase();
+      
+      if (errorString.contains('invalid') || 
+          errorString.contains('credential') || 
+          errorString.contains('incorrect') ||
+          errorString.contains('wrong-password') ||
+          errorString.contains('malformed')) {
+        _setError('E-posta veya şifre hatalı.');
+      } else if (errorString.contains('user-not-found') || errorString.contains('no user')) {
+        _setError('Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı.');
+      } else if (errorString.contains('too-many-requests')) {
+        _setError('Çok fazla başarısız deneme. Lütfen daha sonra tekrar deneyin.');
+      } else if (errorString.contains('network')) {
+        _setError('İnternet bağlantınızı kontrol edin.');
+      } else if (errorString.contains('user-disabled')) {
+        _setError('Bu hesap devre dışı bırakılmış.');
+      } else {
+        _setError('Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.');
+      }
       return false;
     } finally {
       _setLoading(false);
@@ -355,6 +408,34 @@ class AuthProvider with ChangeNotifier {
         return 'Bu işlem şu anda kullanılamıyor.';
       case 'requires-recent-login':
         return 'Bu işlem için yeniden giriş yapmanız gerekiyor.';
+      case 'invalid-credential':
+        return 'E-posta veya şifre hatalı.';
+      case 'INVALID_LOGIN_CREDENTIALS':
+        return 'E-posta veya şifre hatalı.';
+      default:
+        return 'Bir hata oluştu: ${e.message}';
+    }
+  }
+
+  // Firebase genel hata mesajlarını Türkçe'ye çevir
+  String _getFirebaseErrorMessage(FirebaseException e) {
+    switch (e.code) {
+      case 'user-not-found':
+        return 'Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı.';
+      case 'wrong-password':
+        return 'Hatalı şifre girdiniz.';
+      case 'invalid-credential':
+        return 'E-posta veya şifre hatalı.';
+      case 'INVALID_LOGIN_CREDENTIALS':
+        return 'E-posta veya şifre hatalı.';
+      case 'email-already-in-use':
+        return 'Bu e-posta adresi zaten kullanılıyor.';
+      case 'weak-password':
+        return 'Şifre çok zayıf. En az 6 karakter olmalıdır.';
+      case 'invalid-email':
+        return 'Geçersiz e-posta adresi.';
+      case 'too-many-requests':
+        return 'Çok fazla başarısız deneme. Lütfen daha sonra tekrar deneyin.';
       default:
         return 'Bir hata oluştu: ${e.message}';
     }

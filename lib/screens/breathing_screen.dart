@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:collection/collection.dart'; // groupBy için
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../widgets/professional_app_bar.dart';
 import 'package:lottie/lottie.dart';
 import '../constants/app_strings.dart';
@@ -281,7 +282,7 @@ class _BreathingScreenState extends State<BreathingScreen> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Reklam yükleniyor...',
+                    AppStrings.loadingAd,
                     style: AppTypography.bodyLarge.copyWith(
                       color: Colors.white70,
                     ),
@@ -306,7 +307,7 @@ class _BreathingScreenState extends State<BreathingScreen> {
               extendBodyBehindAppBar: true,
               appBar: ProfessionalAppBar(
                 scrollController: _scrollController, 
-                title: 'Nefes Egzersizleri',
+                title: AppStrings.breathingExercisesScreenTitle,
                 // Özel geri tuşu callback'i
                 onBackPressed: () => _handleBackNavigation(context, breathingProvider),
               ),
@@ -317,7 +318,7 @@ class _BreathingScreenState extends State<BreathingScreen> {
                   // Konfeti animasyonu overlay (sadece gösterildiğinde)
                   if (_isShowingConfetti)
                     FullscreenConfettiWidget(
-                      sessionType: breathingProvider.currentExercise?.name ?? 'Nefes Egzersizi',
+                      sessionType: breathingProvider.currentExercise?.name ?? AppStrings.breathingExerciseDefault,
                       duration: breathingProvider.actualSessionDurationMinutes,
                       onAnimationComplete: () {
                         // Confetti bittikten sonra overlay'i kaldır
@@ -381,7 +382,7 @@ class _BreathingScreenState extends State<BreathingScreen> {
                 ),
                 const SizedBox(height: AppSpacing.small),
                 Text(
-                  'Stres, uyku veya odaklanma. İhtiyacın olanı seç.',
+                  AppStrings.selectYourNeed,
                   style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: AppSpacing.large),
@@ -399,8 +400,8 @@ class _BreathingScreenState extends State<BreathingScreen> {
                 _buildCategoryCard(
                   context,
                   category: BreathingCategory.odaklanma,
-                  title: 'Odaklanma & Konsantrasyon',
-                  subtitle: 'Dikkatini tek bir noktaya yönlendir, düşüncelerini toparla',
+                  title: AppStrings.focusAndConcentrationTitle,
+                  subtitle: AppStrings.focusAndConcentrationSubtitle,
                   overlayColor: AppColors.focus,
                   background: Image.asset(
                     AssetManager.coverForest,
@@ -411,8 +412,8 @@ class _BreathingScreenState extends State<BreathingScreen> {
                 _buildCategoryCard(
                   context,
                   category: BreathingCategory.kaygiVeStres,
-                  title: 'Rahatlama & Huzur',
-                  subtitle: 'Derin bir nefesle gerginliği bırak ve bedenini gevşet',
+                  title: AppStrings.relaxationAndPeaceTitle,
+                  subtitle: AppStrings.relaxationAndPeaceSubtitle,
                   overlayColor: AppColors.relaxation,
                   background: Image.asset(
                     AssetManager.coverOcean,
@@ -423,8 +424,8 @@ class _BreathingScreenState extends State<BreathingScreen> {
                 _buildCategoryCard(
                   context,
                   category: BreathingCategory.uykuVeRahatlama,
-                  title: 'Huzurlu Uyku',
-                  subtitle: 'Bedenini ve zihnini dinlendir, yavaşça gevşe',
+                  title: AppStrings.peacefulSleepTitle,
+                  subtitle: AppStrings.peacefulSleepSubtitle,
                   overlayColor: AppColors.sleep,
                   background: Lottie.asset(
                     AssetManager.animationNightBackground,
@@ -435,8 +436,8 @@ class _BreathingScreenState extends State<BreathingScreen> {
                 _buildCategoryCard(
                   context,
                   category: BreathingCategory.enerjiVeCanlilik,
-                  title: 'Enerji & Zindelik',
-                  subtitle: 'İçindeki enerjiyi uyandır ve günün tadını çıkar',
+                  title: AppStrings.energyAndVitalityTitle,
+                  subtitle: AppStrings.energyAndVitalitySubtitle,
                   overlayColor: AppColors.energy,
                   background: Container(
                     decoration: BoxDecoration(
@@ -508,8 +509,8 @@ class _BreathingScreenState extends State<BreathingScreen> {
                           children: [
                             Text(
                               todaySessions > 0 
-                                  ? 'Bugün $todaySessions seans yaptın!'
-                                  : '🌟 Bugün henüz seans yapmadın',
+                                  ? 'todaySessionsCount'.tr(args: [todaySessions.toString()])
+                                  : AppStrings.noSessionsToday,
                               style: AppTypography.labelLarge.copyWith(
                                 color: todaySessions > 0 
                                     ? AppColors.success 
@@ -542,8 +543,8 @@ class _BreathingScreenState extends State<BreathingScreen> {
                     _buildProgressItem(
                       icon: '🔥',
                       value: '$streak',
-                      label: 'Günlük Seri',
-                      subtitle: streak > 0 ? 'Harika gidiyorsun!' : 'Başlayalım!',
+                      label: AppStrings.dailyStreakLabel,
+                      subtitle: streak > 0 ? AppStrings.keepGoing : AppStrings.letsBegin,
                       color: AppColors.energy,
                     ),
                     
@@ -568,8 +569,8 @@ class _BreathingScreenState extends State<BreathingScreen> {
                     _buildProgressItem(
                       icon: null,
                       value: '$completedThisWeek/$weeklyGoal',
-                      label: 'Bu Hafta (Pzt-Paz)', // ✅ Açıklayıcı başlık
-                      subtitle: '${(weeklyProgress * 100).round()}% tamamlandı',
+                      label: AppStrings.thisWeekLabel,
+                      subtitle: '${(weeklyProgress * 100).round()}% ${AppStrings.completed}',
                       color: AppColors.focus,
                       progressValue: weeklyProgress,
                     ),
@@ -586,15 +587,15 @@ class _BreathingScreenState extends State<BreathingScreen> {
   String _getTodayMotivationMessage(int sessions) {
     if (sessions == 0) {
       // ✅ Boş state için motivasyonlu mesaj
-      return 'İlk adımı at ve kendine zaman ayır! Hazırsan aşağıdan bir egzersiz seç 💙';
+      return AppStrings.firstStepMessage;
     } else if (sessions == 1) {
-      return 'Harika bir başlangıç! Devam et 🌟';
+      return AppStrings.greatStartBreathing;
     } else if (sessions == 2) {
-      return 'İki seans! Bugün harikasın 💪';
+      return AppStrings.twoSessions;
     } else if (sessions >= 3) {
-      return 'Müthişsin! $sessions seans yaptın 🎉';
+      return AppStrings.multipleSessions(sessions);
     }
-    return 'Devam et!';
+    return AppStrings.keepGoingShort;
   }
 
   Widget _buildProgressItem({
@@ -973,7 +974,7 @@ class _BreathingScreenState extends State<BreathingScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          '${provider.completedCycles} / ${provider.totalCycles} Tekrar',
+                          '${provider.completedCycles} / ${provider.totalCycles} ${AppStrings.cycles}',
                           style: AppTypography.bodyLarge.copyWith(
                             color: Colors.white,
                             decoration: TextDecoration.none,
@@ -1139,7 +1140,7 @@ class _BreathingScreenState extends State<BreathingScreen> {
                       vertical: isSmallScreen ? AppSpacing.small : AppSpacing.medium,
                     ),
                     child: Text(
-                      'Arkaplan Sesi Seç',
+                      AppStrings.selectBackgroundSound,
                       style: AppTypography.headlineSmall.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.bold,
@@ -1251,7 +1252,7 @@ class _BreathingScreenState extends State<BreathingScreen> {
                         size: isSmallScreen ? 20 : 24,
                       ),
                       title: Text(
-                        'Sessizlik',
+                        AppStrings.silenceOption,
                         style: AppTypography.bodyLarge.copyWith(
                           color: selectedSoundId == null 
                               ? AppColors.primaryAccent

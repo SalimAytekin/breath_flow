@@ -5,6 +5,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
+import '../constants/app_strings.dart';
 import '../constants/app_typography.dart';
 import '../providers/user_preferences_provider.dart';
 import '../providers/breathing_provider.dart';
@@ -135,7 +136,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       title: FadeInDown(
         duration: const Duration(milliseconds: 600),
         child: Text(
-          'Favorilerim',
+          AppStrings.myFavoritesTitle,
           style: AppTypography.headlineMedium.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -213,7 +214,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                     if (showIcon) const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        'Nefes',
+                        AppStrings.breathLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -230,7 +231,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                     if (showIcon) const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        'Ses',
+                        AppStrings.soundLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -254,9 +255,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         if (favoriteIds.isEmpty) {
           return _buildEmptyState(
             icon: FeatherIcons.wind,
-            title: 'Henüz Favori Egzersiz Yok',
-            subtitle: 'Beğendiğiniz nefes egzersizlerini favorilere ekleyin',
-            actionText: 'Egzersizleri Keşfet',
+            title: AppStrings.noFavoriteExercises,
+            subtitle: AppStrings.addFavoriteExercises,
+            actionText: AppStrings.exploreExercises,
             onAction: () => _navigateToExerciseList(),
           );
         }
@@ -294,9 +295,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         if (favoriteIds.isEmpty) {
           return _buildEmptyState(
             icon: FeatherIcons.music,
-            title: 'Henüz Favori Ses Yok',
-            subtitle: 'Beğendiğiniz ses içeriklerini favorilere ekleyin',
-            actionText: 'Sesleri Keşfet',
+            title: AppStrings.noFavoriteSounds,
+            subtitle: AppStrings.addFavoriteSounds,
+            actionText: AppStrings.exploreSounds,
             onAction: () => _navigateToSoundList(),
           );
         }
@@ -433,7 +434,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                                 ),
                                 SizedBox(height: isSmallScreen ? AppSpacing.tiny : AppSpacing.small),
                                 Text(
-                                  'Kaç tekrar yapmak istiyorsun?',
+                                  AppStrings.howManyCyclesQuestion,
                                   style: AppTypography.bodyLarge.copyWith(
                                     color: AppColors.textSecondary,
                                     fontSize: isSmallScreen ? 14 : 16,
@@ -505,7 +506,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                                     ),
                                   ),
                                   Text(
-                                    'tekrar',
+                                    AppStrings.cyclesLabel,
                                     style: TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: isSmallScreen ? 9 : 10,
@@ -555,7 +556,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                               SizedBox(width: isSmallScreen ? AppSpacing.tiny : AppSpacing.small),
                               Flexible(
                                 child: Text(
-                                  'Başlat ($selectedCycles tekrar)',
+                                  AppStrings.startWithCyclesFormat(selectedCycles),
                                   style: AppTypography.bodyLarge.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: Colors.white,
@@ -629,7 +630,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                               ),
                               const SizedBox(height: AppSpacing.small),
                               Text(
-                                'Kaç dakika dinlemek istiyorsun?',
+                                AppStrings.howManyMinutesQuestion,
                                 style: AppTypography.bodyLarge.copyWith(
                                   color: AppColors.textSecondary,
                                 ),
@@ -700,7 +701,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                                     ),
                                   ),
                                   Text(
-                                    'dakika',
+                                    AppStrings.minutesLabel,
                                     style: TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 10,
@@ -748,7 +749,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                             const Icon(FeatherIcons.play, size: 16),
                             const SizedBox(width: AppSpacing.small),
                             Text(
-                              'Başlat ($selectedRepeats dakika)',
+                              AppStrings.startWithMinutesFormat(selectedRepeats),
                               style: AppTypography.bodyLarge.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -818,7 +819,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                     ),
                     const SizedBox(width: AppSpacing.small),
                     Text(
-                      'Favori İstatistikleri',
+                      AppStrings.favoriteStats,
                       style: AppTypography.headlineSmall.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -833,7 +834,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                     Expanded(
                       child: _buildStatCard(
                         icon: FeatherIcons.wind,
-                        title: 'Nefes Egzersizleri',
+                        title: AppStrings.breathingExercisesLabel,
                         count: exerciseCount,
                         color: AppColors.primaryAccent,
                       ),
@@ -842,7 +843,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                     Expanded(
                       child: _buildStatCard(
                         icon: FeatherIcons.music,
-                        title: 'Ses İçerikleri',
+                        title: AppStrings.soundContents,
                         count: soundCount,
                         color: AppColors.success,
                       ),
@@ -854,7 +855,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                 // Toplam kartı
                 _buildStatCard(
                   icon: FeatherIcons.heart,
-                  title: 'Toplam Favori',
+                  title: AppStrings.totalFavorites,
                   count: totalCount,
                   color: AppColors.warning,
                   isFullWidth: true,
@@ -877,7 +878,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                       ),
                     ),
                     child: Text(
-                      'Kapat',
+                      AppStrings.closeLabel,
                       style: AppTypography.bodyLarge.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -1144,13 +1145,13 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   String _getStepLabel(BreathingStepType type) {
     switch (type) {
       case BreathingStepType.inhale:
-        return 'al';
+        return AppStrings.inhale;
       case BreathingStepType.hold:
-        return 'tut';
+        return AppStrings.hold;
       case BreathingStepType.exhale:
-        return 'ver';
+        return AppStrings.exhale;
       case BreathingStepType.holdAfterExhale:
-        return 'bekle';
+        return AppStrings.holdAfterExhale;
       default:
         return '';
     }
@@ -1176,7 +1177,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             ),
           ),
           child: Text(
-            '${step.duration}sn $label',
+            '${step.duration}${AppStrings.secondsShort} $label',
             style: AppTypography.labelSmall.copyWith(
               color: color,
               fontWeight: FontWeight.w700,
@@ -1316,29 +1317,29 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   String _getExerciseShortDescription(BreathingExercise exercise) {
     switch (exercise.name) {
       case 'Kutu Nefesi (4-4-4-4)':
-        return 'Nefesini dört aşamada düzenle: al, tut, ver ve bekle. Zihinsel dengeyi artırır.';
+        return AppStrings.boxBreathingDesc;
       case 'Basit Sayma Nefesi':
-        return 'Nefes alırken ve verirken sayılara odaklan. Zihni toparlamaya yardımcı olur.';
+        return AppStrings.simpleCountingBreathDesc;
       case 'Farkındalık Nefesi':
-        return 'Nefesini doğal akışında gözlemle. Değiştirmeden sadece fark et.';
+        return AppStrings.awarenessBreathDesc;
       case 'Uzunca Nefes Ver (4-6)':
-        return 'Kısa al, uzun ver. Bu ritim sinir sistemini sakinleştirir.';
+        return AppStrings.longExhaleDesc;
       case 'Diyafram Nefesi':
-        return 'Nefesi karına doğru al. Göğüsten değil karından nefes almak stresi azaltır.';
+        return AppStrings.diaphragmBreathDesc;
       case 'Eşit Nefes':
-        return 'Nefesi aynı sürede alıp ver. Zihinsel denge ve iç huzur sağlar.';
+        return AppStrings.equalBreathDesc;
       case 'Yavaşlatıcı Nefes':
-        return 'Her nefeste ritmi biraz daha yavaşlat. Bedenini uykuya hazırlar.';
+        return AppStrings.slowingBreathDesc;
       case 'Beden Farkındalığı Nefesi':
-        return 'Nefes alırken bedenine odaklan. Gerginlikleri fark et ve bırak.';
+        return AppStrings.bodyAwarenessBreathDesc;
       case 'Gevşeme Nefesi (3-6)':
-        return 'Kısa nefes al, uzun nefes ver. Vücudun derin rahatlama yaşar.';
+        return AppStrings.relaxationBreathDesc;
       case 'Canlandırıcı Diyafram':
-        return 'Diyaframdan derin nefes alıp vermek bedene enerji kazandırır.';
+        return AppStrings.energizingDiaphragmDesc;
       case 'Sabah Nefesi':
-        return 'Güne derin ve canlı nefeslerle başla. Sabah enerjini yükseltir.';
+        return AppStrings.morningBreathDesc;
       case 'Güne Başlama Nefesi (6-4)':
-        return 'Pozitif enerjiyle nefes al, hafif şekilde ver. Güne hazırlar.';
+        return AppStrings.dayStartBreathDesc;
       default:
         return exercise.purpose;
     }

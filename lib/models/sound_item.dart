@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_feather_icons/flutter_feather_icons.dart';
-import '../constants/app_colors.dart';
-import '../services/asset_manager.dart';
+import '../data/sounds_loader.dart';
 import 'sound_category.dart';
 
 class SoundItem {
@@ -29,286 +27,24 @@ class SoundItem {
     this.tags = const [], // Varsayılan boş liste
   });
 
-  // --- KATEGORİZE EDİLMİŞ SES LİSTELERİ ---
+  // --- LOKALİZE SES VERİLERİ (SoundsLoader'dan) ---
 
-  static final List<SoundCategory> allCategories = [
-    // 1. Doğa Sesleri
-    SoundCategory(
-      id: 'nature',
-      name: 'Doğa Sesleri',
-      icon: FeatherIcons.wind,
-      sounds: [
-    SoundItem(
-          id: 'rain_on_tent',
-          name: 'Çadırda Yağmur',
-          description: 'Huzurlu bir kamp anı',
-          assetPath: AssetManager.natureRainOnTent,
-          imagePath: AssetManager.coverRain,
-          videoPath: AssetManager.videoRainDrop,
-          icon: FeatherIcons.umbrella,
-          color: AppColors.relaxation,
-          tags: ['sleep', 'relaxation'],
-        ),
-        SoundItem(
-          id: 'light_rain',
-          name: 'Hafif Yağmur',
-          description: 'Pencereye vuran yağmur taneleri',
-          assetPath: AssetManager.natureLightRain,
-          imagePath: AssetManager.coverLightRain,
-          videoPath: AssetManager.videoLightRain,
-          icon: FeatherIcons.cloudDrizzle,
-          color: AppColors.info,
-          tags: ['sleep', 'relaxation', 'focus'],
-        ),
-        SoundItem(
-          id: 'heavy_rain',
-          name: 'Sağanak Yağmur',
-          description: 'Pencereye vuran yoğun yağmur',
-          assetPath: AssetManager.natureHeavyRain,
-          imagePath: AssetManager.coverHeavyRain,
-          videoPath: AssetManager.videoHeavyRain,
-          icon: FeatherIcons.cloudRain,
-          color: AppColors.info,
-          isPremium: true,
-          tags: ['sleep', 'focus'],
-        ),
-        SoundItem(
-          id: 'ocean',
-          name: 'Okyanus Dalgaları',
-          description: 'Sahile vuran sakinleştirici dalgalar',
-          assetPath: AssetManager.natureOceanWaves,
-          imagePath: AssetManager.coverOcean,
-          videoPath: AssetManager.videoOceanWaves,
-          icon: FeatherIcons.voicemail, // wave icon
-          color: AppColors.info,
-          isPremium: true, // Premium ses
-          tags: ['sleep', 'meditation', 'relaxation'],
-        ),
-        SoundItem(
-          id: 'forest',
-          name: 'Orman Sesleri',
-          description: 'Kuş cıvıltıları ve rüzgârda hışırdayan yapraklar',
-          assetPath: AssetManager.natureForest,
-          imagePath: AssetManager.coverForest,
-          videoPath: AssetManager.videoForest,
-          icon: FeatherIcons.wind,
-          color: AppColors.success,
-          isPremium: true, // Premium ses
-          tags: ['meditation', 'relaxation', 'focus'],
-        ),
-        SoundItem(
-          id: 'thunder',
-          name: 'Gök Gürültüsü',
-          description: 'Yoğun fırtına: çakan şimşekler ve sert rüzgâr',
-          assetPath: AssetManager.natureThunder,
-          imagePath: AssetManager.coverThunder,
-          videoPath: AssetManager.videoThunder,
-          icon: FeatherIcons.cloudLightning,
-          color: AppColors.primary,
-          isPremium: true,
-          tags: ['sleep', 'relaxation'],
-        ),
-        SoundItem(
-          id: 'campfire',
-          name: 'Kamp Ateşi',
-          description: 'Çıtırdayan odunlar ve sıcak bir kamp atmosferi',
-          assetPath: AssetManager.natureCampfire,
-          imagePath: AssetManager.coverCampfire,
-          videoPath: AssetManager.videoCampfire,
-          icon: FeatherIcons.zap, // fire icon
-          color: AppColors.warning,
-          tags: ['sleep', 'relaxation'],
-        ),
-        SoundItem(
-          id: 'river',
-          name: 'Nehir Akıntısı',
-          description: 'Sakin ve sürekli su akışı',
-          assetPath: AssetManager.natureRiver,
-          imagePath: AssetManager.coverRiver,
-          videoPath: AssetManager.videoRiver,
-          icon: FeatherIcons.gitPullRequest, // represents flow
-          color: AppColors.info,
-          tags: ['meditation', 'relaxation', 'focus'],
-        ),
-      ],
-    ),
+  /// Tüm kategorileri lokalize olarak döndürür
+  static List<SoundCategory> get allCategories => SoundsLoader.getAllCategories();
 
-    // 2. Ortam & Gürültü
-    SoundCategory(
-      id: 'ambient',
-      name: 'Ortam & Gürültü',
-      icon: FeatherIcons.radio,
-      sounds: [
-        SoundItem(
-          id: 'white_noise',
-          name: 'Beyaz Gürültü',
-          description: 'Tüm frekansları maskeleyen rahatlatıcı ses',
-          assetPath: AssetManager.ambientWhiteNoise,
-          imagePath: AssetManager.coverWhiteNoise,
-          videoPath: AssetManager.videoWhiteNoise,
-          icon: FeatherIcons.activity,
-      color: AppColors.textSecondary,
-      tags: ['sleep', 'focus'],
-    ),
-        SoundItem(
-          id: 'rainy_car_ride',
-          name: 'Yağmurlu Arabada Yolculuk',
-          description: 'Yağmur damlaları, silecek ve motor sesiyle huzurlu bir yolculuk',
-          assetPath: AssetManager.ambientRainyCarRide,
-          imagePath: AssetManager.coverRainyCarRide,
-          videoPath: AssetManager.videoRainyCarRide,
-          icon: FeatherIcons.truck,
-          color: AppColors.info,
-          tags: ['sleep', 'relaxation'],
-        ),
-        SoundItem(
-          id: 'bus_ride',
-          name: 'Otobüs Yolculuğu',
-          description: 'Motor uğultusu, yol titreşimi ve hafif konuşmalar',
-          assetPath: AssetManager.ambientBusRide,
-          imagePath: AssetManager.coverBusRide,
-          videoPath: AssetManager.videoBusRide,
-          icon: FeatherIcons.navigation,
-          color: AppColors.primary,
-          tags: ['sleep', 'relaxation'],
-        ),
-        SoundItem(
-          id: 'library',
-          name: 'Kütüphane',
-          description: 'Fısıldaşmalar ve sayfa yapraklarının sakin sesi',
-          assetPath: AssetManager.ambientLibrary,
-          imagePath: AssetManager.coverLibrary,
-          videoPath: null,
-          icon: FeatherIcons.book,
-          color: AppColors.focus,
-          tags: ['focus'],
-        ),
-        SoundItem(
-          id: 'cafe',
-          name: 'Kafe Ambiyanşı',
-          description: 'Bardak tıkırtısı, kahve makinesi ve arka plan sohbetler',
-          assetPath: AssetManager.ambientCafe,
-          imagePath: AssetManager.coverCafe,
-          videoPath: AssetManager.videoCafe,
-          icon: FeatherIcons.coffee,
-          color: Colors.brown,
-          tags: ['focus'],
-        ),
-        SoundItem(
-          id: 'train',
-          name: 'Tren Yolculuğu',
-          description: 'Rayların ritmi eşliğinde seyahat ambiyansı',
-          assetPath: AssetManager.ambientTrain,
-          imagePath: AssetManager.coverTrain,
-          videoPath: AssetManager.videoTrain,
-          icon: FeatherIcons.truck,
-          color: AppColors.textSecondary,
-          isPremium: true,
-          tags: ['sleep', 'relaxation'],
-        ),
-      ],
-    ),
-    
-    // 3. Müzik & Enstrümanlar
-    SoundCategory(
-      id: 'meditation',
-      name: 'Müzik & Enstrümanlar',
-      icon: FeatherIcons.music,
-      sounds: [
-    SoundItem(
-      id: 'meditation_bell',
-      name: 'Meditasyon Çanı',
-          description: 'Seans başlangıcı için Tibet çanı',
-          assetPath: AssetManager.meditationBell,
-      imagePath: AssetManager.coverMeditationBell,
-      videoPath: AssetManager.videoMeditationBell,
-      icon: FeatherIcons.bell,
-      color: AppColors.sleep,
-      tags: ['meditation', 'relaxation'],
-    ),
-        SoundItem(
-          id: 'tibetan_bowls',
-          name: 'Tibet Ses Çanakları',
-          description: 'Derin rezonans ve titreşimler',
-          assetPath: AssetManager.meditationTibetanBowls,
-          imagePath: AssetManager.coverTibetanBowls,
-          videoPath: AssetManager.videoTibetanBowls,
-          icon: FeatherIcons.disc,
-          color: AppColors.focus,
-          isPremium: true,
-          tags: ['meditation', 'relaxation'],
-        ),
-        SoundItem(
-          id: 'piano',
-          name: 'Sakin Piyano',
-          description: 'Yumuşak ve dinlendirici melodiler',
-          assetPath: AssetManager.musicPiano,
-          imagePath: AssetManager.coverPiano,
-          videoPath: AssetManager.videoPiano,
-          icon: FeatherIcons.music,
-          color: AppColors.primary,
-          isPremium: true,
-          tags: ['meditation', 'relaxation'],
-        ),
-        SoundItem(
-          id: 'binaural_focus',
-          name: 'Binaural Beats (Odak)',
-          description: 'Alfa dalgaları ile zihinsel netlik',
-          assetPath: AssetManager.meditationBinauralFocus,
-          imagePath: AssetManager.coverBinauralBeats,
-          videoPath: AssetManager.videoBinauralFocus,
-          icon: FeatherIcons.target,
-      color: AppColors.focus,
-      isPremium: true,
-      tags: ['focus', 'meditation'],
-    ),
-      ],
-    ),
+  /// Tüm sesleri tek bir liste olarak döndürür
+  static List<SoundItem> get allSounds => SoundsLoader.getAllSounds();
 
-    // 4. Gece Sesleri (Yeni Kategori)
-    SoundCategory(
-      id: 'night',
-      name: 'Gece Sesleri',
-      icon: FeatherIcons.moon,
-      sounds: [
-        SoundItem(
-          id: 'night_crickets',
-          name: 'Gece Böcekleri',
-          description: 'Sıcak bir yaz gecesi ve huzurlu böcek sesleri',
-          assetPath: AssetManager.sleepNightCrickets,
-          imagePath: AssetManager.coverNightCrickets,
-          videoPath: AssetManager.videoNightCrickets,
-          icon: FeatherIcons.moon,
-          color: AppColors.info,
-          tags: ['sleep', 'relaxation'],
-        ),
-      ],
-    ),
-  ];
+  /// ID'ye göre ses bul
+  static SoundItem? findById(String id) => SoundsLoader.findById(id);
 
-  /// Tüm sesleri tek bir liste olarak döndürür.
-  static List<SoundItem> get allSounds =>
-      allCategories.expand((category) => category.sounds).toList();
+  /// Ücretsiz sesleri döndürür
+  static List<SoundItem> get freeSounds => SoundsLoader.getFreeSounds();
 
-  static SoundItem? findById(String id) {
-    try {
-      return allSounds.firstWhere((sound) => sound.id == id);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  static List<SoundItem> get freeSounds => 
-      allSounds.where((sound) => !sound.isPremium).toList();
-
-  static List<SoundItem> get premiumSounds => 
-      allSounds.where((sound) => sound.isPremium).toList();
+  /// Premium sesleri döndürür
+  static List<SoundItem> get premiumSounds => SoundsLoader.getPremiumSounds();
 
   /// Tag'lere göre sesleri filtreler
-  static List<SoundItem> getSoundsByTags(List<String> tags) {
-    if (tags.isEmpty) return allSounds;
-    return allSounds.where((sound) {
-      return tags.any((tag) => sound.tags.contains(tag));
-    }).toList();
-  }
+  static List<SoundItem> getSoundsByTags(List<String> tags) => 
+      SoundsLoader.getSoundsByTags(tags);
 }

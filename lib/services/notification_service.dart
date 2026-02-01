@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:permission_handler/permission_handler.dart';
+import '../constants/app_strings.dart';
 
 /// 🔔 Notification Service
 /// Nefes hatırlatmaları ve önemli bildirimler için lokal bildirim yönetimi
@@ -108,8 +109,8 @@ class NotificationService {
       // Android channel için high importance
       const androidDetails = AndroidNotificationDetails(
         'breathing_reminders',
-        'Nefes Hatırlatmaları',
-        channelDescription: 'Günlük nefes egzersizi hatırlatmaları',
+        AppStrings.notifChannelBreathing,
+        channelDescription: AppStrings.notifChannelBreathingDesc,
         importance: Importance.high,
         priority: Priority.high,
         playSound: true,
@@ -143,7 +144,7 @@ class NotificationService {
 
       await _flutterLocalNotificationsPlugin.zonedSchedule(
         0,
-        'Nefes Egzersizi Hatırlatması',
+        AppStrings.notifBreathingTitle,
         randomMessage['body']!,
         tz.TZDateTime.from(scheduledDate, tz.local),
         const NotificationDetails(
@@ -184,8 +185,8 @@ class NotificationService {
       // Android channel için high importance
       const androidDetails = AndroidNotificationDetails(
         'sleep_data_reminders',
-        'Uyku Verisi Hatırlatmaları',
-        channelDescription: 'Sabah uyku verisi girme hatırlatmaları',
+        AppStrings.notifChannelSleep,
+        channelDescription: AppStrings.notifChannelSleepDesc,
         importance: Importance.high,
         priority: Priority.high,
         playSound: true,
@@ -219,7 +220,7 @@ class NotificationService {
 
       await _flutterLocalNotificationsPlugin.zonedSchedule(
         1, // ID: 1 (farklı ID)
-        'Uyku Verisi Hatırlatması',
+        AppStrings.notifSleepTitle,
         randomMessage['body']!,
         tz.TZDateTime.from(scheduledDate, tz.local),
         const NotificationDetails(
@@ -265,8 +266,8 @@ class NotificationService {
 
   /// Test bildirimi gönder
   Future<void> showTestNotification({
-    String title = 'Breathe Flow Test',
-    String body = 'Bildirim sistemi çalışıyor! 🎉',
+    String title = AppStrings.notifTestTitle,
+    String body = AppStrings.notifTestBody,
   }) async {
     try {
       if (!_isInitialized) {
@@ -285,8 +286,8 @@ class NotificationService {
 
       const androidDetails = AndroidNotificationDetails(
         'test_channel',
-        'Test Bildirimleri',
-        channelDescription: 'Test amaçlı bildirimler',
+        AppStrings.notifChannelTest,
+        channelDescription: AppStrings.notifChannelTestDesc,
         importance: Importance.high,
         priority: Priority.high,
         playSound: true,
@@ -319,43 +320,43 @@ class NotificationService {
   List<Map<String, String>> _getBreathingMessages() {
     return [
       {
-        'body': 'Bugün 5 dakikanı nefesine ayır 🌬️',
+        'body': AppStrings.notifBreathing1,
         'action': 'nefes_egzersizi',
       },
       {
-        'body': 'Rahatla ve yenilenmek için nefes egzersizi yap 🧘',
+        'body': AppStrings.notifBreathing2,
         'action': 'nefes_egzersizi',
       },
       {
-        'body': '5 dakika nefes egzersizi yaparak güne başla ☀️',
+        'body': AppStrings.notifBreathing3,
         'action': 'nefes_egzersizi',
       },
       {
-        'body': 'Zihnini sakinleştirmek için nefes al 🫁',
+        'body': AppStrings.notifBreathing4,
         'action': 'nefes_egzersizi',
       },
       {
-        'body': 'Stresi atmak için nefes egzersizi yap 💨',
+        'body': AppStrings.notifBreathing5,
         'action': 'nefes_egzersizi',
       },
       {
-        'body': 'Odaklanmak için 5 dakika nefes al 🎯',
+        'body': AppStrings.notifBreathing6,
         'action': 'nefes_egzersizi',
       },
       {
-        'body': 'Bedeni ve zihni dengelemek için nefes egzersizi yap ⚖️',
+        'body': AppStrings.notifBreathing7,
         'action': 'nefes_egzersizi',
       },
       {
-        'body': 'Bugünkü nefes egzersizi hatırlatması 🧘‍♀️',
+        'body': AppStrings.notifBreathing8,
         'action': 'nefes_egzersizi',
       },
       {
-        'body': 'Huzurlu bir gün için nefes egzersizi yap ✨',
+        'body': AppStrings.notifBreathing9,
         'action': 'nefes_egzersizi',
       },
       {
-        'body': 'Enerjini toplamak için nefes al ⚡',
+        'body': AppStrings.notifBreathing10,
         'action': 'nefes_egzersizi',
       },
     ];
@@ -365,27 +366,27 @@ class NotificationService {
   List<Map<String, String>> _getSleepMessages() {
     return [
       {
-        'body': 'Dün kaçta yatıp kalktın? Uyku verilerini gir 📝',
+        'body': AppStrings.notifSleep1,
         'action': 'uyku_verisi_gir',
       },
       {
-        'body': 'Sabah uyku günlüğünü doldurmayı unutma 😴',
+        'body': AppStrings.notifSleep2,
         'action': 'uyku_verisi_gir',
       },
       {
-        'body': 'Gecenin nasıldı? Uyku verilerini kaydet 🌙',
+        'body': AppStrings.notifSleep3,
         'action': 'uyku_verisi_gir',
       },
       {
-        'body': 'Uyku kaliteni ve rüyalarını not al 💭',
+        'body': AppStrings.notifSleep4,
         'action': 'uyku_verisi_gir',
       },
       {
-        'body': 'Dün nasıl uyudun? Hadi kaydet 🌟',
+        'body': AppStrings.notifSleep5,
         'action': 'uyku_verisi_gir',
       },
       {
-        'body': 'Uyku günlüğünü doldurarak analiz oluştur 📊',
+        'body': AppStrings.notifSleep6,
         'action': 'uyku_verisi_gir',
       },
     ];
@@ -395,15 +396,15 @@ class NotificationService {
   List<Map<String, String>> _getBedtimeMessages() {
     return [
       {
-        'body': 'İyi geceler! Huzurlu bir uyku dileriz 🌙',
+        'body': AppStrings.notifBedtime1,
         'action': 'iyi_geceler',
       },
       {
-        'body': 'Rahatlamak için uyku sesleri dinle 😴',
+        'body': AppStrings.notifBedtime2,
         'action': 'uyku_sesi',
       },
       {
-        'body': 'Düzenli uyku saatine geçiş zamanı! 🌟',
+        'body': AppStrings.notifBedtime3,
         'action': 'uyku_rutu',
       },
     ];
@@ -413,15 +414,15 @@ class NotificationService {
   List<Map<String, String>> _getSoundMessages() {
     return [
       {
-        'body': 'Yatmadan önce sakinleştirici sesler dinle 🎵',
+        'body': AppStrings.notifSound1,
         'action': 'ses_dinle',
       },
       {
-        'body': 'Uykuya dalmana yardımcı olacak sesler var 🌊',
+        'body': AppStrings.notifSound2,
         'action': 'ses_dinle',
       },
       {
-        'body': 'Rahatlamak için doğa seslerini dinle 🏞️',
+        'body': AppStrings.notifSound3,
         'action': 'ses_dinle',
       },
     ];

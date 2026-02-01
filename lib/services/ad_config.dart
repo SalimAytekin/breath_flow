@@ -23,7 +23,7 @@ class AdConfig {
 
   // 🎯 TEST MODU - Test reklamları aktif
   // Dahili test için güvenli test reklamları kullanılıyor
-  static const bool _useTestAds = true; // Test reklamları
+  static const bool _useTestAds = false; // Gerçek reklamlar - PRODUCTION
   
   // ℹ️ TEST ETMEK İÇİN:
   // 1. Debug modda çalıştırın: flutter run

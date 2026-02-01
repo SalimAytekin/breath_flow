@@ -130,7 +130,7 @@ class _SoundsScreenState extends State<SoundsScreen> {
         extendBodyBehindAppBar: true,
         appBar: ProfessionalAppBar(
           scrollController: _scrollController,
-          title: widget.customTitle ?? 'Ses Koleksiyonu',
+          title: widget.customTitle ?? AppStrings.soundCollectionTitle,
         ),
         body: Stack(
           children: [

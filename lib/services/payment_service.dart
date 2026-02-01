@@ -37,6 +37,35 @@ class PaymentService {
   bool _isPremiumActive = false;
   DateTime? _premiumExpiryDate;
   String? _activeSubscriptionId;
+  String? _purchaseOwnerUserId; // 🔐 Satın almayı yapan kullanıcı ID'si
+  
+  // 🔔 Premium süresi doldu flag'i
+  bool _premiumExpired = false;
+  bool get premiumExpired => _premiumExpired;
+  
+  // Restore için Completer
+  Completer<bool>? _restoreCompleter;
+  
+  // 🔔 Satın alma başarılı callback'i - PremiumProvider bu callback'i dinleyecek
+  Function(PurchaseDetails)? onPurchaseSuccess;
+  
+  // 🔔 Premium süresi doldu callback'i
+  Function()? onPremiumExpired;
+  
+  // 🔐 Mevcut kullanıcı ID'si (AuthProvider'dan set edilecek)
+  String? _currentUserId;
+  
+  /// Mevcut kullanıcı ID'sini ayarla
+  void setCurrentUserId(String? userId) {
+    _currentUserId = userId;
+    if (kDebugMode) print('🔐 PaymentService kullanıcı ID: $userId');
+  }
+  
+  /// Satın almayı yapan kullanıcı ID'si
+  String? get purchaseOwnerUserId => _purchaseOwnerUserId;
+  
+  /// Mevcut kullanıcı ID'si
+  String? get currentUserId => _currentUserId;
 
   // Getters
   bool get isPremiumActive => _isPremiumActive;
@@ -82,10 +111,18 @@ class PaymentService {
   /// Ürünleri sorgula
   Future<void> _queryProducts() async {
     try {
+      if (kDebugMode) print('🔍 Ürün sorgusu başlatılıyor: $_productIds');
+      
       final ProductDetailsResponse response = await _inAppPurchase.queryProductDetails(_productIds);
       
+      if (kDebugMode) {
+        print('📋 Sorgu sonucu:');
+        print('   - Bulunan: ${response.productDetails.length}');
+        print('   - Bulunamayan: ${response.notFoundIDs}');
+      }
+      
       if (response.notFoundIDs.isNotEmpty) {
-        if (kDebugMode) print('❌ Bulunamayan ürünler: ${response.notFoundIDs}');
+        if (kDebugMode) print('⚠️ Bulunamayan ürünler: ${response.notFoundIDs}');
       }
       
       if (response.error != null) {
@@ -108,7 +145,7 @@ class PaymentService {
     }
   }
 
-  /// Mevcut satın almaları geri yükle
+  /// Mevcut satın almaları geri yükle (private)
   Future<void> _restorePurchases() async {
     try {
       await _inAppPurchase.restorePurchases();
@@ -116,6 +153,110 @@ class PaymentService {
     } catch (e) {
       if (kDebugMode) print('❌ Satın alma geri yükleme hatası: $e');
     }
+  }
+  
+  /// 🔐 Retry mekanizması ile restore
+  Future<bool> restoreWithRetry({int maxRetries = 3}) async {
+    for (int i = 0; i < maxRetries; i++) {
+      try {
+        _restoreCompleter = Completer<bool>();
+        await _restorePurchases();
+        
+        // ⏱️ Timeout süresini artır: 15 + i*5 saniye
+        final result = await _restoreCompleter!.future.timeout(
+          Duration(seconds: 15 + i * 5), // İlk deneme 15sn, sonraki 20sn, 25sn
+        );
+        
+        _restoreCompleter = null;
+        if (kDebugMode) print('✅ Restore başarılı (deneme ${i + 1})');
+        return result;
+      } catch (e) {
+        _restoreCompleter = null;
+        if (i == maxRetries - 1) {
+          if (kDebugMode) print('❌ Restore denemeleri başarısız: $e');
+          return false;
+        }
+        if (kDebugMode) print('⚠️ Restore deneme ${i + 1} timeout (${Duration(seconds: 15 + i * 5).inSeconds}s), tekrar deneniyor...');
+        await Future.delayed(const Duration(seconds: 3)); // Bekleme süresini artır
+      }
+    }
+    return false;
+  }
+  
+  /// 🔄 Public: Satın almaları geri yükle ve premium durumunu senkronize et
+  Future<bool> restoreAndSyncPurchases() async {
+    try {
+      if (kDebugMode) print('🔄 Satın almalar geri yükleniyor...');
+      
+      // Premium expired flag'ini sıfırla
+      _premiumExpired = false;
+      
+      // Önce local durumu yükle
+      await loadPremiumStatus();
+      
+      // 📌 Önceki premium durumunu kaydet (karşılaştırma için)
+      final bool wasPremiumBefore = _isPremiumActive;
+      final String? previousOwnerId = _purchaseOwnerUserId;
+      
+      if (kDebugMode) {
+        print('📊 Önceki durum: isPremium=$wasPremiumBefore, owner=$previousOwnerId');
+      }
+      
+      // 🔄 HER ZAMAN Google Play'i sorgula (local cache'e güvenme!)
+      // Retry mekanizması ile restore yap
+      bool hasActiveSubscription = await restoreWithRetry(maxRetries: 3);
+      bool timedOut = !hasActiveSubscription; // Başarısız ise timeout say
+      
+      // 🔔 YENİ MANTIK: Firestore'dan gelen premium durumunu dikkate al
+      // Eğer kullanıcı zaten premium ise (Firestore'dan gelen), Google Play timeout olursa premium'u iptal ETME
+      if (!hasActiveSubscription && wasPremiumBefore) {
+        // 🔐 KONTROL: Eğer timeout oldu ve mevcut kullanıcı satın almanın sahibiyse
+        // Firestore'dan gelen premium durumunu koru (geçici network sorunu olabilir)
+        if (timedOut && previousOwnerId == _currentUserId && _isPremiumActive) {
+          if (kDebugMode) print('⚠️ Google Play timeout ama Firestore\'da premium aktif - durum korunuyor');
+          // Premium durumunu koru, expired flag'i set ETME
+          return _isPremiumActive;
+        }
+        
+        // 🔔 Google Play'de gerçekten aktif abonelik YOKSA premium'u iptal et
+        if (kDebugMode) print('⚠️ Google Play\'de aktif abonelik yok - Premium iptal ediliyor');
+        
+        // Premium'u kapat
+        _isPremiumActive = false;
+        _activeSubscriptionId = null;
+        _premiumExpiryDate = null;
+        await _savePremiumStatus();
+        
+        // Expired flag'i set et
+        if (previousOwnerId == _currentUserId) {
+          _premiumExpired = true;
+          if (kDebugMode) print('🔔 Premium süresi doldu - kullanıcıya bildirilecek');
+          onPremiumExpired?.call();
+        }
+      }
+      
+      // 🔔 SON KONTROL: Eğer timeout olduysa ve premium durumunu koruduysak
+      // loadPremiumStatus() çağırmayalım (çünkü durum zaten doğru)
+      if (!timedOut) {
+        // Sadece timeout olmadıysa durumu tekrar yükle
+        await loadPremiumStatus();
+      }
+      
+      if (kDebugMode) {
+        print('📊 Güncel durum: isPremium=$_isPremiumActive, subscription=$_activeSubscriptionId');
+        print('   Timeout: $timedOut, Owner: $previousOwnerId -> $_currentUserId');
+      }
+      
+      return _isPremiumActive;
+    } catch (e) {
+      if (kDebugMode) print('❌ Restore & sync hatası: $e');
+      return false;
+    }
+  }
+  
+  /// Premium expired flag'ini sıfırla
+  void clearPremiumExpiredFlag() {
+    _premiumExpired = false;
   }
 
   /// Satın alma güncellemelerini dinle
@@ -143,8 +284,42 @@ class PaymentService {
       if (purchaseDetails.status == PurchaseStatus.purchased ||
           purchaseDetails.status == PurchaseStatus.restored) {
         
-        // Satın alma başarılı
-        await _processSuccessfulPurchase(purchaseDetails);
+        final isRestore = purchaseDetails.status == PurchaseStatus.restored;
+        
+        if (isRestore) {
+          // 🔐 RESTORE durumunda: Sahiplik kontrolü yap
+          if (kDebugMode) {
+            print('🔄 Restore algılandı: ${purchaseDetails.productID}');
+            print('   Mevcut sahip: $_purchaseOwnerUserId');
+            print('   Mevcut kullanıcı: $_currentUserId');
+          }
+          
+          // 🚫 Kullanıcı giriş yapmamışsa restore işlemi YAPMA
+          // Böylece sahipsiz premium oluşmaz
+          if (_currentUserId == null) {
+            if (kDebugMode) print('⚠️ Restore: Kullanıcı giriş yapmamış - işlem atlanıyor');
+            // Sadece satın alma işlemini tamamla ama premium aktifleştirme
+            if (purchaseDetails.pendingCompletePurchase) {
+              await _inAppPurchase.completePurchase(purchaseDetails);
+            }
+            return;
+          }
+          
+          // Eğer zaten bir sahip varsa ve mevcut kullanıcı değilse, sahipliği DEĞİŞTİRME
+          if (_purchaseOwnerUserId != null && _purchaseOwnerUserId != _currentUserId) {
+            if (kDebugMode) print('⚠️ Restore: Farklı kullanıcı - sahiplik değiştirilmedi');
+            // Premium durumunu güncelle ama sahipliği değiştirme
+            _isPremiumActive = true;
+            _activeSubscriptionId = purchaseDetails.productID;
+            await _savePremiumStatus();
+          } else {
+            // Sahip yok veya mevcut kullanıcı sahip - normal işle
+            await _processSuccessfulPurchase(purchaseDetails);
+          }
+        } else {
+          // YENİ SATIN ALMA: Normal işle
+          await _processSuccessfulPurchase(purchaseDetails);
+        }
         
         // Satın alma işlemini tamamla
         if (purchaseDetails.pendingCompletePurchase) {
@@ -153,6 +328,16 @@ class PaymentService {
         
         _purchasePending = false;
         if (kDebugMode) print('✅ Satın alma başarılı: ${purchaseDetails.productID}');
+        
+        // 🔔 Callback'i çağır - PremiumProvider anında bilgilendirilecek
+        if (onPurchaseSuccess != null) {
+          onPurchaseSuccess!(purchaseDetails);
+        }
+        
+        // 🔄 Restore Completer'ı tamamla
+        if (_restoreCompleter != null && !_restoreCompleter!.isCompleted) {
+          _restoreCompleter!.complete(true);
+        }
       }
     } catch (e) {
       if (kDebugMode) print('❌ Satın alma işleme hatası: $e');
@@ -163,6 +348,9 @@ class PaymentService {
   /// Başarılı satın almayı işle
   Future<void> _processSuccessfulPurchase(PurchaseDetails purchaseDetails) async {
     final productId = purchaseDetails.productID;
+    
+    // 🔐 Satın almayı yapan kullanıcıyı kaydet
+    _purchaseOwnerUserId = _currentUserId;
     
     // Premium durumunu güncelle
     _isPremiumActive = true;
@@ -184,7 +372,7 @@ class PaymentService {
     // Durumu kaydet
     await _savePremiumStatus();
     
-    if (kDebugMode) print('🎉 Premium aktifleştirildi: $productId');
+    if (kDebugMode) print('🎉 Premium aktifleştirildi: $productId (Kullanıcı: $_purchaseOwnerUserId)');
   }
 
   /// Premium durumunu kaydet
@@ -196,6 +384,11 @@ class PaymentService {
     if (_premiumExpiryDate != null) {
       await prefs.setString('premium_expiry_date', _premiumExpiryDate!.toIso8601String());
     }
+    
+    // 🔐 Satın almayı yapan kullanıcı ID'sini kaydet
+    if (_purchaseOwnerUserId != null) {
+      await prefs.setString('purchase_owner_user_id', _purchaseOwnerUserId!);
+    }
   }
 
   /// Premium durumunu yükle
@@ -204,6 +397,7 @@ class PaymentService {
       final prefs = await SharedPreferences.getInstance();
       _isPremiumActive = prefs.getBool('is_premium_active') ?? false;
       _activeSubscriptionId = prefs.getString('active_subscription_id');
+      _purchaseOwnerUserId = prefs.getString('purchase_owner_user_id');
       
       final expiryString = prefs.getString('premium_expiry_date');
       if (expiryString != null) {
@@ -214,14 +408,67 @@ class PaymentService {
           _isPremiumActive = false;
           _activeSubscriptionId = null;
           _premiumExpiryDate = null;
+          _purchaseOwnerUserId = null;
           await _savePremiumStatus();
         }
       }
       
-      if (kDebugMode) print('📱 Premium durumu yüklendi: $_isPremiumActive');
+      if (kDebugMode) {
+        print('📱 Premium durumu yüklendi:');
+        print('   _isPremiumActive: $_isPremiumActive');
+        print('   _purchaseOwnerUserId: $_purchaseOwnerUserId');
+        print('   _currentUserId: $_currentUserId');
+      }
     } catch (e) {
       if (kDebugMode) print('❌ Premium durumu yükleme hatası: $e');
     }
+  }
+  
+  /// 🔐 Mevcut kullanıcı satın almanın sahibi mi?
+  bool isCurrentUserPurchaseOwner() {
+    // Kullanıcı giriş yapmamışsa veya satın alma yoksa false
+    if (_currentUserId == null || _purchaseOwnerUserId == null) {
+      return false;
+    }
+    return _currentUserId == _purchaseOwnerUserId;
+  }
+  
+  /// 🔐 Kullanıcı bazlı premium durumu
+  /// Bu metod sadece mevcut kullanıcı satın alma sahibiyse true döner
+  bool isPremiumForCurrentUser() {
+    if (kDebugMode) {
+      print('🔐 isPremiumForCurrentUser kontrolü:');
+      print('   _isPremiumActive: $_isPremiumActive');
+      print('   _currentUserId: $_currentUserId');
+      print('   _purchaseOwnerUserId: $_purchaseOwnerUserId');
+    }
+    
+    // Premium aktif değilse false
+    if (!_isPremiumActive) {
+      if (kDebugMode) print('   ❌ Sonuç: Premium aktif değil');
+      return false;
+    }
+    
+    // Kullanıcı giriş yapmamışsa → premium geçersiz
+    if (_currentUserId == null) {
+      if (kDebugMode) print('   ❌ Sonuç: Kullanıcı giriş yapmamış');
+      return false;
+    }
+    
+    // Satın alma sahibi yoksa → bu yeni bir satın alma, mevcut kullanıcı sahip olacak
+    if (_purchaseOwnerUserId == null) {
+      if (kDebugMode) print('   ⚠️ Satın alma sahibi yok - mevcut kullanıcı sahip olacak');
+      // Mevcut kullanıcıyı sahip olarak kaydet
+      _purchaseOwnerUserId = _currentUserId;
+      _savePremiumStatus();
+      if (kDebugMode) print('   ✅ Sonuç: Yeni sahip atandı');
+      return true;
+    }
+    
+    // Sadece satın alan kullanıcı premium olabilir
+    final isOwner = _currentUserId == _purchaseOwnerUserId;
+    if (kDebugMode) print('   ${isOwner ? "✅" : "❌"} Sonuç: Sahip kontrolü = $isOwner');
+    return isOwner;
   }
 
   /// Premium satın al
@@ -243,12 +490,27 @@ class PaymentService {
         productId = _premiumMonthlyId;
         break;
     }
+    
+    if (kDebugMode) {
+      print('🛒 Satın alma isteği: offerType=$offerType, productId=$productId');
+      print('📦 Mevcut ürünler: ${_products.map((p) => '${p.id}: ${p.price}').toList()}');
+    }
 
     // Ürünü bul
-    final product = _products.firstWhere(
-      (p) => p.id == productId,
-      orElse: () => _products.first, // Fallback
-    );
+    ProductDetails? product;
+    try {
+      product = _products.firstWhere((p) => p.id == productId);
+      if (kDebugMode) print('✅ Ürün bulundu: ${product.id} - ${product.price}');
+    } catch (e) {
+      if (kDebugMode) print('⚠️ Ürün bulunamadı: $productId, fallback kullanılacak');
+      if (_products.isNotEmpty) {
+        product = _products.first; // Fallback
+        if (kDebugMode) print('⚠️ Fallback ürün: ${product.id} - ${product.price}');
+      } else {
+        if (kDebugMode) print('❌ Hiç ürün yok!');
+        return false;
+      }
+    }
 
     try {
       _purchasePending = true;
@@ -307,13 +569,25 @@ class PaymentService {
     return difference.inDays;
   }
 
-  /// Premium durumunu temizle (test için)
+  /// Premium durumunu temizle (çıkış yapıldığında)
+  /// NOT: Sahip bilgisi korunur - böylece aynı kullanıcı tekrar giriş yaptığında premium durumu geri gelir
   Future<void> clearPremiumStatus() async {
+    // Sadece aktif durumu sıfırla, sahip bilgisini KORU
     _isPremiumActive = false;
     _activeSubscriptionId = null;
     _premiumExpiryDate = null;
-    await _savePremiumStatus();
-    if (kDebugMode) print('🧹 Premium durumu temizlendi');
+    // _purchaseOwnerUserId KORUNUYOR - bu kritik!
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_premium_active', false);
+    await prefs.remove('active_subscription_id');
+    await prefs.remove('premium_expiry_date');
+    // purchase_owner_user_id KORUNUYOR
+    
+    if (kDebugMode) {
+      print('🧹 Premium durumu temizlendi');
+      print('   Sahip bilgisi korundu: $_purchaseOwnerUserId');
+    }
   }
 
   /// Servisi kapat

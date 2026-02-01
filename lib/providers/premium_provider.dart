@@ -3,16 +3,40 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'dart:convert';
+import '../services/user_data_sync_service.dart';
+import '../services/payment_service.dart';
+import '../core/analytics/analytics_service.dart';
 import '../models/premium_trigger.dart';
 
 class PremiumProvider extends ChangeNotifier {
+  // 🔄 Firestore sync servisi
+  final UserDataSyncService _syncService = UserDataSyncService();
+  final PaymentService _paymentService = PaymentService.instance;
+  // 🔒 Sync bayrağı
+  bool _isSyncing = false;
+  
+  // 🔒 Dialog gösterildi bayrağı
+  bool _hasShownExpiredDialog = false;
+  
   // Ana premium durumu
   bool _isPremiumUser = false;
   DateTime? _premiumExpiryDate;
+  String? _purchaseToken; // Google Play satın alma token'ı
+  String? _productId; // Satın alınan ürün ID'si
+  
+  // 🔔 Satın alma başarılı bildirimi için
+  bool _justPurchased = false;
+  bool get justPurchased => _justPurchased;
+  
+  /// Satın alma bildirimini temizle (UI gösterdikten sonra çağrılmalı)
+  void clearPurchaseNotification() {
+    _justPurchased = false;
+  }
   
   // Test modu kontrolü
-  bool _testMode = true; // Premium sistemi askıya alındı - herkes ücretsiz erişim
+  bool _testMode = false; // 🔥 GERÇEK PREMIUM SİSTEMİ AKTİF!
   
   // Kullanıcı analitikleri ve tetikleyici sistemi
   Map<String, dynamic> _userContext = {};
@@ -38,10 +62,10 @@ class PremiumProvider extends ChangeNotifier {
   // Getters
   bool get isPremiumUser {
     if (_testMode) {
-      // Debug log kaldırıldı - çok fazla spam yapıyordu
       return _isPremiumUser;
     }
-    // Production modunda gerçek premium durumunu kontrol et
+    // Production modunda: Local premium durumu + süre kontrolü
+    // NOT: Kullanıcı bazlı kontrol _syncFromFirestore ve callback'te yapılıyor
     return _isPremiumUser && !_isPremiumExpired();
   }
   
@@ -50,6 +74,60 @@ class PremiumProvider extends ChangeNotifier {
   Map<String, dynamic> get userContext => _userContext;
   PremiumTrigger? get currentActiveTrigger => _currentActiveTrigger;
   Map<String, dynamic> get analyticsData => _analyticsData;
+  
+  // ============================================
+  // 🎯 MERKEZİ PREMIUM KONTROL SİSTEMİ
+  // ============================================
+  
+  /// Premium özellik ID'leri
+  static const String featureUnlimitedMixes = 'unlimited_mixes';
+  static const String featurePremiumSounds = 'premium_sounds';
+  static const String featurePremiumExercises = 'premium_exercises';
+  static const String featureSleepAnalytics = 'sleep_analytics';
+  static const String featureSleepJournal = 'sleep_journal';
+  static const String featureAdvancedStats = 'advanced_stats';
+  static const String featureNoAds = 'ad_free';
+  
+  /// Mix limiti (ücretsiz kullanıcılar için)
+  static const int freeMixLimit = 3;
+  
+  /// Belirli bir özelliğe erişim var mı?
+  bool canAccessFeature(String featureId) {
+    // Premium kullanıcılar her şeye erişebilir
+    if (isPremiumUser) return true;
+    
+    // Ücretsiz kullanıcılar için kısıtlamalar
+    switch (featureId) {
+      case featureUnlimitedMixes:
+      case featurePremiumSounds:
+      case featurePremiumExercises:
+      case featureSleepAnalytics:
+      case featureSleepJournal:
+      case featureAdvancedStats:
+      case featureNoAds:
+        return false;
+      default:
+        return true; // Bilinmeyen özellikler varsayılan olarak açık
+    }
+  }
+  
+  /// Premium içerik mi kontrol et (ses, egzersiz vb.)
+  bool canAccessPremiumContent(bool isContentPremium) {
+    if (!isContentPremium) return true; // Ücretsiz içerik
+    return isPremiumUser; // Premium içerik için premium gerekli
+  }
+  
+  /// Mix limiti kontrolü
+  bool canAddToMix(int currentMixCount) {
+    if (isPremiumUser) return true;
+    return currentMixCount < freeMixLimit;
+  }
+  
+  /// Kalan mix hakkı
+  int getRemainingMixSlots(int currentMixCount) {
+    if (isPremiumUser) return 999; // Sınırsız
+    return (freeMixLimit - currentMixCount).clamp(0, freeMixLimit);
+  }
   
   // Premium süresi dolmuş mu kontrol et
   bool _isPremiumExpired() {
@@ -66,6 +144,64 @@ class PremiumProvider extends ChangeNotifier {
 
   PremiumProvider() {
     _initializeData();
+    _setupPaymentServiceCallback();
+  }
+  
+  /// 🔔 PaymentService callback'ini ayarla
+  /// Satın alma başarılı olduğunda anında bilgilendirilecek
+  void _setupPaymentServiceCallback() {
+    _paymentService.onPurchaseSuccess = (purchaseDetails) async {
+      final isRestore = purchaseDetails.status == PurchaseStatus.restored;
+      
+      if (kDebugMode) debugPrint('🎉 Satın alma callback tetiklendi: ${purchaseDetails.productID} (restore: $isRestore)');
+      
+      // 🔐 YENİ SATIN ALMA: Mevcut kullanıcı yeni sahip olacak
+      // Callback sadece BAŞARILI satın alma sonrası tetiklenir
+      // Bu yüzden mevcut kullanıcıyı sahip olarak kabul ediyoruz
+      final currentUserId = _paymentService.currentUserId;
+      
+      if (kDebugMode) {
+        debugPrint('🔐 Callback - Satın alma:');
+        debugPrint('   currentUserId: $currentUserId');
+        debugPrint('   productId: ${purchaseDetails.productID}');
+        debugPrint('   isRestore: $isRestore');
+      }
+      
+      // Kullanıcı giriş yapmamışsa işleme
+      if (currentUserId == null) {
+        if (kDebugMode) debugPrint('⚠️ Kullanıcı giriş yapmamış - callback atlanıyor');
+        return;
+      }
+      
+      // PaymentService'ten güncel durumu al
+      _isPremiumUser = true;
+      _premiumExpiryDate = _paymentService.premiumExpiryDate;
+      _productId = _paymentService.activeSubscriptionId;
+      
+      // 🔔 Satın alma başarılı bildirimini SADECE YENİ SATIN ALMADA göster
+      // Restore durumunda gösterme (her girişte tetiklenir)
+      if (!isRestore) {
+        _justPurchased = true;
+      }
+      
+      // Local'e kaydet
+      await _savePremiumStatus();
+      
+      // Firestore'a sync et - SADECE bu kullanıcı için
+      await _syncPremiumToFirestore();
+      
+      // Analytics - sadece yeni satın alma için
+      if (!isRestore) {
+        AnalyticsService.instance.logEvent('premium_purchase_success', {
+          'product_id': purchaseDetails.productID,
+        }).catchError((e) => debugPrint('Analytics hatası: $e'));
+      }
+      
+      // 🚨 UI'I ANİNDA GÜNCELLE
+      notifyListeners();
+      
+      if (kDebugMode) debugPrint('✅ Premium ${isRestore ? "restore edildi" : "aktifleştirildi"}!');
+    };
   }
 
   Future<void> _initializeData() async {
@@ -73,8 +209,12 @@ class PremiumProvider extends ChangeNotifier {
     await _loadUserContext();
     await _loadAnalyticsData();
     await _loadTriggerData();
-    // Çevrimiçi senkronizasyon (claim/Firestore) — sessiz çalışır
-    await synchronizePremiumStatus();
+    
+    // 🔄 Firestore'dan sync et (arka planda)
+    if (_syncService.isUserLoggedIn) {
+      _syncFromFirestore();
+    }
+    
     notifyListeners();
   }
 
@@ -87,10 +227,14 @@ class PremiumProvider extends ChangeNotifier {
         _isPremiumUser = false;
         await prefs.setBool('is_premium_user', false);
         await prefs.remove('premium_expiry_date');
+        await prefs.remove('purchase_token');
+        await prefs.remove('product_id');
         if (kDebugMode) print('🚨 TEST: Premium durumu sıfırlandı (Test modu aktif)');
       } else {
         // Production modunda gerçek premium durumunu yükle
         _isPremiumUser = prefs.getBool('is_premium_user') ?? false;
+        _purchaseToken = prefs.getString('purchase_token');
+        _productId = prefs.getString('product_id');
         
         final expiryString = prefs.getString('premium_expiry_date');
         if (expiryString != null && expiryString.isNotEmpty) {
@@ -121,91 +265,32 @@ class PremiumProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('is_premium_user', _isPremiumUser);
+      
       if (_premiumExpiryDate != null) {
         await prefs.setString('premium_expiry_date', _premiumExpiryDate!.toIso8601String());
+      } else {
+        await prefs.remove('premium_expiry_date');
+      }
+      
+      if (_purchaseToken != null) {
+        await prefs.setString('purchase_token', _purchaseToken!);
+      } else {
+        await prefs.remove('purchase_token');
+      }
+      
+      if (_productId != null) {
+        await prefs.setString('product_id', _productId!);
+      } else {
+        await prefs.remove('product_id');
       }
     } catch (e) {
       debugPrint('Premium durumu kaydedilirken hata: $e');
     }
   }
 
-  // Firebase Auth custom claim'lerinden premium durumunu yenile
-  Future<void> refreshFromAuthClaims() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
-      final tokenResult = await user.getIdTokenResult(true); // force refresh
-      final claims = tokenResult.claims ?? {};
-
-      final bool claimPremium = (claims['isPremium'] == true);
-      DateTime? claimExpiry;
-      if (claims['premium_exp'] is int) {
-        // Saniye timestamp bekleniyor
-        claimExpiry = DateTime.fromMillisecondsSinceEpoch((claims['premium_exp'] as int) * 1000);
-      } else if (claims['premium_exp'] is String) {
-        claimExpiry = DateTime.tryParse(claims['premium_exp']);
-      }
-
-      if (claimPremium != _isPremiumUser || (claimExpiry ?? _premiumExpiryDate) != _premiumExpiryDate) {
-        _isPremiumUser = claimPremium;
-        _premiumExpiryDate = claimExpiry;
-        await _savePremiumStatus();
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('Auth claim yenileme hatası: $e');
-    }
-  }
-
-  // Firestore yedeği: users/{uid} dokümanından premium bilgisi oku
-  Future<void> refreshFromFirestore() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      if (!doc.exists) return;
-      final data = doc.data();
-      if (data == null) return;
-
-      final bool fsPremium = (data['isPremium'] == true);
-      DateTime? fsExpiry;
-      if (data['premiumExpiry'] is Timestamp) {
-        fsExpiry = (data['premiumExpiry'] as Timestamp).toDate();
-      } else if (data['premiumExpiry'] is String) {
-        fsExpiry = DateTime.tryParse(data['premiumExpiry']);
-      }
-
-      if (fsPremium != _isPremiumUser || (fsExpiry ?? _premiumExpiryDate) != _premiumExpiryDate) {
-        _isPremiumUser = fsPremium;
-        _premiumExpiryDate = fsExpiry;
-        await _savePremiumStatus();
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('Firestore premium yenileme hatası: $e');
-    }
-  }
-
-  // Tek giriş noktası: önce Auth claims, sonra Firestore fallback
-  Future<void> synchronizePremiumStatus() async {
-    await refreshFromAuthClaims();
-    // Claims gelmediyse veya premium değilse Firestore ile doğrula
-    if (!_isPremiumUser || _premiumExpiryDate == null) {
-      await refreshFromFirestore();
-    }
-  }
-
-  // Token geçerliliğini garanti altına al (expire edge-case)
-  Future<void> ensureValidToken() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-      await user.getIdToken(true);
-    } catch (e) {
-      debugPrint('Token yenileme hatası: $e');
-    }
-  }
+  // ⚠️ ESKİ METODLAR KALDIRILDI - Artık UserDataSyncService kullanılıyor
+  // refreshFromAuthClaims(), refreshFromFirestore(), synchronizePremiumStatus()
+  // yerine _syncFromFirestore() ve performFullSync() kullanılıyor
 
   Future<void> _loadUserContext() async {
     try {
@@ -295,10 +380,22 @@ class PremiumProvider extends ChangeNotifier {
   }
 
   // Premium durumu güncelle
-  Future<void> setPremiumStatus(bool isPremium, {DateTime? expiryDate}) async {
+  Future<void> setPremiumStatus(
+    bool isPremium, {
+    DateTime? expiryDate,
+    String? purchaseToken,
+    String? productId,
+  }) async {
     _isPremiumUser = isPremium;
     _premiumExpiryDate = expiryDate;
+    _purchaseToken = purchaseToken;
+    _productId = productId;
+    
     await _savePremiumStatus();
+    
+    // 🔄 Firestore'a sync et
+    _syncPremiumToFirestore();
+    
     notifyListeners();
   }
 
@@ -429,40 +526,7 @@ class PremiumProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Premium satın alma simülasyonu
-  Future<void> purchasePremium(PremiumOfferType offerType) async {
-    _isPremiumUser = true;
-    
-    // Offer tipine göre süre belirle
-    switch (offerType) {
-      case PremiumOfferType.trialOffer:
-        _premiumExpiryDate = DateTime.now().add(const Duration(days: 7));
-        break;
-      case PremiumOfferType.bundleOffer:
-        _premiumExpiryDate = DateTime.now().add(const Duration(days: 365));
-        break;
-      case PremiumOfferType.discountOffer:
-        _premiumExpiryDate = DateTime.now().add(const Duration(days: 30));
-        break;
-      default:
-        _premiumExpiryDate = DateTime.now().add(const Duration(days: 30));
-        break;
-    }
-    
-    await _savePremiumStatus();
-    
-    // Aktif tetikleyiciyi temizle
-    _currentActiveTrigger = null;
-    
-    // Premium satın alma analitiği
-    await trackUserAction('premium_purchased', {
-      'offerType': offerType.name,
-      'expiryDate': _premiumExpiryDate?.toIso8601String(),
-    });
-    
-    if (kDebugMode) print('🎉 Premium satın alındı: ${offerType.name}');
-    notifyListeners();
-  }
+  // ESKİ METOD SİLİNDİ - Yeni purchasePremium metodu aşağıda (satır 745)
   
   // Test için premium durumunu manuel ayarla
   Future<void> setTestPremiumStatus(bool isPremium, {Duration? duration}) async {
@@ -483,37 +547,7 @@ class PremiumProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Merkezi premium özellik erişim kontrolü
-  bool canAccessFeature(String featureId) {
-    // Test modunda reklam özelliği için özel kontrol
-    if (_testMode && featureId == 'ad_free') {
-      // Debug log kaldırıldı - çok fazla spam yapıyordu
-      return false; // Test modunda da reklamları göster
-    }
-    
-    // Premium sistemi askıya alındı - diğer özellikler için herkes erişebilir
-    if (_testMode) {
-      if (kDebugMode) print('🚨 DEBUG: Premium sistemi askıya alındı - ${featureId} özelliğine erişim verildi');
-      return true;
-    }
-    
-    // Premium kullanıcılar tüm özelliklere erişebilir
-    if (isPremiumUser) return true;
-    
-    // Ücretsiz özellikler listesi
-    const freeFeatures = [
-      'basic_breathing',
-      'basic_sounds',
-      'basic_sleep',
-      'basic_journal',
-      'basic_hrv',
-      'free_stories',
-      'sound_mixing', // Mix limiti var ama erişilebilir
-      'ad_free', // Premium kullanıcılar için reklamsız deneyim
-    ];
-    
-    return freeFeatures.contains(featureId);
-  }
+  // NOT: canAccessFeature metodu yukarıda merkezi sistem olarak tanımlandı
   
   // Premium gerektiren özellikler
   bool isPremiumFeature(String featureId) {
@@ -653,5 +687,473 @@ class PremiumProvider extends ChangeNotifier {
       'premiumStoriesListened': _userContext['premiumStoriesListened'] ?? 0,
       'advancedHRVUsed': _userContext['advancedHRVUsed'] ?? 0,
     };
+  }
+  
+  // ================================
+  // � YARDIMCI METODLAR
+  // ================================
+  
+  /// 🔐 Firestore'dan direkt premium verisi oku (race condition önlemek için)
+  Future<Map<String, dynamic>?> _getFirestorePremiumDataDirect() async {
+    if (!_syncService.isUserLoggedIn) return null;
+    
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return null;
+      
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('premium')
+          .doc('status')
+          .get();
+      
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        return {
+          'isPremium': data['isPremium'] ?? false,
+          'expiryDate': data['expiryDate'] != null 
+              ? (data['expiryDate'] as Timestamp).toDate() 
+              : null,
+          'purchaseToken': data['purchaseToken'],
+          'productId': data['productId'],
+        };
+      }
+    } catch (e) {
+      debugPrint('❌ Firestore direkt okuma hatası: $e');
+    }
+    return null;
+  }
+  
+  /// 🔐 Firestore'daki purchase token'ı doğrula
+  Future<bool> _verifyPurchaseTokenInFirestore() async {
+    final firestoreData = await _getFirestorePremiumDataDirect();
+    if (firestoreData == null) return false;
+    
+    final firestoreToken = firestoreData['purchaseToken'] as String?;
+    final localToken = _purchaseToken;
+    
+    return firestoreToken != null && 
+           localToken != null && 
+           firestoreToken == localToken;
+  }
+  
+  /// 🔐 İnternet bağlantısı kontrolü
+  Future<bool> _hasInternetConnection() async {
+    try {
+      final result = await FirebaseFirestore.instance
+          .collection('connection_test')
+          .doc('ping')
+          .get()
+          .timeout(const Duration(seconds: 3));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  /// 🔐 Retry mekanizması ile restore (PaymentService üzerinden)
+  Future<bool> _restoreWithRetry({int maxRetries = 3}) async {
+    return await _paymentService.restoreWithRetry(maxRetries: maxRetries);
+  }
+  
+  // ================================
+  // � FIRESTORE SYNC METODLARI
+  // ================================
+  
+  /// Firestore'dan premium durumunu yükle ve local ile birleştir
+  Future<void> _syncFromFirestore() async {
+    if (_isSyncing || !_syncService.isUserLoggedIn) return;
+    _isSyncing = true;
+    
+    try {
+      debugPrint('🔄 Premium Firestore sync başlatılıyor...');
+      
+      final remotePremium = await _syncService.loadPremiumStatus();
+      
+      if (remotePremium != null) {
+        final remoteIsPremium = remotePremium['isPremium'] as bool;
+        final remoteExpiry = remotePremium['expiryDate'] as DateTime?;
+        final remotePurchaseToken = remotePremium['purchaseToken'] as String?;
+        final remoteProductId = remotePremium['productId'] as String?;
+        
+        // 🔐 Firestore'daki premium durumunu kullan (kullanıcıya özgü)
+        // Local premium durumu önceki kullanıcıdan kalma olabilir, güvenme!
+        _isPremiumUser = remoteIsPremium;
+        _premiumExpiryDate = remoteExpiry;
+        _purchaseToken = remotePurchaseToken;
+        _productId = remoteProductId;
+        
+        await _savePremiumStatus();
+        debugPrint('✅ Premium durumu Firestore\'dan yüklendi: isPremium=$remoteIsPremium');
+        
+        notifyListeners();
+      }
+      
+      debugPrint('✅ Premium Firestore sync tamamlandı');
+    } catch (e) {
+      debugPrint('❌ Premium Firestore sync hatası: $e');
+    } finally {
+      _isSyncing = false;
+    }
+  }
+  
+  /// Premium durumunu Firestore'a kaydet
+  Future<void> _syncPremiumToFirestore() async {
+    if (!_syncService.isUserLoggedIn) return;
+    
+    // Arka planda sync et
+    _syncService.syncPremiumStatus(
+      isPremium: _isPremiumUser,
+      expiryDate: _premiumExpiryDate,
+      purchaseToken: _purchaseToken,
+      productId: _productId,
+    ).catchError((e) {
+      debugPrint('❌ Premium sync hatası: $e');
+    });
+  }
+  
+  /// Manuel full sync (kullanıcı giriş yaptığında çağrılır)
+  Future<void> performFullSync() async {
+    // 🔒 Race condition önleme: Sync zaten devam ediyorsa bekle
+    if (_isSyncing) {
+      debugPrint('⚠️ Premium sync zaten devam ediyor, atlanıyor');
+      return;
+    }
+    
+    _isSyncing = true;
+    debugPrint('🔄 Premium full sync başlatılıyor...');
+    
+    try {
+      // 🔐 ÖNCELİKLE: Local premium durumunu sıfırla
+      _isPremiumUser = false;
+      _premiumExpiryDate = null;
+      _purchaseToken = null;
+      _productId = null;
+      _justPurchased = false;
+      
+      // 📌 Offline kontrolü
+      final hasInternet = await _hasInternetConnection();
+      if (!hasInternet) {
+        debugPrint('📴 Offline - cache kullanılıyor');
+        await _syncFromFirestore(); // Cache'den yükle
+        return;
+      }
+      
+      // � GÜVENLİK: Önce Firestore'dan kontrol et, sonra restore yap
+      // Böylece restore timeout olsa bile premium kullanıcılar engellenmez
+      final firestoreData = await _getFirestorePremiumDataDirect();
+      final bool firestorePremium = firestoreData?['isPremium'] ?? false;
+      final DateTime? firestoreExpiry = firestoreData?['expiryDate'];
+      
+      debugPrint('📊 Öncelik kontrolü: Firestore premium=$firestorePremium, expiry=$firestoreExpiry');
+      
+      // Eğer Firestore'da premium varsa ve süresi dolmamışsa, öncelikle bunu kabul et
+      if (firestorePremium && firestoreExpiry != null && firestoreExpiry.isAfter(DateTime.now())) {
+        debugPrint('✅ Firestore\'da premium aktif tespit edildi - Google Play sorgusu atlanıyor');
+        _isPremiumUser = true;
+        _premiumExpiryDate = firestoreExpiry;
+        _purchaseToken = firestoreData?['purchaseToken'];
+        _productId = firestoreData?['productId'];
+        
+        // Local'e kaydet ve çık
+        await _savePremiumStatus();
+        debugPrint('✅ Premium full sync tamamlandı (isPremium: $_isPremiumUser)');
+        return;
+      }
+      
+      //  Local'e Firestore verisini yükle
+      _isPremiumUser = firestorePremium;
+      _premiumExpiryDate = firestoreExpiry;
+      _purchaseToken = firestoreData?['purchaseToken'];
+      _productId = firestoreData?['productId'];
+      
+      // 🔄 Google Play'den retry mekanizması ile restore yap
+      final googlePlayPremium = await _restoreWithRetry(maxRetries: 5);
+      
+      // 🎯 ÖNCelik Sırası: Google Play > Firestore > Varsayılan
+      if (googlePlayPremium) {
+        // Google Play aktif = kesinlikle premium
+        debugPrint('✅ Google Play aktif - premium onaylandı');
+        _isPremiumUser = true;
+        _premiumExpiryDate = _paymentService.premiumExpiryDate;
+        _productId = _paymentService.activeSubscriptionId;
+      } else if (firestorePremium && firestoreExpiry != null) {
+        // Google Play aktif değil ama Firestore'da premium var
+        if (firestoreExpiry.isAfter(DateTime.now())) {
+          debugPrint('⚠️ Google Play timeout ama Firestore\'da premium aktif - durum korunuyor');
+          // Firestore durumunu koru
+          _isPremiumUser = true;
+          // _premiumExpiryDate ve _purchaseToken zaten yüklendi
+        } else {
+          debugPrint('⚠️ Firestore\'da premium süresi dolmuş - premium iptal ediliyor');
+          _isPremiumUser = false;
+          _premiumExpiryDate = null;
+          _purchaseToken = null;
+          _productId = null;
+          
+          // Firestore'u güncelle
+          await _syncPremiumToFirestore();
+        }
+      } else {
+        // 🔔 YENİ KURAL: Google Play timeout olursa varsayılan olarak Firestore'a güven
+        // Eğer Firestore'da premium varsa (expiry kontrolü yapıldı), koru
+        if (firestorePremium) {
+          debugPrint('⚠️ Google Play timeout ama Firestore\'da premium var - varsayılan olarak korunuyor');
+          // Firestore durumunu koru (_premiumExpiryDate zaten yüklü)
+          _isPremiumUser = true;
+        } else {
+          debugPrint('❌ Premium bulunamadı - kullanıcı premium değil');
+          _isPremiumUser = false;
+          _premiumExpiryDate = null;
+          _purchaseToken = null;
+          _productId = null;
+        }
+      }
+      
+      // 💾 Local'e kaydet
+      await _savePremiumStatus();
+      
+      debugPrint('✅ Premium full sync tamamlandı (isPremium: $_isPremiumUser)');
+      
+    } catch (e) {
+      debugPrint('❌ Premium full sync hatası: $e');
+    } finally {
+      _isSyncing = false;
+    }
+  }
+  
+  /// Premium durumunu gerçek zamanlı dinle (opsiyonel)
+  void startListeningToPremiumChanges() {
+    if (!_syncService.isUserLoggedIn) return;
+    
+    _syncService.watchPremiumStatus().listen((status) {
+      if (status != null) {
+        final remoteIsPremium = status['isPremium'] as bool;
+        final remoteExpiry = status['expiryDate'] as DateTime?;
+        
+        // Sadece değişiklik varsa güncelle
+        if (remoteIsPremium != _isPremiumUser || 
+            remoteExpiry != _premiumExpiryDate) {
+          _isPremiumUser = remoteIsPremium;
+          _premiumExpiryDate = remoteExpiry;
+          _purchaseToken = status['purchaseToken'] as String?;
+          _productId = status['productId'] as String?;
+          
+          _savePremiumStatus();
+          notifyListeners();
+          
+          debugPrint('🔄 Premium durumu real-time güncellendi');
+        }
+      }
+    });
+  }
+  
+  // ================================
+  // 💳 SATIN ALMA METODLARI
+  // ================================
+  
+  /// Premium satın al
+  Future<bool> purchasePremium(PremiumOfferType offerType) async {
+    try {
+      // PaymentService üzerinden satın alma başlat
+      final success = await _paymentService.purchasePremium(offerType);
+      
+      if (success) {
+        // Analytics
+        AnalyticsService.instance.logEvent('premium_purchase_initiated', {
+          'offer_type': offerType.toString(),
+        }).catchError((e) => debugPrint('Analytics hatası: $e'));
+      }
+      
+      return success;
+    } catch (e) {
+      debugPrint('❌ Premium satın alma hatası: $e');
+      return false;
+    }
+  }
+  
+  /// 🔄 Manuel premium aktivasyonu (satın alma sonrası çağrılabilir)
+  Future<void> activatePremiumNow() async {
+    if (kDebugMode) debugPrint('🔄 Manuel premium aktivasyonu başlatılıyor...');
+    
+    // PaymentService'ten güncel durumu al
+    _isPremiumUser = _paymentService.isPremiumActive;
+    _premiumExpiryDate = _paymentService.premiumExpiryDate;
+    _productId = _paymentService.activeSubscriptionId;
+    
+    // Eğer PaymentService'te premium aktifse
+    if (_isPremiumUser) {
+      await _savePremiumStatus();
+      await _syncPremiumToFirestore();
+      notifyListeners();
+      if (kDebugMode) debugPrint('✅ Premium manuel olarak aktifleştirildi!');
+    } else {
+      if (kDebugMode) debugPrint('⚠️ PaymentService\'te premium aktif değil');
+    }
+  }
+  
+  /// Satın almaları geri yükle (Google Play'den çeker)
+  Future<bool> restorePurchases() async {
+    try {
+      if (kDebugMode) debugPrint('🔄 Premium restore başlatılıyor...');
+      
+      // PaymentService'ten Google Play'den restore et
+      await _paymentService.restoreAndSyncPurchases();
+      
+      // 🔐 KULLANICI BAZLI KONTROL: Sadece bu kullanıcı satın aldıysa premium yap
+      final isPremiumForThisUser = _paymentService.isPremiumForCurrentUser();
+      
+      if (isPremiumForThisUser) {
+        // Bu kullanıcı satın almış - premium yap
+        _isPremiumUser = true;
+        _premiumExpiryDate = _paymentService.premiumExpiryDate;
+        _productId = _paymentService.activeSubscriptionId;
+        
+        await _savePremiumStatus();
+        
+        // 🔄 Firestore'a sync et
+        await _syncPremiumToFirestore();
+        
+        if (kDebugMode) debugPrint('✅ Premium restore: Bu kullanıcı premium!');
+      } else {
+        // Bu kullanıcı satın almamış - premium yapma
+        _isPremiumUser = false;
+        _premiumExpiryDate = null;
+        _productId = null;
+        
+        await _savePremiumStatus();
+        
+        if (kDebugMode) debugPrint('ℹ️ Premium restore: Bu kullanıcı premium değil');
+      }
+      
+      notifyListeners();
+      
+      return _isPremiumUser;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Premium restore hatası: $e');
+      return false;
+    }
+  }
+  
+  /// PaymentService'ten premium durumunu senkronize et
+  Future<void> syncWithPaymentService() async {
+    final wasPremium = _isPremiumUser;
+    
+    _isPremiumUser = _paymentService.isPremiumActive;
+    _premiumExpiryDate = _paymentService.premiumExpiryDate;
+    _productId = _paymentService.activeSubscriptionId;
+    
+    if (wasPremium != _isPremiumUser) {
+      await _savePremiumStatus();
+      await _syncPremiumToFirestore();
+      notifyListeners();
+      
+      debugPrint('🔄 Premium durumu PaymentService ile senkronize edildi');
+    }
+  }
+  
+  // ================================
+  // 🚪 OTURUM KAPATMA - VERİ TEMİZLEME
+  // ================================
+  
+  /// Oturum kapatıldığında TÜM premium verilerini temizle
+  /// Bu metod AuthProvider.signOut() sonrası çağrılmalı
+  Future<void> clearAllDataOnLogout() async {
+    if (kDebugMode) debugPrint('🚪 Oturum kapatılıyor - Premium verileri temizleniyor...');
+    
+    // 1. Memory'deki verileri temizle
+    _isPremiumUser = false;
+    _premiumExpiryDate = null;
+    _purchaseToken = null;
+    _productId = null;
+    _justPurchased = false;
+    
+    // 2. Tetikleyici verilerini temizle
+    _triggerCooldowns.clear();
+    _dismissedTriggers.clear();
+    _triggerShowCounts.clear();
+    _currentActiveTrigger = null;
+    
+    // 3. Kullanıcı bağlamını temizle
+    _userContext.clear();
+    
+    // 4. Analytics verilerini sıfırla
+    _analyticsData = {
+      'totalSessions': 0,
+      'breathingSessionsCompleted': 0,
+      'differentTechniquesUsed': 0,
+      'savedMixesCount': 0,
+      'dailyUsageDays': 0,
+      'weeklyGoalCompletion': 0.0,
+      'consecutiveWeeks': 0,
+      'featuresUsed': 0,
+      'measurementCount': 0,
+      'lastUsageDate': null,
+    };
+    
+    // 5. SharedPreferences'tan temizle
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Premium verileri
+      await prefs.remove('is_premium_user');
+      await prefs.remove('premium_expiry_date');
+      await prefs.remove('purchase_token');
+      await prefs.remove('product_id');
+      
+      // Tetikleyici verileri
+      await prefs.remove('trigger_cooldowns');
+      await prefs.remove('dismissed_triggers');
+      await prefs.remove('trigger_show_counts');
+      
+      // Kullanıcı bağlamı ve analytics
+      await prefs.remove('user_context');
+      await prefs.remove('analytics_data');
+      
+      if (kDebugMode) debugPrint('✅ SharedPreferences premium verileri temizlendi');
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ SharedPreferences temizleme hatası: $e');
+    }
+    
+    // 6. PaymentService'teki verileri de temizle
+    await _paymentService.clearPremiumStatus();
+    
+    // 7. UI'ı güncelle
+    notifyListeners();
+    
+    if (kDebugMode) debugPrint('✅ Tüm premium verileri temizlendi - Yeni kullanıcı için hazır');
+  }
+  
+  /// Sadece premium durumunu temizle (tetikleyici ve analytics verilerini koru)
+  /// Test veya debug için kullanılabilir
+  Future<void> clearPremiumStatusOnly() async {
+    _isPremiumUser = false;
+    _premiumExpiryDate = null;
+    _purchaseToken = null;
+    _productId = null;
+    
+    await _savePremiumStatus();
+    await _paymentService.clearPremiumStatus();
+    
+    notifyListeners();
+    
+    if (kDebugMode) debugPrint('🧹 Premium durumu temizlendi');
+  }
+  
+  /// 🔧 Debug: Premium durumunu kontrol et ve logla
+  void debugPremiumStatus() {
+    if (!kDebugMode) return;
+    
+    debugPrint('🔍 PREMIUM DURUMU DEBUG:');
+    debugPrint('   PremiumProvider.isPremiumUser: $_isPremiumUser');
+    debugPrint('   PremiumProvider.isPremiumExpired: ${_isPremiumExpired()}');
+    debugPrint('   PremiumProvider.premiumExpiryDate: $_premiumExpiryDate');
+    debugPrint('   PaymentService.isPremiumActive: ${_paymentService.isPremiumActive}');
+    debugPrint('   PaymentService.premiumExpired: ${_paymentService.premiumExpired}');
+    debugPrint('   PaymentService.isPremiumForCurrentUser: ${_paymentService.isPremiumForCurrentUser()}');
+    debugPrint('   PaymentService.currentUserId: ${_paymentService.currentUserId}');
+    debugPrint('   PaymentService.purchaseOwnerUserId: ${_paymentService.purchaseOwnerUserId}');
+    debugPrint('   Sonuç: isPremiumUser getter = ${isPremiumUser}');
   }
 } 

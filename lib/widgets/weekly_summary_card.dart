@@ -82,7 +82,7 @@ class _WeeklySummaryCardState extends State<WeeklySummaryCard> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Bu Hafta (Pzt-Paz)', // ✅ Açıklayıcı başlık
+                                      AppStrings.thisWeekLabel, // ✅ Açıklayıcı başlık
                                       style: AppTypography.headlineSmall.copyWith(
                                         fontSize: titleFontSize,
                                       ),
@@ -320,22 +320,22 @@ class _WeeklySummaryCardState extends State<WeeklySummaryCard> {
   }
 
   String _getMotivationalMessage(int sessions, int tabIndex) {
-    final activityName = tabIndex == 0 ? 'nefes egzersizi' : 'ses dinleme';
+    final activityName = tabIndex == 0 ? AppStrings.breathingExerciseActivity : AppStrings.soundListeningActivity;
     
     if (sessions == 0) {
       // ✅ Daha motivasyonlu boş state mesajı
       return tabIndex == 0 
-          ? '🌟 İlk adımı atmaya hazır mısın? Bir nefes egzersizi ile başla!'
-          : '🎵 Rahatlatıcı seslerle huzuru keşfet. İlk seansını başlat!';
+          ? AppStrings.noSessionsBreathingPrompt
+          : AppStrings.noSessionsSoundPrompt;
     } else if (sessions == 1) {
       // 🆕 İlk seansı kutlama mesajı
-      return '🎉 Harika başlangıç! İlk $activityName seansını tamamladın. Devam et!';
+      return AppStrings.firstSessionComplete(activityName);
     } else if (sessions < 5) {
-      return '💪 ${AppStrings.greatStart} $sessions seans yaptın, hedefine yaklaşıyorsun!';
+      return AppStrings.fewSessionsMessage(sessions);
     } else if (sessions < 10) {
-      return '⭐ ${AppStrings.goingSuperb} $sessions seans! Muhteşem bir hafta geçiriyorsun!';
+      return AppStrings.manySessionsMessage(sessions);
     } else {
-      return '🏆 ${AppStrings.amazingWeek} $sessions seans! Sen bir şampiyonsun!';
+      return AppStrings.championMessage(sessions);
     }
   }
 
@@ -365,7 +365,7 @@ class _WeeklySummaryCardState extends State<WeeklySummaryCard> {
             const SizedBox(width: AppSpacing.medium),
             Expanded(
               child: Text(
-                'Haftalık İstatistikler',
+                AppStrings.weeklyStatistics,
                 style: AppTypography.headlineSmall.copyWith(
                   color: AppColors.textPrimary,
                 ),
@@ -379,20 +379,20 @@ class _WeeklySummaryCardState extends State<WeeklySummaryCard> {
           children: [
             _buildInfoItem(
               icon: FeatherIcons.calendar,
-              title: 'Hafta Tanımı',
-              description: 'Pazartesi\'den Pazar\'a kadar olan 7 günlük periyodu gösterir.',
+              title: AppStrings.weekDefinition,
+              description: AppStrings.weekDefinitionDesc,
             ),
             const SizedBox(height: AppSpacing.medium),
             _buildInfoItem(
               icon: FeatherIcons.activity,
-              title: 'Seans Sayısı',
-              description: 'Bu hafta yaptığın tüm nefes egzersizi veya ses dinleme seanslarının toplamıdır.',
+              title: AppStrings.sessionCount,
+              description: AppStrings.sessionCountDesc,
             ),
             const SizedBox(height: AppSpacing.medium),
             _buildInfoItem(
               icon: FeatherIcons.clock,
-              title: 'Toplam Dakika',
-              description: 'Bu hafta aktivitelere ayırdığın toplam süre dakika cinsinden gösterilir.',
+              title: AppStrings.totalMinutesLabel,
+              description: AppStrings.totalMinutesDesc,
             ),
           ],
         ),
@@ -400,7 +400,7 @@ class _WeeklySummaryCardState extends State<WeeklySummaryCard> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
-              'Anladım',
+              AppStrings.understoodButton,
               style: TextStyle(color: AppColors.primaryAccent),
             ),
           ),

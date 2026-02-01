@@ -1,8 +1,10 @@
-import 'package:breathe_flow/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:breathe_flow/constants/app_colors.dart';
+import 'package:breathe_flow/constants/app_strings.dart';
 import 'package:breathe_flow/constants/app_typography.dart';
 import 'package:breathe_flow/widgets/professional_button.dart';
+import 'package:breathe_flow/providers/auth_provider.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -17,33 +19,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final AuthService _authService = AuthService();
-  bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
   void _submitForm() async {
     if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isLoading = true);
-      final name = _nameController.text.trim();
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
       
-      final result = await _authService.signUpWithEmail(email, password);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final success = await authProvider.signUpWithEmail(email, password);
 
-      if (result == null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Kayıt başarısız. Lütfen tekrar deneyin.'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-      }
       if (mounted) {
-        setState(() => _isLoading = false);
+        if (success) {
+          // ✅ Kayıt başarılı - Ana ekrana yönlendir
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        } else {
+          // ❌ Kayıt başarısız - Hata mesajını göster
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authProvider.errorMessage ?? AppStrings.signupFailed),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
       }
     }
   }
@@ -116,7 +118,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 SizedBox(height: isSmallScreen ? 24 : 32),
                 
                 Text(
-                  'Aramıza Katıl',
+                  AppStrings.joinUs,
                   style: AppTypography.displayMedium.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
@@ -128,7 +130,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 8),
                 
                 Text(
-                  'Sakinlik ve mindfulness yolculuğuna başla',
+                  AppStrings.startJourney,
                   style: AppTypography.bodyLarge.copyWith(
                     color: AppColors.textSecondary,
                     height: 1.5,
@@ -156,16 +158,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       children: [
                         _buildTextField(
                           controller: _nameController,
-                          labelText: 'Adınız Soyadınız',
-                          hintText: 'Ahmet Yılmaz',
+                          labelText: AppStrings.fullName,
+                          hintText: AppStrings.fullNamePlaceholder,
                           icon: Icons.person_outline,
                           keyboardType: TextInputType.name,
                           validator: (value) {
                             if (value?.isEmpty ?? true) {
-                              return 'Ad soyad gerekli';
+                              return AppStrings.fullNameRequired;
                             }
                             if (value!.length < 2) {
-                              return 'Ad soyad en az 2 karakter olmalı';
+                              return AppStrings.fullNameMinLength;
                             }
                             return null;
                           },
@@ -175,16 +177,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         
                         _buildTextField(
                           controller: _emailController,
-                          labelText: 'E-posta Adresiniz',
-                          hintText: 'ornek@email.com',
+                          labelText: AppStrings.emailAddress,
+                          hintText: AppStrings.emailPlaceholder,
                           icon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
                             if (value?.isEmpty ?? true) {
-                              return 'E-posta adresi gerekli';
+                              return AppStrings.emailRequired;
                             }
                             if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!)) {
-                              return 'Geçerli bir e-posta adresi girin';
+                              return AppStrings.emailInvalid;
                             }
                             return null;
                           },
@@ -194,8 +196,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         
                         _buildTextField(
                           controller: _passwordController,
-                          labelText: 'Şifreniz',
-                          hintText: '••••••••',
+                          labelText: AppStrings.password,
+                          hintText: AppStrings.passwordPlaceholder,
                           icon: Icons.lock_outline,
                           obscureText: _obscurePassword,
                           suffixIcon: IconButton(
@@ -211,10 +213,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                           validator: (value) {
                             if (value?.isEmpty ?? true) {
-                              return 'Şifre gerekli';
+                              return AppStrings.passwordRequired;
                             }
                             if (value!.length < 6) {
-                              return 'Şifre en az 6 karakter olmalı';
+                              return AppStrings.passwordMinLength;
                             }
                             return null;
                           },
@@ -224,8 +226,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         
                         _buildTextField(
                           controller: _confirmPasswordController,
-                          labelText: 'Şifre Tekrarı',
-                          hintText: '••••••••',
+                          labelText: AppStrings.confirmPassword,
+                          hintText: AppStrings.passwordPlaceholder,
                           icon: Icons.lock_outline,
                           obscureText: _obscureConfirmPassword,
                           suffixIcon: IconButton(
@@ -241,10 +243,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                           validator: (value) {
                             if (value?.isEmpty ?? true) {
-                              return 'Şifre tekrarı gerekli';
+                              return AppStrings.confirmPasswordRequired;
                             }
                             if (value != _passwordController.text) {
-                              return 'Şifreler eşleşmiyor';
+                              return AppStrings.passwordsNotMatch;
                             }
                             return null;
                           },
@@ -264,44 +266,49 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         
                         const SizedBox(height: 24),
                         
-                        if (_isLoading)
-                          const Center(
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryAccent),
-                            ),
-                          )
-                        else
-                          Container(
-                            height: 56,
-                            decoration: BoxDecoration(
-                              gradient: AppColors.primaryGradient,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primaryAccent.withOpacity(0.3),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
+                        Consumer<AuthProvider>(
+                          builder: (context, authProvider, child) {
+                            if (authProvider.isLoading) {
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryAccent),
                                 ),
-                              ],
-                            ),
-                            child: ElevatedButton(
-                              onPressed: _submitForm,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                              );
+                            }
+                            
+                            return Container(
+                              height: 56,
+                              decoration: BoxDecoration(
+                                gradient: AppColors.primaryGradient,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primaryAccent.withOpacity(0.3),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton(
+                                onPressed: _submitForm,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: Text(
+                                  AppStrings.signUpNow,
+                                  style: AppTypography.buttonText.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                              child: Text(
-                                'Hesap Oluştur',
-                                style: AppTypography.buttonText.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -314,13 +321,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     onPressed: () => Navigator.pop(context),
                     child: Text.rich(
                       TextSpan(
-                        text: 'Zaten hesabın var mı? ',
+                        text: AppStrings.alreadyHaveAccount,
                         style: AppTypography.bodyMedium.copyWith(
                           color: AppColors.textSecondary,
                         ),
                         children: [
                           TextSpan(
-                            text: 'Giriş Yap',
+                            text: AppStrings.loginNow,
                             style: AppTypography.bodyMedium.copyWith(
                               color: AppColors.primaryAccent,
                               fontWeight: FontWeight.w600,

@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/premium_trigger.dart';
 import '../providers/premium_provider.dart';
+import '../providers/auth_provider.dart';
 import '../constants/app_colors.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
-import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../constants/app_strings.dart';
+import '../screens/login_screen.dart';
 
 class SmartPremiumDialog extends StatefulWidget {
   final PremiumTrigger trigger;
@@ -29,6 +29,13 @@ class SmartPremiumDialog extends StatefulWidget {
     VoidCallback? onDismiss,
     VoidCallback? onPurchase,
   }) {
+    // 🔐 Misafir kullanıcı kontrolü - önce giriş yapmasını iste
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (!authProvider.isAuthenticated) {
+      _showLoginRequiredDialog(context);
+      return;
+    }
+    
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -36,6 +43,64 @@ class SmartPremiumDialog extends StatefulWidget {
         trigger: trigger,
         onDismiss: onDismiss,
         onPurchase: onPurchase,
+      ),
+    );
+  }
+  
+  /// Misafir kullanıcıya giriş yapması gerektiğini söyle
+  static void _showLoginRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.lock_outline, color: AppColors.primaryAccent, size: 28),
+            const SizedBox(width: 12),
+            Text(
+              'Giriş Gerekli',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Premium satın almak için önce giriş yapmanız gerekiyor. Bu sayede satın alımınız hesabınıza kaydedilir ve tüm cihazlarınızda kullanabilirsiniz.',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 14,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Vazgeç',
+              style: TextStyle(color: AppColors.textTertiary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Login ekranına yönlendir
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Giriş Yap'),
+          ),
+        ],
       ),
     );
   }
@@ -47,6 +112,9 @@ class _SmartPremiumDialogState extends State<SmartPremiumDialog>
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
   late Animation<Offset> _slideAnimation;
+  
+  // Seçili plan: 0 = Aylık, 1 = Yıllık
+  int _selectedPlanIndex = 1; // Varsayılan: Yıllık (daha karlı)
 
   @override
   void initState() {
@@ -191,9 +259,9 @@ class _SmartPremiumDialogState extends State<SmartPremiumDialog>
           
           const SizedBox(height: 16),
           
-          // Title
+          // Title - Lokalize edilmiş
           Text(
-            widget.trigger.title,
+            AppStrings.greatStartTitle,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.bold,
@@ -203,9 +271,9 @@ class _SmartPremiumDialogState extends State<SmartPremiumDialog>
           
           const SizedBox(height: 8),
           
-          // Description
+          // Description - Lokalize edilmiş
           Text(
-            widget.trigger.description,
+            AppStrings.continueWithPremium,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.white.withOpacity(0.9),
             ),
@@ -218,155 +286,207 @@ class _SmartPremiumDialogState extends State<SmartPremiumDialog>
 
   Widget _buildContent(BuildContext context, PremiumOffer offer) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
-          // Offer title
-          Text(
-            offer.title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // Subtitle
-          Text(
-            offer.subtitle,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withOpacity(0.8),
-            ),
-            textAlign: TextAlign.center,
-          ),
+          // Plan seçim kartları
+          _buildPlanSelector(context),
           
           const SizedBox(height: 16),
           
-          // Price
-          _buildPriceSection(context, offer),
-          
-          const SizedBox(height: 16),
-          
-          // Features
-          _buildFeaturesList(context, offer),
-          
-          // Limited time indicator
-          if (offer.isLimitedTime) ...[
-            const SizedBox(height: 16),
-            _buildLimitedTimeIndicator(context),
-          ],
+          // Özellikler listesi
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: _buildCompactFeaturesList(context),
+          ),
         ],
       ),
     );
   }
-
-  Widget _buildPriceSection(BuildContext context, PremiumOffer offer) {
+  
+  Widget _buildPlanSelector(BuildContext context) {
+    final plans = [
+      _PlanOption(
+        name: AppStrings.monthlyPlan,
+        price: '₺69,99',
+        period: AppStrings.perMonth,
+        description: AppStrings.renewsMonthly,
+        offerType: PremiumOfferType.specificFeature,
+        isBestValue: false,
+      ),
+      _PlanOption(
+        name: AppStrings.yearlyPlan,
+        price: '₺419,99',
+        period: AppStrings.perYear,
+        description: AppStrings.yearlySavings,
+        offerType: PremiumOfferType.bundleOffer,
+        isBestValue: true,
+      ),
+    ];
+    
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (offer.originalPrice.isNotEmpty) ...[
-          Text(
-            offer.originalPrice,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withOpacity(0.7),
-              decoration: TextDecoration.lineThrough,
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
+      children: List.generate(plans.length, (index) {
+        final plan = plans[index];
+        final isSelected = _selectedPlanIndex == index;
         
-        Text(
-          offer.price,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        
-        if (offer.discountPercentage > 0) ...[
-          const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.red,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '-%${offer.discountPercentage}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => setState(() => _selectedPlanIndex = index),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: EdgeInsets.only(
+                left: index == 0 ? 0 : 4,
+                right: index == plans.length - 1 ? 0 : 4,
               ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildFeaturesList(BuildContext context, PremiumOffer offer) {
-    return Column(
-      children: offer.features.map((feature) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          children: [
-            Icon(
-              Icons.check_circle,
-              color: Colors.white.withOpacity(0.9),
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                feature,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withOpacity(0.9),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected 
+                    ? Colors.white.withOpacity(0.25)
+                    : Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected 
+                      ? Colors.white 
+                      : Colors.white.withOpacity(0.2),
+                  width: isSelected ? 2 : 1,
                 ),
               ),
+              child: Column(
+                children: [
+                  // Best value badge
+                  if (plan.isBestValue)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      margin: const EdgeInsets.only(bottom: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.amber,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        AppStrings.bestValueBadge,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 9,
+                        ),
+                      ),
+                    )
+                  else
+                    const SizedBox(height: 18),
+                  
+                  // Plan name
+                  Text(
+                    plan.name,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  
+                  // Price
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        plan.price,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        plan.period,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  
+                  // Description
+                  Text(
+                    plan.description,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: plan.isBestValue 
+                          ? Colors.amber.shade200 
+                          : Colors.white.withOpacity(0.7),
+                      fontWeight: plan.isBestValue 
+                          ? FontWeight.w600 
+                          : FontWeight.normal,
+                      fontSize: 10,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // Selection indicator
+                  Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSelected 
+                          ? Colors.white 
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(isSelected ? 1 : 0.5),
+                        width: 2,
+                      ),
+                    ),
+                    child: isSelected
+                        ? Icon(
+                            Icons.check,
+                            color: widget.trigger.color,
+                            size: 14,
+                          )
+                        : null,
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      )).toList(),
+          ),
+        );
+      }),
     );
   }
-
-  Widget _buildLimitedTimeIndicator(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.red,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
+  
+  Widget _buildCompactFeaturesList(BuildContext context) {
+    final features = [
+      AppStrings.featureAdFree,
+      AppStrings.featureAllExercises,
+      AppStrings.featurePremiumSounds,
+      AppStrings.featureAdvancedAnalytics,
+    ];
+    
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      children: features.map((feature) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.access_time,
-            color: Colors.white,
-            size: 16,
+          Icon(
+            Icons.check_circle,
+            color: Colors.white.withOpacity(0.9),
+            size: 14,
           ),
           const SizedBox(width: 4),
           Text(
-            'Sınırlı Süre!',
+            feature,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 11,
             ),
           ),
         ],
-      ),
+      )).toList(),
     );
   }
 
@@ -390,7 +510,7 @@ class _SmartPremiumDialogState extends State<SmartPremiumDialog>
                 elevation: 0,
               ),
               child: Text(
-                offer.ctaText,
+                AppStrings.getSpecialOffer,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -408,7 +528,7 @@ class _SmartPremiumDialogState extends State<SmartPremiumDialog>
               TextButton(
                 onPressed: () => _handleDismiss(context, false),
                 child: Text(
-                  'Daha Sonra',
+                  AppStrings.laterButton,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.8),
                   ),
@@ -418,7 +538,7 @@ class _SmartPremiumDialogState extends State<SmartPremiumDialog>
               TextButton(
                 onPressed: () => _handleDismiss(context, true),
                 child: Text(
-                  'Tekrar Gösterme',
+                  AppStrings.dontShowAgainButton,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.6),
                     fontSize: 12,
@@ -432,20 +552,30 @@ class _SmartPremiumDialogState extends State<SmartPremiumDialog>
     );
   }
 
+  /// Seçili planın offerType'ını döndür
+  PremiumOfferType _getSelectedOfferType() {
+    return _selectedPlanIndex == 0 
+        ? PremiumOfferType.specificFeature  // Aylık
+        : PremiumOfferType.bundleOffer;     // Yıllık
+  }
+  
   void _handlePurchase(BuildContext context) {
     final premiumProvider = Provider.of<PremiumProvider>(context, listen: false);
+    final selectedOfferType = _getSelectedOfferType();
+    
     if (premiumProvider.isTestMode) {
       // Test modunda simüle et
-      premiumProvider.purchasePremium(widget.trigger.offerType);
+      premiumProvider.purchasePremium(selectedOfferType);
       premiumProvider.trackUserAction('premium_purchase_attempted', {
         'triggerId': widget.trigger.id,
-        'offerType': widget.trigger.offerType.name,
+        'offerType': selectedOfferType.name,
+        'planType': _selectedPlanIndex == 0 ? 'monthly' : 'yearly',
         'source': 'smart_dialog',
       });
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Premium (TEST) aktifleştirildi! 🎉'),
+          content: Text('${AppStrings.premiumSuccessTitle} (TEST)'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
         ),
@@ -458,131 +588,61 @@ class _SmartPremiumDialogState extends State<SmartPremiumDialog>
     _initiateGooglePlayPurchase(context, premiumProvider);
   }
 
+  /// 🔄 Google Play Billing ile satın alma başlat
+  /// PaymentService üzerinden merkezi satın alma - callback ile anında güncelleme
   Future<void> _initiateGooglePlayPurchase(BuildContext context, PremiumProvider premiumProvider) async {
-    final InAppPurchase inAppPurchase = InAppPurchase.instance;
-    
-    // Google Play Billing'in mevcut olup olmadığını kontrol et
-    final bool isAvailable = await inAppPurchase.isAvailable();
-    if (!isAvailable) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Google Play Billing mevcut değil'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    // Premium ürün ID'si (Google Play Console'da tanımlanacak)
-    const String productId = 'premium_monthly'; // Google Play Console'da oluşturulacak
+    final selectedOfferType = _getSelectedOfferType();
     
     try {
-      // Ürün detaylarını al
-      final ProductDetailsResponse response = await inAppPurchase.queryProductDetails({productId});
+      // Analytics tracking
+      premiumProvider.trackUserAction('premium_purchase_attempted', {
+        'triggerId': widget.trigger.id,
+        'offerType': selectedOfferType.name,
+        'planType': _selectedPlanIndex == 0 ? 'monthly' : 'yearly',
+        'source': 'smart_dialog',
+      });
       
-      if (response.notFoundIDs.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ürün bulunamadı: ${response.notFoundIDs.join(', ')}'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-        return;
-      }
-
-      if (response.productDetails.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Ürün detayları alınamadı'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-        return;
-      }
-
-      final ProductDetails productDetails = response.productDetails.first;
-      
-      // Satın alma parametrelerini hazırla
-      final PurchaseParam purchaseParam = PurchaseParam(
-        productDetails: productDetails,
-        applicationUserName: null, // Opsiyonel kullanıcı adı
-      );
-
-      // Satın alma işlemini başlat
-      final bool success = await inAppPurchase.buyNonConsumable(purchaseParam: purchaseParam);
+      // 🔔 PaymentService üzerinden satın alma başlat
+      // PaymentService.onPurchaseSuccess callback'i PremiumProvider'ı otomatik güncelleyecek
+      final success = await premiumProvider.purchasePremium(selectedOfferType);
       
       if (success) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Satın alma işlemi başlatıldı...'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
-        
-        // Satın alma durumunu dinle
-        _listenToPurchaseUpdates(context, premiumProvider);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Satın alma işlemi başlatılamadı'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Hata: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
-
-  void _listenToPurchaseUpdates(BuildContext context, PremiumProvider premiumProvider) {
-    final InAppPurchase inAppPurchase = InAppPurchase.instance;
-    StreamSubscription<List<PurchaseDetails>>? subscription;
-    
-    subscription = inAppPurchase.purchaseStream.listen((List<PurchaseDetails> purchaseDetailsList) {
-      for (final PurchaseDetails purchaseDetails in purchaseDetailsList) {
-        if (purchaseDetails.status == PurchaseStatus.purchased) {
-          // Satın alma başarılı - Premium'u aktifleştir
-          premiumProvider.trackUserAction('premium_purchase_success', {
-            'productId': purchaseDetails.productID,
-            'purchaseId': purchaseDetails.purchaseID,
-          });
-          
-          // Token yenile ve premium durumunu senkronize et
-          () async {
-            await premiumProvider.ensureValidToken();
-            await premiumProvider.synchronizePremiumStatus();
-            
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Premium aktifleştirildi! 🎉'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            }
-          }();
-          
-          // Satın alma işlemini tamamla
-          if (purchaseDetails.pendingCompletePurchase) {
-            inAppPurchase.completePurchase(purchaseDetails);
-          }
-        } else if (purchaseDetails.status == PurchaseStatus.error) {
-          // Satın alma hatası
+        // Dialog'u kapat
+        if (context.mounted) {
+          Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Satın alma hatası: ${purchaseDetails.error?.message}'),
+              content: Text(AppStrings.purchaseStarted),
+              backgroundColor: AppColors.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        
+        // onPurchase callback'i çağır
+        widget.onPurchase?.call();
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppStrings.purchaseCannotStart),
               backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
       }
-    });
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hata: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _handleDismiss(BuildContext context, bool permanent) {
@@ -607,6 +667,25 @@ class _SmartPremiumDialogState extends State<SmartPremiumDialog>
     Navigator.of(context).pop();
     widget.onDismiss?.call();
   }
+}
+
+/// Plan seçeneği modeli
+class _PlanOption {
+  final String name;
+  final String price;
+  final String period;
+  final String description;
+  final PremiumOfferType offerType;
+  final bool isBestValue;
+
+  const _PlanOption({
+    required this.name,
+    required this.price,
+    required this.period,
+    required this.description,
+    required this.offerType,
+    this.isBestValue = false,
+  });
 }
 
 // Kompakt premium banner widget'ı
@@ -702,7 +781,7 @@ class SmartPremiumBanner extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'Keşfet',
+                    AppStrings.exploreButton,
                     style: TextStyle(
                       color: trigger.color,
                       fontWeight: FontWeight.bold,
@@ -816,7 +895,7 @@ class PremiumFeatureLock extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: onUnlock,
             icon: const Icon(Icons.star),
-            label: const Text('Premium ile Aç'),
+            label: Text(AppStrings.unlockWithPremium),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.warning,
               foregroundColor: Colors.white,

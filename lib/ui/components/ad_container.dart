@@ -5,6 +5,7 @@ import 'package:breathe_flow/core/ads/ad_manager.dart';
 import 'package:breathe_flow/core/ads/admob_provider.dart';
 import 'package:breathe_flow/providers/premium_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:breathe_flow/constants/app_strings.dart';
 
 class AdContainer extends StatefulWidget {
   final String placement;
@@ -320,7 +321,7 @@ class _AdContainerState extends State<AdContainer> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Reklam Alanı',
+              AppStrings.adPlaceholder,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.5),
                 fontSize: 12,

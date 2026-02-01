@@ -10,7 +10,19 @@ import 'package:breathe_flow/services/storage_service.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final UserService _userService = UserService();
-{{ ... }}
+  final StorageService _storageService = StorageService();
+
+  // Auth state stream
+  Stream<User?> get user => _auth.authStateChanges();
+
+  // Sign up with email & password
+  Future<UserCredential?> signUpWithEmail(String email, String password) async {
+    try {
+      final result = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      
       if (result.user != null) {
         await _createUserInFirestore(result.user!);
       }
@@ -27,7 +39,12 @@ class AuthService {
 
   // Sign in with email & password
   Future<UserCredential?> signInWithEmail(String email, String password) async {
-{{ ... }}
+    try {
+      final result = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      
       if (result.user != null) {
         await _userService.updateLastLogin(result.user!.uid);
       }
@@ -80,7 +97,11 @@ class AuthService {
 
   // Profil güncelle (displayName, photoURL)
   Future<void> updateProfile({String? displayName, String? photoURL}) async {
-{{ ... }}
+    try {
+      User? user = _auth.currentUser;
+      if (user != null) {
+        Map<String, dynamic> updates = {};
+        if (displayName != null) updates['displayName'] = displayName;
         if (photoURL != null) updates['photoURL'] = photoURL;
         
         if (updates.isNotEmpty) {
@@ -151,7 +172,14 @@ class AuthService {
 
 
   Future<void> changePassword(String currentPassword, String newPassword) async {
-{{ ... }}
+    try {
+      User? user = _auth.currentUser;
+      if (user != null && user.email != null) {
+        // Önce yeniden kimlik doğrulama yap
+        final credential = EmailAuthProvider.credential(
+          email: user.email!,
+          password: currentPassword,
+        );
         await user.reauthenticateWithCredential(credential);
         
         // Şifreyi güncelle
@@ -168,7 +196,17 @@ class AuthService {
 
   // Hesabı sil
   Future<void> deleteAccount(String password) async {
-{{ ... }}
+    try {
+      User? user = _auth.currentUser;
+      if (user != null && user.email != null) {
+        // Önce yeniden kimlik doğrulama yap
+        final credential = EmailAuthProvider.credential(
+          email: user.email!,
+          password: password,
+        );
+        await user.reauthenticateWithCredential(credential);
+        
+        // Firestore'dan sil
         await _userService.deleteUser(user.uid);
         
         // Firebase Auth'tan sil
@@ -185,11 +223,27 @@ class AuthService {
 
   // Firestore'da yeni kullanıcı oluştur
   Future<void> _createUserInFirestore(User firebaseUser) async {
-{{ ... }}
+    try {
+      final newUser = AppUser(
+        uid: firebaseUser.uid,
+        email: firebaseUser.email ?? '',
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        createdAt: DateTime.now(),
+        lastLoginAt: DateTime.now(),
+        isPremium: false,
+        totalMeditationMinutes: 0,
+        streakDays: 0,
+        favoriteBreathingExercises: [],
+        favoriteSounds: [],
+        completedJourneys: [],
+        preferences: {
+          'dailyGoal': 10,
+          'reminderTime': '20:00',
         },
         notificationsEnabled: true,
         preferredTheme: 'system',
-      });
+      );
       
       await _userService.createUser(newUser);
     } catch (e) {
