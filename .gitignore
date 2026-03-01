@@ -61,3 +61,6 @@ macos/Flutter/ephemeral/
 
 # Generated files
 GeneratedPluginRegistrant.*
+
+# Submodule directory
+breathflow-privacy/
