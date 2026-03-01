@@ -1,0 +1,10 @@
+# Fonts Placeholder
+
+Bu klasör font dosyalarını içerir. Gerçek font dosyaları şunlar olacak:
+
+- Poppins-Regular.ttf
+- Poppins-Medium.ttf
+- Poppins-SemiBold.ttf
+- Poppins-Bold.ttf
+
+Şu anda font dosyaları mevcut değil, bu yüzden sistem fontları kullanılacak. 
