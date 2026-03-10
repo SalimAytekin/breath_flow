@@ -77,7 +77,7 @@ class AppTheme {
       ),
       
       // 🎴 CARD THEME
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: LightAppColors.cardBackground,
         elevation: 0,
         shadowColor: LightAppColors.shadowLight,
@@ -208,7 +208,7 @@ class AppTheme {
       ),
       
       // 🎴 CARD THEME
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.cardBackground,
         elevation: 0,
         shadowColor: AppColors.shadowLight,
@@ -473,7 +473,7 @@ class AppTheme {
       ),
       
       // 🎭 DIALOG THEME
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: AppColors.cardBackground,
         elevation: 8,
         shadowColor: AppColors.shadowDark,

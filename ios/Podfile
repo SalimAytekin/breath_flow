@@ -4,6 +4,9 @@ platform :ios, '15.5'
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
+# SSL sertifika sorununu çözmek için (Hackintosh)
+ENV['COCOAPODS_SKIP_CERT_VERIFICATION'] = 'true'
+
 project 'Runner', {
   'Debug' => :debug,
   'Profile' => :release,

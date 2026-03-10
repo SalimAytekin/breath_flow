@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 	<dict>
+		<key>CADisableMinimumFrameDurationOnPhone</key>
+		<true/>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
@@ -22,12 +24,26 @@
 		<string>????</string>
 		<key>CFBundleVersion</key>
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
+		<key>GADApplicationIdentifier</key>
+		<string>ca-app-pub-5877027096706438~3347511713</string>
 		<key>LSRequiresIPhoneOS</key>
+		<true/>
+		<key>NSCameraUsageDescription</key>
+		<string>Egzersiz formunuzu analiz etmek ve kalp atış hızı ölçümü için kameranıza erişim gereklidir.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Ses kaydı için mikrofon erişimi gerekiyor</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Fotoğraf kaydetmek için izin gerekiyor</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Profil fotoğrafı seçmek için fotoğraf kütüphanenize erişim gerekiyor</string>
+		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
 		<key>UILaunchStoryboardName</key>
 		<string>LaunchScreen</string>
 		<key>UIMainStoryboardFile</key>
 		<string>Main</string>
+		<key>UIStatusBarHidden</key>
+		<false/>
 		<key>UISupportedInterfaceOrientations</key>
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>
@@ -41,18 +57,7 @@
 			<string>UIInterfaceOrientationLandscapeLeft</string>
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
-		<key>CADisableMinimumFrameDurationOnPhone</key>
-		<true/>
-		<key>UIApplicationSupportsIndirectInputEvents</key>
-		<true/>
-		<!-- AdMob App ID - Production -->
-		<key>GADApplicationIdentifier</key>
-		<string>ca-app-pub-5877027096706438~3347511713</string>
-		<key>UIStatusBarHidden</key>
-		<false/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
-		<key>NSCameraUsageDescription</key>
-		<string>Egzersiz formunuzu analiz etmek için kamera erişimi gereklidir.</string>
 	</dict>
 </plist>
