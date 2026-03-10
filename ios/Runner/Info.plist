@@ -52,5 +52,7 @@
 		<false/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>Egzersiz formunuzu analiz etmek için kamera erişimi gereklidir.</string>
 	</dict>
 </plist>
