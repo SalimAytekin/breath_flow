@@ -17,6 +17,7 @@ import 'breathing_screen.dart';
 import 'mood_detail_screen.dart';
 import 'sounds_screen.dart';
 import 'sleep_hub_screen.dart';
+import '../features/ai_fitness/screens/exercise_catalog_screen.dart';
 
 /// 🧭 Keşfet Ekranı — Premium, yetişkin, sıcak tasarım
 /// ChatGPT mockup'ına birebir: 4 büyük mood kartı + 3 küçük kare kart
@@ -105,6 +106,11 @@ class ExploreScreen extends StatelessWidget {
                   ],
                   moodKey: 'tukendim',
                 ),
+
+                const SizedBox(height: 16),
+
+                // 🏋️ AI Fitness Test Kartı
+                _buildAIFitnessCard(context),
 
                 const SizedBox(height: 24),
 
@@ -621,6 +627,86 @@ class ExploreScreen extends StatelessWidget {
       },
     );
   }
+
+  /// 🏋️ AI Fitness Test Kartı
+  Widget _buildAIFitnessCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _navigateToAIFitness(context),
+      child: Container(
+        height: 100,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              Color(0xFF0D47A1),
+              Color(0xFF1565C0),
+              Color(0xFF42A5F5),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1565C0).withOpacity(0.4),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.fitness_center,
+                color: Colors.white,
+                size: 36,
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '🏋️ AI Fitness Asistanı',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Kameranla egzersiz formunu analiz et',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.white54,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToAIFitness(BuildContext context) {
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => const ExerciseCatalogScreen(),
+    ),
+  );
+}
 
   void _navigateToBreathing(BuildContext context) {
     Navigator.of(context).push(

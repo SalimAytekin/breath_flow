@@ -88,6 +88,10 @@ dependencies:
   font_awesome_flutter: ^10.8.0
   image_picker: ^1.1.2
   vibration: ^2.0.0
+  flutter_tts: ^4.2.0
+
+  # AI Fitness - MediaPipe Pose Detection
+  flutter_pose_detection: ^0.4.1
 
   # AdMob - Temiz ve kontrollü reklam sistemi
   google_mobile_ads: ^5.1.0

@@ -19,4 +19,6 @@
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+    <!-- MLKit Pose Detection Activities Theme -->
+    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar"/>
 </resources>

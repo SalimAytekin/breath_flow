@@ -47,7 +47,8 @@ android {
         applicationId = "com.breatheflow.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-build-configuration.
-        minSdkVersion(23)
+        // ⚠️ AI Fitness (flutter_pose_detection / MediaPipe) minSdk 31 gerektirir
+        minSdkVersion(31)
         targetSdkVersion(flutter.targetSdkVersion)
         versionCode = flutter.versionCode.toInt()
         versionName = flutter.versionName
@@ -81,6 +82,10 @@ android {
         }
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
 }
 
 flutter {
@@ -89,4 +94,26 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
+    // MLKit Pose Detection
+    implementation("com.google.mlkit:pose-detection:18.0.0-beta5")
+    implementation("com.google.mlkit:pose-detection-accurate:18.0.0-beta5")
+    implementation("com.google.mlkit:camera:16.0.0-beta3")
+
+    // CameraX
+    implementation("androidx.camera:camera-camera2:1.3.1")
+    implementation("androidx.camera:camera-lifecycle:1.3.1")
+    implementation("androidx.camera:camera-view:1.3.1")
+
+    // Supporting libraries
+    implementation("com.google.code.gson:gson:2.8.6")
+    implementation("com.google.guava:guava:27.1-android")
+    implementation("com.google.android.odml:image:1.0.0-beta1")
+    implementation("androidx.appcompat:appcompat:1.2.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.0.4")
+    implementation("androidx.multidex:multidex:2.0.1")
+
+    configurations.all {
+        exclude(group = "com.google.guava", module = "listenablefuture")
+    }
 }
