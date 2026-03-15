@@ -27,7 +27,7 @@ class GenericExerciseAnalyzer: ExerciseAnalyzer {
     private var exerciseStartTime: Int64 = 0
     
     // Hareket algılama
-    private var previousPositions: [Int: [Float]] = [:]
+    private var previousPositions: [String: [CGFloat]] = [:]
     private var smoothedMovementSpeed: Double = 0
     
     private static let movementAlpha: Double = 0.3
@@ -165,9 +165,9 @@ class GenericExerciseAnalyzer: ExerciseAnalyzer {
             let lm = pose.landmark(ofType: landmarkType)
             guard lm.inFrameLikelihood >= 0.5 else { continue }
             
-            let x = lm.position.x
-            let y = lm.position.y
-            let typeKey = landmarkType.rawValue
+            let x = CGFloat(lm.position.x)
+            let y = CGFloat(lm.position.y)
+            let typeKey = String(describing: landmarkType.rawValue)
             
             if let prev = previousPositions[typeKey] {
                 let dx = Double(x - prev[0])

@@ -134,6 +134,55 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
         ])
         
         // ═══════════════════════════════════════════
+        // Bottom Feedback Panel (rightPanel'den ÖNCE eklenmeli,
+        // çünkü rightPanel.bottomAnchor → bottomPanel.topAnchor referansı var)
+        // ═══════════════════════════════════════════
+        bottomPanel.backgroundColor = UIColor.black.withAlphaComponent(0.56)
+        bottomPanel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(bottomPanel)
+        
+        feedbackEmojiLabel.text = "🔄"
+        feedbackEmojiLabel.font = .systemFont(ofSize: 32)
+        feedbackEmojiLabel.textAlignment = .center
+        feedbackEmojiLabel.backgroundColor = UIColor.white.withAlphaComponent(0.27)
+        feedbackEmojiLabel.layer.cornerRadius = 8
+        feedbackEmojiLabel.clipsToBounds = true
+        feedbackEmojiLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        feedbackTitleLabel.text = "Başlayın"
+        feedbackTitleLabel.textColor = UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1)
+        feedbackTitleLabel.font = .boldSystemFont(ofSize: 18)
+        
+        feedbackMessageLabel.text = "Koçluk başlatılıyor..."
+        feedbackMessageLabel.textColor = .white
+        feedbackMessageLabel.font = .systemFont(ofSize: 15)
+        feedbackMessageLabel.numberOfLines = 4
+        
+        let feedbackTextStack = UIStackView(arrangedSubviews: [feedbackTitleLabel, feedbackMessageLabel])
+        feedbackTextStack.axis = .vertical
+        feedbackTextStack.spacing = 4
+        feedbackTextStack.translatesAutoresizingMaskIntoConstraints = false
+        
+        bottomPanel.addSubview(feedbackEmojiLabel)
+        bottomPanel.addSubview(feedbackTextStack)
+        
+        NSLayoutConstraint.activate([
+            bottomPanel.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            bottomPanel.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            bottomPanel.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            bottomPanel.heightAnchor.constraint(equalToConstant: 150),
+            
+            feedbackEmojiLabel.leadingAnchor.constraint(equalTo: bottomPanel.leadingAnchor, constant: 16),
+            feedbackEmojiLabel.centerYAnchor.constraint(equalTo: bottomPanel.centerYAnchor),
+            feedbackEmojiLabel.widthAnchor.constraint(equalToConstant: 60),
+            feedbackEmojiLabel.heightAnchor.constraint(equalToConstant: 60),
+            
+            feedbackTextStack.leadingAnchor.constraint(equalTo: feedbackEmojiLabel.trailingAnchor, constant: 16),
+            feedbackTextStack.trailingAnchor.constraint(equalTo: bottomPanel.trailingAnchor, constant: -16),
+            feedbackTextStack.centerYAnchor.constraint(equalTo: bottomPanel.centerYAnchor),
+        ])
+        
+        // ═══════════════════════════════════════════
         // Right Panel
         // ═══════════════════════════════════════════
         rightPanel.backgroundColor = UIColor.black.withAlphaComponent(0.52)
@@ -201,57 +250,58 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
         ])
         
         // ═══════════════════════════════════════════
-        // Bottom Feedback Panel
+        // Debug Panel (Sol Orta)
         // ═══════════════════════════════════════════
-        bottomPanel.backgroundColor = UIColor.black.withAlphaComponent(0.56)
-        bottomPanel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(bottomPanel)
+        let debugPanel = UIView()
+        debugPanel.backgroundColor = UIColor.black.withAlphaComponent(0.6)
+        debugPanel.layer.cornerRadius = 8
+        debugPanel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(debugPanel)
         
-        feedbackEmojiLabel.text = "🔄"
-        feedbackEmojiLabel.font = .systemFont(ofSize: 32)
-        feedbackEmojiLabel.textAlignment = .center
-        feedbackEmojiLabel.backgroundColor = UIColor.white.withAlphaComponent(0.27)
-        feedbackEmojiLabel.layer.cornerRadius = 8
-        feedbackEmojiLabel.clipsToBounds = true
-        feedbackEmojiLabel.translatesAutoresizingMaskIntoConstraints = false
+        let debugTitle = UILabel()
+        debugTitle.text = "🔧 DEBUG"
+        debugTitle.textColor = .yellow
+        debugTitle.font = .boldSystemFont(ofSize: 12)
         
-        feedbackTitleLabel.text = "Başlayın"
-        feedbackTitleLabel.textColor = UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1)
-        feedbackTitleLabel.font = .boldSystemFont(ofSize: 18)
+        let dStateL = UILabel(); dStateL.textColor = .white; dStateL.font = .systemFont(ofSize: 10)
+        let dTiltL = UILabel(); dTiltL.textColor = .white; dTiltL.font = .systemFont(ofSize: 10)
+        let dRawL = UILabel(); dRawL.textColor = .white; dRawL.font = .systemFont(ofSize: 10)
+        let dConfL = UILabel(); dConfL.textColor = .white; dConfL.font = .systemFont(ofSize: 10)
+        let dLmL = UILabel(); dLmL.textColor = .white; dLmL.font = .systemFont(ofSize: 10)
         
-        feedbackMessageLabel.text = "Koçluk başlatılıyor..."
-        feedbackMessageLabel.textColor = .white
-        feedbackMessageLabel.font = .systemFont(ofSize: 15)
-        feedbackMessageLabel.numberOfLines = 4
-        
-        let feedbackTextStack = UIStackView(arrangedSubviews: [feedbackTitleLabel, feedbackMessageLabel])
-        feedbackTextStack.axis = .vertical
-        feedbackTextStack.spacing = 4
-        feedbackTextStack.translatesAutoresizingMaskIntoConstraints = false
-        
-        bottomPanel.addSubview(feedbackEmojiLabel)
-        bottomPanel.addSubview(feedbackTextStack)
+        let debugStack = UIStackView(arrangedSubviews: [debugTitle, dStateL, dTiltL, dRawL, dConfL, dLmL])
+        debugStack.axis = .vertical
+        debugStack.spacing = 4
+        debugStack.translatesAutoresizingMaskIntoConstraints = false
+        debugPanel.addSubview(debugStack)
         
         NSLayoutConstraint.activate([
-            bottomPanel.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            bottomPanel.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            bottomPanel.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            bottomPanel.heightAnchor.constraint(equalToConstant: 150),
+            debugPanel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            debugPanel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            debugPanel.widthAnchor.constraint(equalToConstant: 160),
             
-            feedbackEmojiLabel.leadingAnchor.constraint(equalTo: bottomPanel.leadingAnchor, constant: 16),
-            feedbackEmojiLabel.centerYAnchor.constraint(equalTo: bottomPanel.centerYAnchor),
-            feedbackEmojiLabel.widthAnchor.constraint(equalToConstant: 60),
-            feedbackEmojiLabel.heightAnchor.constraint(equalToConstant: 60),
-            
-            feedbackTextStack.leadingAnchor.constraint(equalTo: feedbackEmojiLabel.trailingAnchor, constant: 16),
-            feedbackTextStack.trailingAnchor.constraint(equalTo: bottomPanel.trailingAnchor, constant: -16),
-            feedbackTextStack.centerYAnchor.constraint(equalTo: bottomPanel.centerYAnchor),
+            debugStack.topAnchor.constraint(equalTo: debugPanel.topAnchor, constant: 8),
+            debugStack.leadingAnchor.constraint(equalTo: debugPanel.leadingAnchor, constant: 8),
+            debugStack.trailingAnchor.constraint(equalTo: debugPanel.trailingAnchor, constant: -8),
+            debugStack.bottomAnchor.constraint(equalTo: debugPanel.bottomAnchor, constant: -8)
         ])
+        
+        // Debug callback bağlama
+        exerciseCoachProcessor?.onDebugInfoUpdated = { [weak self] info in
+            DispatchQueue.main.async {
+                dStateL.text = "State: \(info["state"] as? String ?? "-")"
+                dTiltL.text = "Tilt (EMA): \(info["tiltAngle"] as? String ?? "-")"
+                dRawL.text = "Raw Angle: \(info["rawAngle"] as? String ?? "-")"
+                dConfL.text = "Confidence: \(info["confidence"] as? String ?? "-")"
+                dLmL.text = "Visible LMs: \(info["landmarks"] as? String ?? "-")"
+            }
+        }
         
         // Overlay'ları pose overlay'ın üstüne getir
         view.bringSubviewToFront(topBar)
-        view.bringSubviewToFront(rightPanel)
         view.bringSubviewToFront(bottomPanel)
+        view.bringSubviewToFront(rightPanel)
+        view.bringSubviewToFront(debugPanel)
     }
     
     // MARK: - Exercise Initialization

@@ -8,14 +8,26 @@
 
 /* Begin PBXBuildFile section */
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
+		1BEAFBE3A9F417721AF91D8E /* ExerciseAnalyzerFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23513A06E155B02A63CB3F01 /* ExerciseAnalyzerFactory.swift */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		501DBBD786A3AA0CF8249D3E /* NeckSideBendAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BDBD97A5409D76B8B16C11D /* NeckSideBendAnalyzer.swift */; };
+		5308BD128172E1FB7F0423AA /* PoseDetectorToExerciseAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7CC8BCED1B5F4A957FCF6E8 /* PoseDetectorToExerciseAdapter.swift */; };
+		5E829E2C02D2109015FDBF16 /* CoachingFeedbackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D7D8B3312CB869F4342A79A /* CoachingFeedbackManager.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		A7C3D033EE9551E838386AB3 /* GenericExerciseAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D696CC0BAFC4C642D00AF66 /* GenericExerciseAnalyzer.swift */; };
+		AA43DECC91E48119CFB32211 /* CameraPreviewViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D717264E48E373893F7A339B /* CameraPreviewViewController.swift */; };
+		B1769DF504B304BB1C9A746A /* PoseStabilizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F2FE53402217DDB413AE79E /* PoseStabilizer.swift */; };
 		B34EDAC2BBDC3B5B633BE6E6 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5761BA2C141CD97FC6E23BFB /* Pods_Runner.framework */; };
+		CCE56F028D6B43439622E14E /* ExerciseCoachProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5BF147B67BB629EA1F7C15C /* ExerciseCoachProcessor.swift */; };
+		CF427A36D3B0E7853F3DAD8F /* BaseExerciseAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C3BE2C79B9F9343A3CE8DE /* BaseExerciseAnalyzer.swift */; };
+		D9937EC4CEE21C6050BA8F37 /* PoseDetectorProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EAD78E0E2E08778E91F2C5B /* PoseDetectorProcessor.swift */; };
+		DDC9D34C229F5333CC20881B /* ExerciseCoachingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7FEA16A1CB33F0190065753 /* ExerciseCoachingViewController.swift */; };
 		ED6E6980981B08093C4AC4E1 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8E9EDA4D8A20CDB2839833E9 /* Pods_RunnerTests.framework */; };
+		FF631494F49B775C5340130C /* PoseGraphicOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4114F35972A74EF4402F8373 /* PoseGraphicOverlayView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,14 +54,20 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0EAD78E0E2E08778E91F2C5B /* PoseDetectorProcessor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PoseDetectorProcessor.swift; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
+		1D696CC0BAFC4C642D00AF66 /* GenericExerciseAnalyzer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GenericExerciseAnalyzer.swift; sourceTree = "<group>"; };
+		23513A06E155B02A63CB3F01 /* ExerciseAnalyzerFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExerciseAnalyzerFactory.swift; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3A126988212C16DC82CB8997 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		4114F35972A74EF4402F8373 /* PoseGraphicOverlayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PoseGraphicOverlayView.swift; sourceTree = "<group>"; };
 		5761BA2C141CD97FC6E23BFB /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A6706E87F54DF63A29AEC0A /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
+		6BDBD97A5409D76B8B16C11D /* NeckSideBendAnalyzer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NeckSideBendAnalyzer.swift; sourceTree = "<group>"; };
+		6F2FE53402217DDB413AE79E /* PoseStabilizer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PoseStabilizer.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
@@ -63,7 +81,13 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9D7D8B3312CB869F4342A79A /* CoachingFeedbackManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoachingFeedbackManager.swift; sourceTree = "<group>"; };
+		A2C3BE2C79B9F9343A3CE8DE /* BaseExerciseAnalyzer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BaseExerciseAnalyzer.swift; sourceTree = "<group>"; };
+		A5BF147B67BB629EA1F7C15C /* ExerciseCoachProcessor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExerciseCoachProcessor.swift; sourceTree = "<group>"; };
+		B7FEA16A1CB33F0190065753 /* ExerciseCoachingViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExerciseCoachingViewController.swift; sourceTree = "<group>"; };
 		B8D07AB8B32E09C3820B8A27 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		D717264E48E373893F7A339B /* CameraPreviewViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraPreviewViewController.swift; sourceTree = "<group>"; };
+		E7CC8BCED1B5F4A957FCF6E8 /* PoseDetectorToExerciseAdapter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PoseDetectorToExerciseAdapter.swift; sourceTree = "<group>"; };
 		F62D5CD1F480792691E2C1F2 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -87,6 +111,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2A0B0FF8775A4B65179C5F26 /* PoseDetection */ = {
+			isa = PBXGroup;
+			children = (
+				D717264E48E373893F7A339B /* CameraPreviewViewController.swift */,
+				4114F35972A74EF4402F8373 /* PoseGraphicOverlayView.swift */,
+				0EAD78E0E2E08778E91F2C5B /* PoseDetectorProcessor.swift */,
+			);
+			name = PoseDetection;
+			path = PoseDetection;
+			sourceTree = "<group>";
+		};
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -160,8 +195,27 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				E45700206CC4E2FF5D786034 /* ExerciseCoaching */,
+				2A0B0FF8775A4B65179C5F26 /* PoseDetection */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		E45700206CC4E2FF5D786034 /* ExerciseCoaching */ = {
+			isa = PBXGroup;
+			children = (
+				B7FEA16A1CB33F0190065753 /* ExerciseCoachingViewController.swift */,
+				9D7D8B3312CB869F4342A79A /* CoachingFeedbackManager.swift */,
+				A2C3BE2C79B9F9343A3CE8DE /* BaseExerciseAnalyzer.swift */,
+				A5BF147B67BB629EA1F7C15C /* ExerciseCoachProcessor.swift */,
+				6F2FE53402217DDB413AE79E /* PoseStabilizer.swift */,
+				23513A06E155B02A63CB3F01 /* ExerciseAnalyzerFactory.swift */,
+				E7CC8BCED1B5F4A957FCF6E8 /* PoseDetectorToExerciseAdapter.swift */,
+				6BDBD97A5409D76B8B16C11D /* NeckSideBendAnalyzer.swift */,
+				1D696CC0BAFC4C642D00AF66 /* GenericExerciseAnalyzer.swift */,
+			);
+			name = ExerciseCoaching;
+			path = ExerciseCoaching;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -396,6 +450,18 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
+				DDC9D34C229F5333CC20881B /* ExerciseCoachingViewController.swift in Sources */,
+				5E829E2C02D2109015FDBF16 /* CoachingFeedbackManager.swift in Sources */,
+				CF427A36D3B0E7853F3DAD8F /* BaseExerciseAnalyzer.swift in Sources */,
+				CCE56F028D6B43439622E14E /* ExerciseCoachProcessor.swift in Sources */,
+				B1769DF504B304BB1C9A746A /* PoseStabilizer.swift in Sources */,
+				1BEAFBE3A9F417721AF91D8E /* ExerciseAnalyzerFactory.swift in Sources */,
+				5308BD128172E1FB7F0423AA /* PoseDetectorToExerciseAdapter.swift in Sources */,
+				501DBBD786A3AA0CF8249D3E /* NeckSideBendAnalyzer.swift in Sources */,
+				A7C3D033EE9551E838386AB3 /* GenericExerciseAnalyzer.swift in Sources */,
+				AA43DECC91E48119CFB32211 /* CameraPreviewViewController.swift in Sources */,
+				FF631494F49B775C5340130C /* PoseGraphicOverlayView.swift in Sources */,
+				D9937EC4CEE21C6050BA8F37 /* PoseDetectorProcessor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

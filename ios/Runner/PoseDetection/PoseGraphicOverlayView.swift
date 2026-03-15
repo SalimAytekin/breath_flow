@@ -19,7 +19,7 @@ class PoseGraphicOverlayView: UIView {
     private static let deadZonePx: CGFloat = 2.0
     
     // Smoothed pozisyonlar — frame'ler arasında tutuluyor
-    private var smoothedPositions: [Int: [CGFloat]] = [:]
+    private var smoothedPositions: [String: [CGFloat]] = [:]
     
     // Mevcut poz verisi
     private var currentPose: Pose?
@@ -64,12 +64,12 @@ class PoseGraphicOverlayView: UIView {
     
     // MARK: - Coordinate Transform
     
-    /// Image koordinatlarını view koordinatlarına dönüştür
+    /// Image koordinatlarını view koordinatlarına dönüştür.
+    /// NOT: Ön kamera için AVCaptureConnection.isVideoMirrored = true
+    /// olduğundan video çıkışı zaten aynalanmış durumda.
+    /// Bu yüzden overlay'da tekrar aynalama yapmıyoruz.
     private func translateX(_ x: CGFloat) -> CGFloat {
         let scaleX = bounds.width / imageWidth
-        if isFrontCamera {
-            return bounds.width - (x * scaleX) // Ön kamera aynalama
-        }
         return x * scaleX
     }
     
@@ -82,10 +82,10 @@ class PoseGraphicOverlayView: UIView {
     
     /// Landmark pozisyonunu EMA ile smooth et (Android PoseGraphic ile aynı)
     private func getSmoothedPosition(for landmark: PoseLandmark) -> [CGFloat] {
-        let type = landmark.type.rawValue
-        let rawX = landmark.position.x
-        let rawY = landmark.position.y
-        let rawZ = landmark.position.z
+        let type = String(describing: landmark.type.rawValue)
+        let rawX = CGFloat(landmark.position.x)
+        let rawY = CGFloat(landmark.position.y)
+        let rawZ = CGFloat(truncating: landmark.position.z as NSNumber)
         
         guard let prev = smoothedPositions[type] else {
             // İlk frame — direkt raw değeri kullan
@@ -110,7 +110,8 @@ class PoseGraphicOverlayView: UIView {
         let smoothZ = alpha * rawZ + (1 - alpha) * prev[2]
         
         let smoothed: [CGFloat] = [smoothX, smoothY, smoothZ]
-        smoothedPositions[type] = smoothed
+        let typeKey = String(describing: landmark.type.rawValue)
+        smoothedPositions[typeKey] = smoothed
         return smoothed
     }
     
@@ -213,7 +214,13 @@ class PoseGraphicOverlayView: UIView {
     
     // MARK: - Drawing Helpers
     
+    /// Minimum güvenilirlik eşiği — bu değerin altındaki landmark'lar çizilmez
+    private static let minDrawConfidence: Float = 0.5
+    
     private func drawSmoothedPoint(context: CGContext, landmark: PoseLandmark, color: UIColor) {
+        // Düşük güvenilirlikli landmark'ları çizme (hayalet uzuv önleme)
+        guard landmark.inFrameLikelihood >= PoseGraphicOverlayView.minDrawConfidence else { return }
+        
         let sp = getSmoothedPosition(for: landmark)
         let x = translateX(sp[0])
         let y = translateY(sp[1])
@@ -228,6 +235,10 @@ class PoseGraphicOverlayView: UIView {
     }
     
     private func drawSmoothedLine(context: CGContext, from startLandmark: PoseLandmark, to endLandmark: PoseLandmark, color: UIColor) {
+        // Her iki uç noktanın da yeterli güvenilirliğe sahip olması gerekir
+        guard startLandmark.inFrameLikelihood >= PoseGraphicOverlayView.minDrawConfidence,
+              endLandmark.inFrameLikelihood >= PoseGraphicOverlayView.minDrawConfidence else { return }
+        
         let start = getSmoothedPosition(for: startLandmark)
         let end = getSmoothedPosition(for: endLandmark)
         

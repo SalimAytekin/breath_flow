@@ -20,14 +20,15 @@ class PoseDetectorProcessor {
     var onError: ((Error) -> Void)?
     
     init(useAccurateModel: Bool = true) {
-        let options: PoseDetectorOptions
+        let options: CommonPoseDetectorOptions
         if useAccurateModel {
             let accurateOptions = AccuratePoseDetectorOptions()
             accurateOptions.detectorMode = .stream
             options = accurateOptions
         } else {
-            options = PoseDetectorOptions()
-            options.detectorMode = .stream
+            let baseOptions = PoseDetectorOptions()
+            baseOptions.detectorMode = .stream
+            options = baseOptions
         }
         
         poseDetector = PoseDetector.poseDetector(options: options)

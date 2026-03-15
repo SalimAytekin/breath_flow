@@ -26,6 +26,9 @@ class ExerciseCoachProcessor: NSObject {
     private let poseStabilizer = PoseStabilizer()
     private let feedbackManager = CoachingFeedbackManager()
     
+    // Debug Callback (Sadece iOS UI'si için, Flutter'a gitmez)
+    var onDebugInfoUpdated: (([String: Any]) -> Void)?
+    
     // FPS optimizasyonu
     private var lastProcessTime: Int64 = 0
     private static let processIntervalMs: Int64 = 150 // ~7 FPS
@@ -123,6 +126,11 @@ class ExerciseCoachProcessor: NSObject {
         }
         
         let result = analyzer.analyze(pose: pose)
+        
+        // Debug bilgisini UI'a ilet
+        if let info = result.debugInfo {
+            onDebugInfoUpdated?(info)
+        }
         
         // PoseStabilizer ile metrikleri smooth et
         poseStabilizer.update(pose: pose, rawAccuracy: result.accuracy)

@@ -6,11 +6,13 @@ struct AnalysisResult {
     let accuracy: Double      // 0.0 - 1.0
     let feedback: String      // Kullanıcıya gösterilecek mesaj
     let isRepetitionComplete: Bool // Tekrar tamamlandı mı?
+    let debugInfo: [String: Any]?  // Debug overlay için ek bilgi
     
-    init(accuracy: Double, feedback: String, isRepetitionComplete: Bool = false) {
+    init(accuracy: Double, feedback: String, isRepetitionComplete: Bool = false, debugInfo: [String: Any]? = nil) {
         self.accuracy = accuracy
         self.feedback = feedback
         self.isRepetitionComplete = isRepetitionComplete
+        self.debugInfo = debugInfo
     }
 }
 
