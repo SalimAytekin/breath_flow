@@ -23,10 +23,10 @@ class NeckSideBendAnalyzer: ExerciseAnalyzer {
     // Açı ve Hız Eşikleri
     // ═══════════════════════════════════════════
     private static let centerThreshold: Double = 8.0
-    private static let minTiltAngle: Double = 12.0
-    private static let goodTiltAngle: Double = 20.0
-    private static let targetTiltAngle: Double = 30.0
-    private static let maxSafeAngle: Double = 45.0
+    private static let minTiltAngle: Double = 10.0 // Önceki 12.0 idi. Azaltıldı, daha erken tepki verecek.
+    private static let goodTiltAngle: Double = 16.0 // Önceki 20.0 idi. "İyi gidiyorsun" mesajı daha rahat çıkacak.
+    private static let targetTiltAngle: Double = 22.0 // Önceki 30.0 idi. "Tamam tut!" açısı insani seviyeye indirildi.
+    private static let maxSafeAngle: Double = 40.0 // Önceki 45.0 idi. Güvenli bölge daraltıldı.
     
     // Hız Kontrolü (Derece / Saniye)
     private static let maxAllowedSpeed: Double = 15.0 
@@ -72,19 +72,21 @@ class NeckSideBendAnalyzer: ExerciseAnalyzer {
             return AnalysisResult(accuracy: 0.1, feedback: "👤 Poz algılama kalitesi düşük.\nLütfen iyi aydınlatılmış bir ortamda durun.")
         }
         
-        // Açı Hesaplama
-        let shoulderAngle = atan2(
-            Double(rightShoulder.position.y - leftShoulder.position.y),
-            Double(rightShoulder.position.x - leftShoulder.position.x)
-        ) * 180.0 / .pi
+        // ═══════════════════════════════════════════
+        // Açı Hesaplama - (Mirroring Bypass Edilmiş Hali)
+        // ═══════════════════════════════════════════
+        // X eksenini abs() ile alarak iOS aynalama (mirroring) farkını yok ediyoruz!
+        let shoulderDx = abs(Double(rightShoulder.position.x - leftShoulder.position.x))
+        let shoulderDy = Double(rightShoulder.position.y - leftShoulder.position.y)
+        let shoulderAngle = atan2(shoulderDy, shoulderDx) * 180.0 / .pi
         
-        let earAngle = atan2(
-            Double(rightEar.position.y - leftEar.position.y),
-            Double(rightEar.position.x - leftEar.position.x)
-        ) * 180.0 / .pi
+        let earDx = abs(Double(rightEar.position.x - leftEar.position.x))
+        let earDy = Double(rightEar.position.y - leftEar.position.y)
+        let earAngle = atan2(earDy, earDx) * 180.0 / .pi
         
         let rawTiltAngle = earAngle - shoulderAngle
-        let correctedTiltAngle = -rawTiltAngle // iOS Aynalama düzeltmesi
+        // Sağa eğilimde 'earDy' > 0 çıkar (Sağ kulak pos.y büyür). Code State'leri sağa eğilimi negatif bekliyor, bu yüzden eksi atıyoruz.
+        let correctedTiltAngle = -rawTiltAngle 
         
         // EMA Smoothing
         smoothedTiltAngle = NeckSideBendAnalyzer.smoothingFactor * correctedTiltAngle + (1 - NeckSideBendAnalyzer.smoothingFactor) * smoothedTiltAngle

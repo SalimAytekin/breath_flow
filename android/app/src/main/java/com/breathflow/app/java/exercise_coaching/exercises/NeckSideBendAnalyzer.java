@@ -41,10 +41,10 @@ public class NeckSideBendAnalyzer extends BaseExerciseAnalyzer {
     // Açı Eşikleri (derece)
     // ═══════════════════════════════════════════
     private static final double CENTER_THRESHOLD = 8.0; // Merkez sayılma eşiği (±8°)
-    private static final double MIN_TILT_ANGLE = 12.0; // Eğilme başladı
-    private static final double GOOD_TILT_ANGLE = 20.0; // İyi eğilme
-    private static final double TARGET_TILT_ANGLE = 30.0; // Hedef açı
-    private static final double MAX_SAFE_ANGLE = 45.0; // Güvenli maksimum
+    private static final double MIN_TILT_ANGLE = 10.0; // Eğilme başladı (Azaltıldı: 12->10)
+    private static final double GOOD_TILT_ANGLE = 16.0; // İyi eğilme (Azaltıldı: 20->16)
+    private static final double TARGET_TILT_ANGLE = 22.0; // Hedef açı (Azaltıldı: 30->22)
+    private static final double MAX_SAFE_ANGLE = 40.0; // Güvenli maksimum (Azaltıldı: 45->40)
 
     // ═══════════════════════════════════════════
     // Hold Timer

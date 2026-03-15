@@ -9,25 +9,19 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
     // MARK: - UI Elements
     
     // Top bar
-    private let topBar = UIView()
+    private let topBar = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
     private let exerciseNameLabel = UILabel()
     private let timerLabel = UILabel()
     private let repCountLabel = UILabel()
     private let stopButton = UIButton(type: .system)
     
-    // Right panel
-    private let rightPanel = UIView()
-    private let accuracyLabel = UILabel()
-    private let accuracyProgressView = UIProgressView(progressViewStyle: .default)
-    private let poseQualityLabel = UILabel()
-    private let fluidityLabel = UILabel()
-    private let stabilityLabel = UILabel()
-    
     // Bottom feedback panel
-    private let bottomPanel = UIView()
+    private let bottomPanel = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
     private let feedbackEmojiLabel = UILabel()
     private let feedbackTitleLabel = UILabel()
     private let feedbackMessageLabel = UILabel()
+    
+
     
     // MARK: - Coaching
     private var exerciseCoachProcessor: ExerciseCoachProcessor?
@@ -69,23 +63,24 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
         let safeArea = view.safeAreaLayoutGuide
         
         // ═══════════════════════════════════════════
-        // Top Status Bar
+        // Top Status Bar (Glassmorphism)
         // ═══════════════════════════════════════════
-        topBar.backgroundColor = UIColor.black.withAlphaComponent(0.56)
         topBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(topBar)
         
+        let topBarContentView = topBar.contentView
+        
         exerciseNameLabel.text = "Egzersiz"
         exerciseNameLabel.textColor = .white
-        exerciseNameLabel.font = .boldSystemFont(ofSize: 18)
+        exerciseNameLabel.font = .boldSystemFont(ofSize: 20)
         exerciseNameLabel.translatesAutoresizingMaskIntoConstraints = false
-        topBar.addSubview(exerciseNameLabel)
+        topBarContentView.addSubview(exerciseNameLabel)
         
         timerLabel.text = "00:00"
         timerLabel.textColor = UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1)
-        timerLabel.font = .boldSystemFont(ofSize: 14)
+        timerLabel.font = .boldSystemFont(ofSize: 16)
         timerLabel.translatesAutoresizingMaskIntoConstraints = false
-        topBar.addSubview(timerLabel)
+        topBarContentView.addSubview(timerLabel)
         
         let repStack = UIStackView()
         repStack.axis = .vertical
@@ -100,46 +95,49 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
         
         repCountLabel.text = "0"
         repCountLabel.textColor = .white
-        repCountLabel.font = .boldSystemFont(ofSize: 24)
+        repCountLabel.font = .boldSystemFont(ofSize: 28)
         repStack.addArrangedSubview(repCountLabel)
-        topBar.addSubview(repStack)
+        topBarContentView.addSubview(repStack)
         
         stopButton.setTitle("DURDUR", for: .normal)
         stopButton.setTitleColor(.white, for: .normal)
-        stopButton.backgroundColor = UIColor(red: 0.96, green: 0.26, blue: 0.21, alpha: 1)
-        stopButton.titleLabel?.font = .boldSystemFont(ofSize: 12)
-        stopButton.layer.cornerRadius = 8
-        stopButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
+        stopButton.backgroundColor = UIColor(red: 0.96, green: 0.26, blue: 0.21, alpha: 0.8)
+        stopButton.titleLabel?.font = .boldSystemFont(ofSize: 14)
+        stopButton.layer.cornerRadius = 10
+        stopButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
         stopButton.addTarget(self, action: #selector(stopCoachingTapped), for: .touchUpInside)
         stopButton.translatesAutoresizingMaskIntoConstraints = false
-        topBar.addSubview(stopButton)
+        topBarContentView.addSubview(stopButton)
         
         NSLayoutConstraint.activate([
             topBar.topAnchor.constraint(equalTo: view.topAnchor),
             topBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             topBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            topBar.heightAnchor.constraint(equalToConstant: 100),
+            topBar.heightAnchor.constraint(equalToConstant: 110),
             
-            exerciseNameLabel.leadingAnchor.constraint(equalTo: topBar.leadingAnchor, constant: 16),
-            exerciseNameLabel.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 8),
+            exerciseNameLabel.leadingAnchor.constraint(equalTo: topBarContentView.leadingAnchor, constant: 20),
+            exerciseNameLabel.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 10),
             
-            timerLabel.leadingAnchor.constraint(equalTo: topBar.leadingAnchor, constant: 16),
-            timerLabel.topAnchor.constraint(equalTo: exerciseNameLabel.bottomAnchor, constant: 4),
+            timerLabel.leadingAnchor.constraint(equalTo: topBarContentView.leadingAnchor, constant: 20),
+            timerLabel.topAnchor.constraint(equalTo: exerciseNameLabel.bottomAnchor, constant: 6),
             
-            repStack.trailingAnchor.constraint(equalTo: stopButton.leadingAnchor, constant: -16),
-            repStack.centerYAnchor.constraint(equalTo: topBar.centerYAnchor, constant: 10),
+            repStack.trailingAnchor.constraint(equalTo: stopButton.leadingAnchor, constant: -20),
+            repStack.centerYAnchor.constraint(equalTo: safeArea.topAnchor, constant: 25),
             
-            stopButton.trailingAnchor.constraint(equalTo: topBar.trailingAnchor, constant: -16),
-            stopButton.centerYAnchor.constraint(equalTo: topBar.centerYAnchor, constant: 10),
+            stopButton.trailingAnchor.constraint(equalTo: topBarContentView.trailingAnchor, constant: -20),
+            stopButton.centerYAnchor.constraint(equalTo: safeArea.topAnchor, constant: 25),
         ])
         
         // ═══════════════════════════════════════════
-        // Bottom Feedback Panel (rightPanel'den ÖNCE eklenmeli,
-        // çünkü rightPanel.bottomAnchor → bottomPanel.topAnchor referansı var)
+        // Bottom Feedback Panel (Glassmorphism)
         // ═══════════════════════════════════════════
-        bottomPanel.backgroundColor = UIColor.black.withAlphaComponent(0.56)
         bottomPanel.translatesAutoresizingMaskIntoConstraints = false
+        bottomPanel.layer.cornerRadius = 24
+        bottomPanel.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        bottomPanel.clipsToBounds = true
         view.addSubview(bottomPanel)
+        
+        let bottomBarContentView = bottomPanel.contentView
         
         feedbackEmojiLabel.text = "🔄"
         feedbackEmojiLabel.font = .systemFont(ofSize: 32)
@@ -182,126 +180,11 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
             feedbackTextStack.centerYAnchor.constraint(equalTo: bottomPanel.centerYAnchor),
         ])
         
-        // ═══════════════════════════════════════════
-        // Right Panel
-        // ═══════════════════════════════════════════
-        rightPanel.backgroundColor = UIColor.black.withAlphaComponent(0.52)
-        rightPanel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(rightPanel)
-        
-        let formTitle = UILabel()
-        formTitle.text = "📊 FORM ANALİZİ"
-        formTitle.textColor = .white
-        formTitle.font = .boldSystemFont(ofSize: 16)
-        formTitle.textAlignment = .center
-        
-        let accTitle = UILabel()
-        accTitle.text = "Genel Doğruluk"
-        accTitle.textColor = UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1)
-        accTitle.font = .boldSystemFont(ofSize: 14)
-        
-        accuracyProgressView.progressTintColor = UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1)
-        accuracyProgressView.progress = 0
-        
-        accuracyLabel.text = "0%"
-        accuracyLabel.textColor = .white
-        accuracyLabel.font = .boldSystemFont(ofSize: 18)
-        accuracyLabel.textAlignment = .center
-        
-        // Detay satırları
-        func makeDetailRow(title: String, valueLabel: UILabel, color: UIColor) -> UIStackView {
-            let titleL = UILabel()
-            titleL.text = title
-            titleL.textColor = .white
-            titleL.font = .systemFont(ofSize: 12)
-            
-            valueLabel.textColor = color
-            valueLabel.font = .boldSystemFont(ofSize: 12)
-            
-            let stack = UIStackView(arrangedSubviews: [titleL, valueLabel])
-            stack.axis = .horizontal
-            stack.distribution = .equalSpacing
-            return stack
-        }
-        
-        poseQualityLabel.text = "İyi"
-        fluidityLabel.text = "Normal"
-        stabilityLabel.text = "Stabil"
-        
-        let pqRow = makeDetailRow(title: "Poz Kalitesi:", valueLabel: poseQualityLabel, color: UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1))
-        let flRow = makeDetailRow(title: "Akıcılık:", valueLabel: fluidityLabel, color: UIColor(red: 1, green: 0.6, blue: 0, alpha: 1))
-        let stRow = makeDetailRow(title: "Stabilite:", valueLabel: stabilityLabel, color: UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1))
-        
-        let rightStack = UIStackView(arrangedSubviews: [formTitle, accTitle, accuracyProgressView, accuracyLabel, pqRow, flRow, stRow])
-        rightStack.axis = .vertical
-        rightStack.spacing = 10
-        rightStack.translatesAutoresizingMaskIntoConstraints = false
-        rightPanel.addSubview(rightStack)
-        
-        NSLayoutConstraint.activate([
-            rightPanel.topAnchor.constraint(equalTo: topBar.bottomAnchor),
-            rightPanel.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            rightPanel.widthAnchor.constraint(equalToConstant: 200),
-            rightPanel.bottomAnchor.constraint(equalTo: bottomPanel.topAnchor),
-            
-            rightStack.topAnchor.constraint(equalTo: rightPanel.topAnchor, constant: 16),
-            rightStack.leadingAnchor.constraint(equalTo: rightPanel.leadingAnchor, constant: 12),
-            rightStack.trailingAnchor.constraint(equalTo: rightPanel.trailingAnchor, constant: -12),
-        ])
-        
-        // ═══════════════════════════════════════════
-        // Debug Panel (Sol Orta)
-        // ═══════════════════════════════════════════
-        let debugPanel = UIView()
-        debugPanel.backgroundColor = UIColor.black.withAlphaComponent(0.6)
-        debugPanel.layer.cornerRadius = 8
-        debugPanel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(debugPanel)
-        
-        let debugTitle = UILabel()
-        debugTitle.text = "🔧 DEBUG"
-        debugTitle.textColor = .yellow
-        debugTitle.font = .boldSystemFont(ofSize: 12)
-        
-        let dStateL = UILabel(); dStateL.textColor = .white; dStateL.font = .systemFont(ofSize: 10)
-        let dTiltL = UILabel(); dTiltL.textColor = .white; dTiltL.font = .systemFont(ofSize: 10)
-        let dRawL = UILabel(); dRawL.textColor = .white; dRawL.font = .systemFont(ofSize: 10)
-        let dConfL = UILabel(); dConfL.textColor = .white; dConfL.font = .systemFont(ofSize: 10)
-        let dLmL = UILabel(); dLmL.textColor = .white; dLmL.font = .systemFont(ofSize: 10)
-        
-        let debugStack = UIStackView(arrangedSubviews: [debugTitle, dStateL, dTiltL, dRawL, dConfL, dLmL])
-        debugStack.axis = .vertical
-        debugStack.spacing = 4
-        debugStack.translatesAutoresizingMaskIntoConstraints = false
-        debugPanel.addSubview(debugStack)
-        
-        NSLayoutConstraint.activate([
-            debugPanel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            debugPanel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            debugPanel.widthAnchor.constraint(equalToConstant: 160),
-            
-            debugStack.topAnchor.constraint(equalTo: debugPanel.topAnchor, constant: 8),
-            debugStack.leadingAnchor.constraint(equalTo: debugPanel.leadingAnchor, constant: 8),
-            debugStack.trailingAnchor.constraint(equalTo: debugPanel.trailingAnchor, constant: -8),
-            debugStack.bottomAnchor.constraint(equalTo: debugPanel.bottomAnchor, constant: -8)
-        ])
-        
-        // Debug callback bağlama
-        exerciseCoachProcessor?.onDebugInfoUpdated = { [weak self] info in
-            DispatchQueue.main.async {
-                dStateL.text = "State: \(info["state"] as? String ?? "-")"
-                dTiltL.text = "Tilt (EMA): \(info["tiltAngle"] as? String ?? "-")"
-                dRawL.text = "Raw Angle: \(info["rawAngle"] as? String ?? "-")"
-                dConfL.text = "Confidence: \(info["confidence"] as? String ?? "-")"
-                dLmL.text = "Visible LMs: \(info["landmarks"] as? String ?? "-")"
-            }
-        }
+
         
         // Overlay'ları pose overlay'ın üstüne getir
         view.bringSubviewToFront(topBar)
         view.bringSubviewToFront(bottomPanel)
-        view.bringSubviewToFront(rightPanel)
-        view.bringSubviewToFront(debugPanel)
     }
     
     // MARK: - Exercise Initialization
@@ -349,20 +232,7 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
     func updateAccuracy(_ accuracy: Double) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            let percentage = Int(accuracy * 100)
-            self.accuracyLabel.text = "\(percentage)%"
-            self.accuracyProgressView.setProgress(Float(accuracy), animated: true)
-            
-            // Renk güncelle
-            if accuracy > 0.7 {
-                self.accuracyProgressView.progressTintColor = UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1)
-            } else if accuracy > 0.4 {
-                self.accuracyProgressView.progressTintColor = UIColor(red: 1, green: 0.6, blue: 0, alpha: 1)
-            } else {
-                self.accuracyProgressView.progressTintColor = UIColor(red: 0.96, green: 0.26, blue: 0.21, alpha: 1)
-            }
-            
-            // İstatistikler
+            // Arka planda istatistikleri tutmaya devam et, UI'dan kaldırdığımız için sadece data tutuyoruz.
             if accuracy > self.bestAccuracy { self.bestAccuracy = accuracy }
             self.totalAccuracy += accuracy
             self.accuracyCount += 1
@@ -376,35 +246,41 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
     }
     
     func updateStabilityMetrics(_ metrics: [String: Any]) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.poseQualityLabel.text = metrics["poseQuality"] as? String ?? "—"
-            self.fluidityLabel.text = metrics["fluidity"] as? String ?? "—"
-            self.stabilityLabel.text = metrics["stability"] as? String ?? "—"
-        }
+        // Form Analiz panelini UI'dan kaldırdık, metrikler hesaplanıyor ama gösterilmiyor. İleride kaydedilebilir.
+    }
+    
+    // Mesaj değişimlerinde şık bir soluklaşma efekti (fade) için
+    private func crossDissolveText(label: UILabel, newText: String) {
+        UIView.transition(with: label, duration: 0.3, options: .transitionCrossDissolve, animations: {
+            label.text = newText
+        }, completion: nil)
     }
     
     private func updateFeedbackVisuals(_ message: String) {
-        if message.contains("Mükemmel") || message.contains("Harika") || message.contains("TEBRİKLER") {
-            feedbackEmojiLabel.text = "🎉"
-            feedbackTitleLabel.text = "Mükemmel!"
-            feedbackTitleLabel.textColor = UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1)
-        } else if message.contains("İyi") || message.contains("Güzel") || message.contains("Devam") {
-            feedbackEmojiLabel.text = "👍"
-            feedbackTitleLabel.text = "İyi Gidiyor"
-            feedbackTitleLabel.textColor = UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1)
-        } else if message.contains("⚠️") || message.contains("Dikkat") {
-            feedbackEmojiLabel.text = "⚠️"
-            feedbackTitleLabel.text = "Dikkat!"
-            feedbackTitleLabel.textColor = UIColor(red: 1, green: 0.6, blue: 0, alpha: 1)
-        } else if message.contains("eğilin") || message.contains("dönün") || message.contains("tutun") {
-            feedbackEmojiLabel.text = "🏋️"
-            feedbackTitleLabel.text = "Koç Diyor"
-            feedbackTitleLabel.textColor = UIColor(red: 0.13, green: 0.59, blue: 0.95, alpha: 1)
-        } else {
-            feedbackEmojiLabel.text = "🔄"
-            feedbackTitleLabel.text = "Devam"
-            feedbackTitleLabel.textColor = .white
+        crossDissolveText(label: feedbackMessageLabel, newText: message)
+        
+        UIView.animate(withDuration: 0.3) {
+            if message.contains("Mükemmel") || message.contains("Harika") || message.contains("TEBRİKLER") {
+                self.feedbackEmojiLabel.text = "🎉"
+                self.feedbackTitleLabel.text = "Mükemmel!"
+                self.feedbackTitleLabel.textColor = UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1)
+            } else if message.contains("İyi") || message.contains("Güzel") || message.contains("Devam") {
+                self.feedbackEmojiLabel.text = "👍"
+                self.feedbackTitleLabel.text = "İyi Gidiyor"
+                self.feedbackTitleLabel.textColor = UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1)
+            } else if message.contains("⚠️") || message.contains("Dikkat") {
+                self.feedbackEmojiLabel.text = "⚠️"
+                self.feedbackTitleLabel.text = "Dikkat!"
+                self.feedbackTitleLabel.textColor = UIColor(red: 1, green: 0.6, blue: 0, alpha: 1)
+            } else if message.contains("eğilin") || message.contains("dönün") || message.contains("tutun") {
+                self.feedbackEmojiLabel.text = "🏋️"
+                self.feedbackTitleLabel.text = "Koç Diyor"
+                self.feedbackTitleLabel.textColor = UIColor(red: 0.13, green: 0.59, blue: 0.95, alpha: 1)
+            } else {
+                self.feedbackEmojiLabel.text = "🔄"
+                self.feedbackTitleLabel.text = "Devam"
+                self.feedbackTitleLabel.textColor = .white
+            }
         }
     }
     
