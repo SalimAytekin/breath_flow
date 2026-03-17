@@ -6,7 +6,7 @@ import MLKitPoseDetection
 /// Android'deki ExerciseCoachingActivity.java karşılığı.
 class ExerciseCoachingViewController: CameraPreviewViewController {
     
-    // MARK: - UI Elements
+    // MARK: - UI Elem    // MARK: - UI Elements
     
     // Top bar
     private let topBar = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
@@ -20,6 +20,10 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
     private let feedbackEmojiLabel = UILabel()
     private let feedbackTitleLabel = UILabel()
     private let feedbackMessageLabel = UILabel()
+    
+    // Progress Arc (Açı Barı)
+    private let progressLayer = CAShapeLayer()
+    private let progressTrackLayer = CAShapeLayer()
     
 
     
@@ -37,6 +41,7 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupCoachingOverlay()
+        setupProgressArc()
         initializeExerciseCoaching()
     }
     
@@ -58,6 +63,39 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
     }
     
     // MARK: - Coaching Setup
+    
+    private func setupProgressArc() {
+        let arcCenter = CGPoint(x: view.bounds.midX, y: view.bounds.midY)
+        let radius: CGFloat = 120
+        let startAngle = CGFloat.pi * 3 / 4
+        let endAngle = CGFloat.pi * 1 / 4
+        
+        let circularPath = UIBezierPath(arcCenter: arcCenter, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: true)
+        
+        // Arka plan çizgisi (Track)
+        progressTrackLayer.path = circularPath.cgPath
+        progressTrackLayer.fillColor = UIColor.clear.cgColor
+        progressTrackLayer.strokeColor = UIColor.white.withAlphaComponent(0.15).cgColor
+        progressTrackLayer.lineWidth = 15
+        progressTrackLayer.lineCap = .round
+        view.layer.addSublayer(progressTrackLayer)
+        
+        // İlerleme çizgisi (Progress)
+        progressLayer.path = circularPath.cgPath
+        progressLayer.fillColor = UIColor.clear.cgColor
+        progressLayer.strokeColor = UIColor.white.cgColor // Nötr renk (değişecek)
+        progressLayer.lineWidth = 15
+        progressLayer.lineCap = .round
+        progressLayer.strokeEnd = 0
+        
+        // Neon / Glow effect
+        progressLayer.shadowColor = UIColor.green.cgColor
+        progressLayer.shadowOffset = .zero
+        progressLayer.shadowOpacity = 0.0
+        progressLayer.shadowRadius = 15.0
+        
+        view.layer.addSublayer(progressLayer)
+    }
     
     private func setupCoachingOverlay() {
         let safeArea = view.safeAreaLayoutGuide
@@ -99,12 +137,12 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
         repStack.addArrangedSubview(repCountLabel)
         topBarContentView.addSubview(repStack)
         
-        stopButton.setTitle("DURDUR", for: .normal)
-        stopButton.setTitleColor(.white, for: .normal)
-        stopButton.backgroundColor = UIColor(red: 0.96, green: 0.26, blue: 0.21, alpha: 0.8)
-        stopButton.titleLabel?.font = .boldSystemFont(ofSize: 14)
-        stopButton.layer.cornerRadius = 10
-        stopButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
+        // Pause Button (SFSymbol)
+        let pauseConfig = UIImage.SymbolConfiguration(pointSize: 32, weight: .medium)
+        let pauseIcon = UIImage(systemName: "pause.circle.fill", withConfiguration: pauseConfig)
+        stopButton.setImage(pauseIcon, for: .normal)
+        stopButton.tintColor = UIColor(white: 0.9, alpha: 1)
+        
         stopButton.addTarget(self, action: #selector(stopCoachingTapped), for: .touchUpInside)
         stopButton.translatesAutoresizingMaskIntoConstraints = false
         topBarContentView.addSubview(stopButton)
@@ -126,13 +164,15 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
             
             stopButton.trailingAnchor.constraint(equalTo: topBarContentView.trailingAnchor, constant: -20),
             stopButton.centerYAnchor.constraint(equalTo: safeArea.topAnchor, constant: 25),
+            stopButton.widthAnchor.constraint(equalToConstant: 44),
+            stopButton.heightAnchor.constraint(equalToConstant: 44),
         ])
         
         // ═══════════════════════════════════════════
         // Bottom Feedback Panel (Glassmorphism)
         // ═══════════════════════════════════════════
         bottomPanel.translatesAutoresizingMaskIntoConstraints = false
-        bottomPanel.layer.cornerRadius = 24
+        bottomPanel.layer.cornerRadius = 32
         bottomPanel.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         bottomPanel.clipsToBounds = true
         view.addSubview(bottomPanel)
@@ -140,25 +180,25 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
         let bottomBarContentView = bottomPanel.contentView
         
         feedbackEmojiLabel.text = "🔄"
-        feedbackEmojiLabel.font = .systemFont(ofSize: 32)
+        feedbackEmojiLabel.font = .systemFont(ofSize: 40)
         feedbackEmojiLabel.textAlignment = .center
-        feedbackEmojiLabel.backgroundColor = UIColor.white.withAlphaComponent(0.27)
-        feedbackEmojiLabel.layer.cornerRadius = 8
+        feedbackEmojiLabel.backgroundColor = UIColor.white.withAlphaComponent(0.25)
+        feedbackEmojiLabel.layer.cornerRadius = 16
         feedbackEmojiLabel.clipsToBounds = true
         feedbackEmojiLabel.translatesAutoresizingMaskIntoConstraints = false
         
         feedbackTitleLabel.text = "Başlayın"
         feedbackTitleLabel.textColor = UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1)
-        feedbackTitleLabel.font = .boldSystemFont(ofSize: 18)
+        feedbackTitleLabel.font = .boldSystemFont(ofSize: 22)
         
         feedbackMessageLabel.text = "Koçluk başlatılıyor..."
         feedbackMessageLabel.textColor = .white
-        feedbackMessageLabel.font = .systemFont(ofSize: 15)
+        feedbackMessageLabel.font = .systemFont(ofSize: 18, weight: .medium)
         feedbackMessageLabel.numberOfLines = 4
         
         let feedbackTextStack = UIStackView(arrangedSubviews: [feedbackTitleLabel, feedbackMessageLabel])
         feedbackTextStack.axis = .vertical
-        feedbackTextStack.spacing = 4
+        feedbackTextStack.spacing = 6
         feedbackTextStack.translatesAutoresizingMaskIntoConstraints = false
         
         bottomBarContentView.addSubview(feedbackEmojiLabel)
@@ -168,19 +208,17 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
             bottomPanel.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bottomPanel.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             bottomPanel.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            bottomPanel.heightAnchor.constraint(equalToConstant: 150),
+            bottomPanel.heightAnchor.constraint(equalToConstant: 220), // Taller Panel
             
-            feedbackEmojiLabel.leadingAnchor.constraint(equalTo: bottomBarContentView.leadingAnchor, constant: 16),
-            feedbackEmojiLabel.centerYAnchor.constraint(equalTo: bottomBarContentView.centerYAnchor),
-            feedbackEmojiLabel.widthAnchor.constraint(equalToConstant: 60),
-            feedbackEmojiLabel.heightAnchor.constraint(equalToConstant: 60),
+            feedbackEmojiLabel.leadingAnchor.constraint(equalTo: bottomBarContentView.leadingAnchor, constant: 20),
+            feedbackEmojiLabel.topAnchor.constraint(equalTo: bottomBarContentView.topAnchor, constant: 32),
+            feedbackEmojiLabel.widthAnchor.constraint(equalToConstant: 72),
+            feedbackEmojiLabel.heightAnchor.constraint(equalToConstant: 72),
             
-            feedbackTextStack.leadingAnchor.constraint(equalTo: feedbackEmojiLabel.trailingAnchor, constant: 16),
-            feedbackTextStack.trailingAnchor.constraint(equalTo: bottomBarContentView.trailingAnchor, constant: -16),
-            feedbackTextStack.centerYAnchor.constraint(equalTo: bottomBarContentView.centerYAnchor),
+            feedbackTextStack.leadingAnchor.constraint(equalTo: feedbackEmojiLabel.trailingAnchor, constant: 20),
+            feedbackTextStack.trailingAnchor.constraint(equalTo: bottomBarContentView.trailingAnchor, constant: -20),
+            feedbackTextStack.topAnchor.constraint(equalTo: bottomBarContentView.topAnchor, constant: 32),
         ])
-        
-
         
         // Overlay'ları pose overlay'ın üstüne getir
         view.bringSubviewToFront(topBar)
@@ -232,21 +270,50 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
     func updateAccuracy(_ accuracy: Double) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            // Arka planda istatistikleri tutmaya devam et, UI'dan kaldırdığımız için sadece data tutuyoruz.
             if accuracy > self.bestAccuracy { self.bestAccuracy = accuracy }
             self.totalAccuracy += accuracy
             self.accuracyCount += 1
+            
+            // Progress Arc Animasyonu
+            self.progressLayer.strokeEnd = CGFloat(accuracy)
+            
+            // Dinamik Renk ve Parlama
+            let greenVal = CGFloat(max(0.0, min(1.0, accuracy)))
+            let redVal = CGFloat(1.0 - greenVal)
+            let blueVal = CGFloat(1.0 - greenVal)
+            let dynamicColor = UIColor(red: redVal, green: 1.0, blue: blueVal, alpha: 1.0)
+            
+            self.progressLayer.strokeColor = dynamicColor.cgColor
+            if accuracy >= 0.95 {
+                self.progressLayer.shadowOpacity = 1.0 // Hedefteyken parlar
+            } else {
+                self.progressLayer.shadowOpacity = 0.0
+            }
         }
     }
     
     func updateRepetitionCount(_ count: Int) {
         DispatchQueue.main.async { [weak self] in
-            self?.repCountLabel.text = "\(count)"
+            guard let self = self else { return }
+            // Pop-up Scale Animasyonu
+            if self.repCountLabel.text != "\(count)" {
+                self.repCountLabel.text = "\(count)"
+                
+                UIView.animate(withDuration: 0.1, animations: {
+                    self.repCountLabel.transform = CGAffineTransform(scaleX: 1.5, y: 1.5)
+                    self.repCountLabel.textColor = .green
+                }) { _ in
+                    UIView.animate(withDuration: 0.2, animations: {
+                        self.repCountLabel.transform = CGAffineTransform.identity
+                        self.repCountLabel.textColor = .white
+                    })
+                }
+            }
         }
     }
     
     func updateStabilityMetrics(_ metrics: [String: Any]) {
-        // Form Analiz panelini UI'dan kaldırdık, metrikler hesaplanıyor ama gösterilmiyor. İleride kaydedilebilir.
+        // ...
     }
     
     // Mesaj değişimlerinde şık bir soluklaşma efekti (fade) için
@@ -259,21 +326,35 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
     private func updateFeedbackVisuals(_ message: String) {
         crossDissolveText(label: feedbackMessageLabel, newText: message)
         
-        UIView.animate(withDuration: 0.3) {
+        UIView.animate(withDuration: 0.4) {
             if message.contains("Mükemmel") || message.contains("Harika") || message.contains("TEBRİKLER") {
                 self.feedbackEmojiLabel.text = "🎉"
                 self.feedbackTitleLabel.text = "Mükemmel!"
-                self.feedbackTitleLabel.textColor = UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1)
+                self.feedbackTitleLabel.textColor = UIColor.white
+                self.bottomPanel.backgroundColor = UIColor(red: 0.2, green: 0.6, blue: 0.2, alpha: 0.85) // Koyu Yeşil
             } else if message.contains("İyi") || message.contains("Güzel") || message.contains("Devam") {
                 self.feedbackEmojiLabel.text = "👍"
                 self.feedbackTitleLabel.text = "İyi Gidiyor"
-                self.feedbackTitleLabel.textColor = UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1)
+                self.feedbackTitleLabel.textColor = UIColor.white
+                self.bottomPanel.backgroundColor = UIColor(red: 0.1, green: 0.4, blue: 0.7, alpha: 0.85) // Koyu Mavi
             } else if message.contains("⚠️") || message.contains("Dikkat") {
                 self.feedbackEmojiLabel.text = "⚠️"
                 self.feedbackTitleLabel.text = "Dikkat!"
-                self.feedbackTitleLabel.textColor = UIColor(red: 1, green: 0.6, blue: 0, alpha: 1)
+                self.feedbackTitleLabel.textColor = UIColor.white
+                self.bottomPanel.backgroundColor = UIColor(red: 0.8, green: 0.4, blue: 0.1, alpha: 0.85) // Turuncu Hata
             } else if message.contains("eğilin") || message.contains("dönün") || message.contains("tutun") {
                 self.feedbackEmojiLabel.text = "🏋️"
+                self.feedbackTitleLabel.text = "Koç Diyor"
+                self.feedbackTitleLabel.textColor = UIColor(red: 0.4, green: 0.8, blue: 0.95, alpha: 1)
+                self.bottomPanel.backgroundColor = UIColor.clear // Nötr
+            } else {
+                self.feedbackEmojiLabel.text = "🔄"
+                self.feedbackTitleLabel.text = "Devam"
+                self.feedbackTitleLabel.textColor = .white
+                self.bottomPanel.backgroundColor = UIColor.clear // Nötr
+            }
+        }
+    }kEmojiLabel.text = "🏋️"
                 self.feedbackTitleLabel.text = "Koç Diyor"
                 self.feedbackTitleLabel.textColor = UIColor(red: 0.13, green: 0.59, blue: 0.95, alpha: 1)
             } else {

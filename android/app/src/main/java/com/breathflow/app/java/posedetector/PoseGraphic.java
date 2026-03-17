@@ -135,6 +135,13 @@ public class PoseGraphic extends Graphic {
     smoothedPositions.clear();
   }
 
+    // MARK: - Gamification (Accuracy Color)
+    private static double currentAccuracy = 0.0;
+    
+    public static void updateAccuracy(double accuracy) {
+        currentAccuracy = accuracy;
+    }
+
   @Override
   public void draw(Canvas canvas) {
     List<PoseLandmark> landmarks = pose.getAllPoseLandmarks();
@@ -160,102 +167,61 @@ public class PoseGraphic extends Graphic {
       }
     }
 
-    // Draw all the points (smoothed)
-    for (PoseLandmark landmark : landmarks) {
-      drawSmoothedPoint(canvas, landmark, whitePaint);
-    }
+    // Dinamik Renk Hesaplama (Gamification)
+    // 0.0 (Beyaz) -> 1.0 (Parlak/Neon Yeşil)
+    float greenVal = (float) Math.max(0.0, Math.min(1.0, currentAccuracy));
+    
+    // Ara renk: Beyaz (255,255,255) -> Yeşil yaklaştıkça kırmızı ve mavi azalıyor
+    int redVal = (int) (255 * (1.0f - greenVal));
+    int blueVal = (int) (255 * (1.0f - greenVal));
+    int alphaVal = (int) (255 * 0.8f);
 
+    int dynamicColor = Color.argb(alphaVal, redVal, 255, blueVal);
+    
+    Paint dynamicPaint = new Paint();
+    dynamicPaint.setStrokeWidth(STROKE_WIDTH);
+    dynamicPaint.setColor(dynamicColor);
+    dynamicPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+    
+    // Glow (Neon) Efekti Ekle
+    int shadowAlpha = (int) (255 * (currentAccuracy * 0.8f));
+    int shadowColor = Color.argb(shadowAlpha, 0, 255, 0);
+    dynamicPaint.setShadowLayer(10.0f + (float)(currentAccuracy * 15.0f), 0f, 0f, shadowColor);
+    
+    // Sadece Burun ve Omuz Hizasını Çiz
     PoseLandmark nose = pose.getPoseLandmark(PoseLandmark.NOSE);
-    PoseLandmark lefyEyeInner = pose.getPoseLandmark(PoseLandmark.LEFT_EYE_INNER);
-    PoseLandmark lefyEye = pose.getPoseLandmark(PoseLandmark.LEFT_EYE);
-    PoseLandmark leftEyeOuter = pose.getPoseLandmark(PoseLandmark.LEFT_EYE_OUTER);
-    PoseLandmark rightEyeInner = pose.getPoseLandmark(PoseLandmark.RIGHT_EYE_INNER);
-    PoseLandmark rightEye = pose.getPoseLandmark(PoseLandmark.RIGHT_EYE);
-    PoseLandmark rightEyeOuter = pose.getPoseLandmark(PoseLandmark.RIGHT_EYE_OUTER);
-    PoseLandmark leftEar = pose.getPoseLandmark(PoseLandmark.LEFT_EAR);
-    PoseLandmark rightEar = pose.getPoseLandmark(PoseLandmark.RIGHT_EAR);
-    PoseLandmark leftMouth = pose.getPoseLandmark(PoseLandmark.LEFT_MOUTH);
-    PoseLandmark rightMouth = pose.getPoseLandmark(PoseLandmark.RIGHT_MOUTH);
-
     PoseLandmark leftShoulder = pose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER);
     PoseLandmark rightShoulder = pose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER);
-    PoseLandmark leftElbow = pose.getPoseLandmark(PoseLandmark.LEFT_ELBOW);
-    PoseLandmark rightElbow = pose.getPoseLandmark(PoseLandmark.RIGHT_ELBOW);
-    PoseLandmark leftWrist = pose.getPoseLandmark(PoseLandmark.LEFT_WRIST);
-    PoseLandmark rightWrist = pose.getPoseLandmark(PoseLandmark.RIGHT_WRIST);
-    PoseLandmark leftHip = pose.getPoseLandmark(PoseLandmark.LEFT_HIP);
-    PoseLandmark rightHip = pose.getPoseLandmark(PoseLandmark.RIGHT_HIP);
-    PoseLandmark leftKnee = pose.getPoseLandmark(PoseLandmark.LEFT_KNEE);
-    PoseLandmark rightKnee = pose.getPoseLandmark(PoseLandmark.RIGHT_KNEE);
-    PoseLandmark leftAnkle = pose.getPoseLandmark(PoseLandmark.LEFT_ANKLE);
-    PoseLandmark rightAnkle = pose.getPoseLandmark(PoseLandmark.RIGHT_ANKLE);
-
-    PoseLandmark leftPinky = pose.getPoseLandmark(PoseLandmark.LEFT_PINKY);
-    PoseLandmark rightPinky = pose.getPoseLandmark(PoseLandmark.RIGHT_PINKY);
-    PoseLandmark leftIndex = pose.getPoseLandmark(PoseLandmark.LEFT_INDEX);
-    PoseLandmark rightIndex = pose.getPoseLandmark(PoseLandmark.RIGHT_INDEX);
-    PoseLandmark leftThumb = pose.getPoseLandmark(PoseLandmark.LEFT_THUMB);
-    PoseLandmark rightThumb = pose.getPoseLandmark(PoseLandmark.RIGHT_THUMB);
-    PoseLandmark leftHeel = pose.getPoseLandmark(PoseLandmark.LEFT_HEEL);
-    PoseLandmark rightHeel = pose.getPoseLandmark(PoseLandmark.RIGHT_HEEL);
-    PoseLandmark leftFootIndex = pose.getPoseLandmark(PoseLandmark.LEFT_FOOT_INDEX);
-    PoseLandmark rightFootIndex = pose.getPoseLandmark(PoseLandmark.RIGHT_FOOT_INDEX);
-
-    // Face
-    drawSmoothedLine(canvas, nose, lefyEyeInner, whitePaint);
-    drawSmoothedLine(canvas, lefyEyeInner, lefyEye, whitePaint);
-    drawSmoothedLine(canvas, lefyEye, leftEyeOuter, whitePaint);
-    drawSmoothedLine(canvas, leftEyeOuter, leftEar, whitePaint);
-    drawSmoothedLine(canvas, nose, rightEyeInner, whitePaint);
-    drawSmoothedLine(canvas, rightEyeInner, rightEye, whitePaint);
-    drawSmoothedLine(canvas, rightEye, rightEyeOuter, whitePaint);
-    drawSmoothedLine(canvas, rightEyeOuter, rightEar, whitePaint);
-    drawSmoothedLine(canvas, leftMouth, rightMouth, whitePaint);
-
-    drawSmoothedLine(canvas, leftShoulder, rightShoulder, whitePaint);
-    drawSmoothedLine(canvas, leftHip, rightHip, whitePaint);
-
-    // Left body
-    drawSmoothedLine(canvas, leftShoulder, leftElbow, leftPaint);
-    drawSmoothedLine(canvas, leftElbow, leftWrist, leftPaint);
-    drawSmoothedLine(canvas, leftShoulder, leftHip, leftPaint);
-    drawSmoothedLine(canvas, leftHip, leftKnee, leftPaint);
-    drawSmoothedLine(canvas, leftKnee, leftAnkle, leftPaint);
-    drawSmoothedLine(canvas, leftWrist, leftThumb, leftPaint);
-    drawSmoothedLine(canvas, leftWrist, leftPinky, leftPaint);
-    drawSmoothedLine(canvas, leftWrist, leftIndex, leftPaint);
-    drawSmoothedLine(canvas, leftIndex, leftPinky, leftPaint);
-    drawSmoothedLine(canvas, leftAnkle, leftHeel, leftPaint);
-    drawSmoothedLine(canvas, leftHeel, leftFootIndex, leftPaint);
-
-    // Right body
-    drawSmoothedLine(canvas, rightShoulder, rightElbow, rightPaint);
-    drawSmoothedLine(canvas, rightElbow, rightWrist, rightPaint);
-    drawSmoothedLine(canvas, rightShoulder, rightHip, rightPaint);
-    drawSmoothedLine(canvas, rightHip, rightKnee, rightPaint);
-    drawSmoothedLine(canvas, rightKnee, rightAnkle, rightPaint);
-    drawSmoothedLine(canvas, rightWrist, rightThumb, rightPaint);
-    drawSmoothedLine(canvas, rightWrist, rightPinky, rightPaint);
-    drawSmoothedLine(canvas, rightWrist, rightIndex, rightPaint);
-    drawSmoothedLine(canvas, rightIndex, rightPinky, rightPaint);
-    drawSmoothedLine(canvas, rightAnkle, rightHeel, rightPaint);
-    drawSmoothedLine(canvas, rightHeel, rightFootIndex, rightPaint);
+    
+    if (nose != null) {
+      drawSmoothedPoint(canvas, nose, dynamicPaint);
+    }
+    
+    if (leftShoulder != null && rightShoulder != null) {
+      // Omuz çizgisini yarı saydam yap
+      Paint semiTransparentPaint = new Paint(dynamicPaint);
+      semiTransparentPaint.setAlpha((int)(255 * 0.5f));
+      drawSmoothedLine(canvas, leftShoulder, rightShoulder, semiTransparentPaint);
+    }
 
     // Draw inFrameLikelihood for all points (smoothed positions)
     if (showInFrameLikelihood) {
-      for (PoseLandmark landmark : landmarks) {
-        float[] sp = getSmoothedPosition(landmark);
-        canvas.drawText(
-            String.format(Locale.US, "%.2f", landmark.getInFrameLikelihood()),
-            translateX(sp[0]),
-            translateY(sp[1]),
-            whitePaint);
-      }
+        // İsteğe bağlı olarak korunabilir ama sade UI istendiğinde textleri debug modda göster
+        for (PoseLandmark landmark : landmarks) {
+            float[] sp = getSmoothedPosition(landmark);
+            canvas.drawText(
+                String.format(Locale.US, "%.2f", landmark.getInFrameLikelihood()),
+                translateX(sp[0]),
+                translateY(sp[1]),
+                whitePaint);
+        }
     }
   }
 
   /** Smoothed pozisyon ile nokta çiz */
   void drawSmoothedPoint(Canvas canvas, PoseLandmark landmark, Paint paint) {
+    if (landmark.getInFrameLikelihood() < 0.75f) return; // Düşük güvenilirlik filtresi
+      
     float[] sp = getSmoothedPosition(landmark);
     updatePaintColorByZValue(
         paint, canvas, visualizeZ, rescaleZForVisualization, sp[2], zMin, zMax);
@@ -264,6 +230,8 @@ public class PoseGraphic extends Graphic {
 
   /** Smoothed pozisyonlar ile çizgi çiz */
   void drawSmoothedLine(Canvas canvas, PoseLandmark startLandmark, PoseLandmark endLandmark, Paint paint) {
+    if (startLandmark.getInFrameLikelihood() < 0.75f || endLandmark.getInFrameLikelihood() < 0.75f) return;
+      
     float[] start = getSmoothedPosition(startLandmark);
     float[] end = getSmoothedPosition(endLandmark);
 

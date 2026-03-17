@@ -115,6 +115,14 @@ class PoseGraphicOverlayView: UIView {
         return smoothed
     }
     
+    // MARK: - Gamification (Accuracy Color)
+    private var currentAccuracy: Double = 0.0
+    
+    func updateAccuracy(_ accuracy: Double) {
+        self.currentAccuracy = accuracy
+        setNeedsDisplay()
+    }
+    
     // MARK: - Drawing
     
     override func draw(_ rect: CGRect) {
@@ -128,94 +136,36 @@ class PoseGraphicOverlayView: UIView {
             _ = getSmoothedPosition(for: landmark)
         }
         
-        // Tüm noktaları çiz
-        for landmark in landmarks {
-            drawSmoothedPoint(context: context, landmark: landmark, color: whitePaint)
-        }
+        // Dinamik Renk Hesaplama (Gamification)
+        // 0.0 (Beyaz) -> 1.0 (Parlak/Neon Yeşil)
+        let greenVal = CGFloat(max(0.0, min(1.0, currentAccuracy)))
         
-        // Landmark'ları getir
+        // Ara renk: Beyaz (1,1,1) -> Yeşil yaklaştıkça kırmızı ve mavi azalıyor
+        let redVal = CGFloat(1.0 - greenVal)
+        let blueVal = CGFloat(1.0 - greenVal)
+        
+        let dynamicColor = UIColor(red: redVal, green: 1.0, blue: blueVal, alpha: 0.8)
+        let shadowColor = UIColor.green.withAlphaComponent(CGFloat(currentAccuracy * 0.8)).cgColor
+        
+        // Glow (Neon) Efekti Ekle
+        context.setShadow(offset: .zero, blur: CGFloat(10.0 + (currentAccuracy * 15.0)), color: shadowColor)
+        
+        // Çizilecek noktaları al
         let nose = pose.landmark(ofType: .nose)
-        let leftEyeInner = pose.landmark(ofType: .leftEyeInner)
-        let leftEye = pose.landmark(ofType: .leftEye)
-        let leftEyeOuter = pose.landmark(ofType: .leftEyeOuter)
-        let rightEyeInner = pose.landmark(ofType: .rightEyeInner)
-        let rightEye = pose.landmark(ofType: .rightEye)
-        let rightEyeOuter = pose.landmark(ofType: .rightEyeOuter)
-        let leftEar = pose.landmark(ofType: .leftEar)
-        let rightEar = pose.landmark(ofType: .rightEar)
-        let leftMouth = pose.landmark(ofType: .mouthLeft)
-        let rightMouth = pose.landmark(ofType: .mouthRight)
-        
         let leftShoulder = pose.landmark(ofType: .leftShoulder)
         let rightShoulder = pose.landmark(ofType: .rightShoulder)
-        let leftElbow = pose.landmark(ofType: .leftElbow)
-        let rightElbow = pose.landmark(ofType: .rightElbow)
-        let leftWrist = pose.landmark(ofType: .leftWrist)
-        let rightWrist = pose.landmark(ofType: .rightWrist)
-        let leftHip = pose.landmark(ofType: .leftHip)
-        let rightHip = pose.landmark(ofType: .rightHip)
-        let leftKnee = pose.landmark(ofType: .leftKnee)
-        let rightKnee = pose.landmark(ofType: .rightKnee)
-        let leftAnkle = pose.landmark(ofType: .leftAnkle)
-        let rightAnkle = pose.landmark(ofType: .rightAnkle)
         
-        let leftPinky = pose.landmark(ofType: .leftPinkyFinger)
-        let rightPinky = pose.landmark(ofType: .rightPinkyFinger)
-        let leftIndex = pose.landmark(ofType: .leftIndexFinger)
-        let rightIndex = pose.landmark(ofType: .rightIndexFinger)
-        let leftThumb = pose.landmark(ofType: .leftThumb)
-        let rightThumb = pose.landmark(ofType: .rightThumb)
-        let leftHeel = pose.landmark(ofType: .leftHeel)
-        let rightHeel = pose.landmark(ofType: .rightHeel)
-        let leftFootIndex = pose.landmark(ofType: .leftToe)
-        let rightFootIndex = pose.landmark(ofType: .rightToe)
+        // Sade UI vizyonu: Sadece burun noktası ve omuz hizası
+        drawSmoothedPoint(context: context, landmark: nose, color: dynamicColor)
         
-        // Face
-        drawSmoothedLine(context: context, from: nose, to: leftEyeInner, color: whitePaint)
-        drawSmoothedLine(context: context, from: leftEyeInner, to: leftEye, color: whitePaint)
-        drawSmoothedLine(context: context, from: leftEye, to: leftEyeOuter, color: whitePaint)
-        drawSmoothedLine(context: context, from: leftEyeOuter, to: leftEar, color: whitePaint)
-        drawSmoothedLine(context: context, from: nose, to: rightEyeInner, color: whitePaint)
-        drawSmoothedLine(context: context, from: rightEyeInner, to: rightEye, color: whitePaint)
-        drawSmoothedLine(context: context, from: rightEye, to: rightEyeOuter, color: whitePaint)
-        drawSmoothedLine(context: context, from: rightEyeOuter, to: rightEar, color: whitePaint)
-        drawSmoothedLine(context: context, from: leftMouth, to: rightMouth, color: whitePaint)
-        
-        // Center
-        drawSmoothedLine(context: context, from: leftShoulder, to: rightShoulder, color: whitePaint)
-        drawSmoothedLine(context: context, from: leftHip, to: rightHip, color: whitePaint)
-        
-        // Left body
-        drawSmoothedLine(context: context, from: leftShoulder, to: leftElbow, color: leftPaint)
-        drawSmoothedLine(context: context, from: leftElbow, to: leftWrist, color: leftPaint)
-        drawSmoothedLine(context: context, from: leftShoulder, to: leftHip, color: leftPaint)
-        drawSmoothedLine(context: context, from: leftHip, to: leftKnee, color: leftPaint)
-        drawSmoothedLine(context: context, from: leftKnee, to: leftAnkle, color: leftPaint)
-        drawSmoothedLine(context: context, from: leftWrist, to: leftThumb, color: leftPaint)
-        drawSmoothedLine(context: context, from: leftWrist, to: leftPinky, color: leftPaint)
-        drawSmoothedLine(context: context, from: leftWrist, to: leftIndex, color: leftPaint)
-        drawSmoothedLine(context: context, from: leftIndex, to: leftPinky, color: leftPaint)
-        drawSmoothedLine(context: context, from: leftAnkle, to: leftHeel, color: leftPaint)
-        drawSmoothedLine(context: context, from: leftHeel, to: leftFootIndex, color: leftPaint)
-        
-        // Right body
-        drawSmoothedLine(context: context, from: rightShoulder, to: rightElbow, color: rightPaint)
-        drawSmoothedLine(context: context, from: rightElbow, to: rightWrist, color: rightPaint)
-        drawSmoothedLine(context: context, from: rightShoulder, to: rightHip, color: rightPaint)
-        drawSmoothedLine(context: context, from: rightHip, to: rightKnee, color: rightPaint)
-        drawSmoothedLine(context: context, from: rightKnee, to: rightAnkle, color: rightPaint)
-        drawSmoothedLine(context: context, from: rightWrist, to: rightThumb, color: rightPaint)
-        drawSmoothedLine(context: context, from: rightWrist, to: rightPinky, color: rightPaint)
-        drawSmoothedLine(context: context, from: rightWrist, to: rightIndex, color: rightPaint)
-        drawSmoothedLine(context: context, from: rightIndex, to: rightPinky, color: rightPaint)
-        drawSmoothedLine(context: context, from: rightAnkle, to: rightHeel, color: rightPaint)
-        drawSmoothedLine(context: context, from: rightHeel, to: rightFootIndex, color: rightPaint)
+        // Omuz çizgisini yarı saydam çiz
+        drawSmoothedLine(context: context, from: leftShoulder, to: rightShoulder, color: dynamicColor.withAlphaComponent(0.5))
     }
     
     // MARK: - Drawing Helpers
     
     /// Minimum güvenilirlik eşiği — bu değerin altındaki landmark'lar çizilmez
-    private static let minDrawConfidence: Float = 0.75 // Hayali el/kol (ghost limbs) çizimini engellemek için artırıldı
+    private static let minDrawConfidence: Float = 0.75
     
     private func drawSmoothedPoint(context: CGContext, landmark: PoseLandmark, color: UIColor) {
         // Düşük güvenilirlikli landmark'ları çizme (hayalet uzuv önleme)

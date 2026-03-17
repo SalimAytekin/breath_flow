@@ -1,0 +1,550 @@
+# 🏋️ Breath Flow — AI Fitness Koçluğu: UX Yolculuk Haritası
+
+> **Mevcut Durum:** Native Android ML Kit poz algılama çalışıyor, EMA smoothing uygulandı, iskelet overlay + form analiz paneli + talimat sistemi mevcut. Boyun eğme, squat ve biceps curl validatörleri hazır.
+>
+> **Hedef:** Bu prototipi ürün kalitesinde (product-ready) bir deneyime dönüştürmek.
+
+---
+
+## 📍 BÖLÜM 1 — Uçtan Uca Kullanıcı Akışı (User Flow)
+
+### Akış Diyagramı
+
+```mermaid
+flowchart TD
+    A["🏠 Ana Ekran"] --> B["📋 Egzersiz Kataloğu"]
+    B --> C["📄 Egzersiz Detay Kartı"]
+    C --> D["📸 Kamera İzni & Ortam Kontrolü"]
+    D --> E["📐 Telefon Konumlandırma Rehberi"]
+    E --> F["🎯 Hazırlık Geri Sayımı 3-2-1"]
+    F --> G["🏃 Aktif Egzersiz Ekranı"]
+    G --> H{"Egzersiz Bitti mi?"}
+    H -->|Evet| I["🏆 Sonuç / Özet Ekranı"]
+    H -->|Hayır| G
+    I --> J["📊 İlerleme Kaydı"]
+```
+
+---
+
+### Adım 1 — Ana Ekran → AI Fitness Bölümüne Giriş
+| Öğe | Detay |
+|-----|-------|
+| **Tetikleyici** | Ana ekrandaki "AI Fitness Koçu" kartı / butonu |
+| **Kullanıcı beklentisi** | "Bu ne? Güvenli mi? Kolay mı?" |
+| **Tasarım notu** | Karta kısa bir animasyon (Lottie) + "Kameranla egzersiz yap, formunu analiz edelim" alt metni. İlk kez giren kullanıcıya **onboarding** akışı tetiklenir (Bölüm 5'e bkz.) |
+
+---
+
+### Adım 2 — Egzersiz Kataloğu
+| Öğe | Detay |
+|-----|-------|
+| **Ekran yapısı** | Grid/Liste görünümü. Her egzersiz kartında: küçük animasyon (GIF/Lottie), egzersiz adı, zorluk seviyesi (Kolay/Orta/Zor), süre tahmini, hedef kas grubu |
+| **Filtreleme** | Zorluk derecesi, kas grubu, süre filtresi |
+| **Başlangıç egzersizleri** | Boyun Eğme, Squat, Biceps Curl (mevcut validatörler) |
+| **Kilitli egzersizler** | "Yakında" etiketi ile gelecek egzersizler gösterilir (kullanıcıda beklenti yaratır) |
+| **Kullanıcı psikolojisi** | Seçim felcini önlemek için "Bugün Sana Önerilen" bölümü en üstte |
+
+---
+
+### Adım 3 — Egzersiz Detay Kartı (Pre-Exercise)
+| Öğe | Detay |
+|-----|-------|
+| **Başlık** | Egzersiz adı + animasyonlu demo (doğru formu gösteren 5-10sn loop) |
+| **Bilgi blokları** | ⏱ Süre · 💪 Zorluk · 🔥 Kalori tahmini · 🎯 Hedef kas grubu |
+| **"Nasıl Yapılır"** | 3-4 madde ile kısa form talimatları (metin + ikonlar) |
+| **Dikkat notu** | ⚠️ "Bu egzersiz sırasında telefonu [yere/masaya/duvara] konumlandırmanız gerekir" |
+| **CTA (Aksiyon Butonu)** | **"Egzersize Başla"** — büyük, belirgin, gradient buton |
+
+---
+
+### Adım 4 — Kamera İzni & Ortam Kontrolü
+| Öğe | Detay |
+|-----|-------|
+| **İzin yoksa** | Özel tasarlanmış izin sayfası (sistem popup'undan ÖNCE): kamera ikonu + "Formunu analiz edebilmemiz için kamerana ihtiyacımız var" + "Görüntüler cihazında kalır, sunucuya gönderilmez" güven mesajı |
+| **İzin reddedilirse** | Yumuşak uyarı: "Kamera izni olmadan AI koçluk yapamıyoruz. İstersen ayarlardan açabilirsin." + Ayarlara yönlendirme butonu + Catalogaya geri dön butonu |
+| **Ortam kontrolü** | Kamera açılır, arka planda: ışık seviyesi kontrolü + tam vücut algılama testi (otomatik, 2-3 saniye) |
+
+---
+
+### Adım 5 — Telefon Konumlandırma Rehberi
+| Öğe | Detay |
+|-----|-------|
+| **Ekran** | Kamera önizlemesi üzerine yarı-saydam overlay |
+| **Görsel rehber** | Telefonu nereye koyacağını gösteren animasyonlu illüstrasyon (egzersize göre değişir: yere, masaya, duvara) |
+| **Canlı geri bildirim** | Kullanıcı kadrajda göründüğünde: ✅ "Harika, seni görüyorum!" — yeşil çerçeve. Kadrajda yoksa: ⚠️ "Biraz daha geriye çekil" / "Telefonu biraz yukarı kaldır" |
+| **Vücut kontur rehberi** | Ekranda yarı-saydam bir insan silüeti — kullanıcı bu silüetle hizalanmalı |
+| **Otomatik geçiş** | Doğru pozisyon 2 saniye sürdürüldüğünde otomatik olarak geri sayıma geçer |
+| **Manuel geçiş** | "Hazırım" butonu da mevcut (kullanıcıya kontrol hissi) |
+
+---
+
+### Adım 6 — Hazırlık Geri Sayımı (3-2-1)
+| Öğe | Detay |
+|-----|-------|
+| **Görsel** | Ekranın ortasında büyük sayılar (3 → 2 → 1 → "BAŞLA!") + pulse animasyonu |
+| **Ses** | Her sayıda kısa bip sesi (isteğe bağlı, ayarlardan kapatılabilir) |
+| **Haptic** | Her sayıda hafif titreşim |
+| **Amaç** | Kullanıcıya hazırlanma süresi vermek, ani başlangıcı önlemek |
+
+---
+
+### Adım 7 — Aktif Egzersiz Ekranı (Ana Deneyim) ⭐
+| Bölge | Öğe | Detay |
+|-------|------|-------|
+| **Arka plan** | Kamera görüntüsü | Tam ekran, kamera feed |
+| **Overlay — İskelet** | Poz çizgileri | Yeşil = doğru form, Sarı = dikkat, Kırmızı = hatalı eklem. Çizgiler kalınlık ve renk ile güven skorunu yansıtır |
+| **Üst Bar** | Sol: Egzersiz adı + süre | Sağ: Durakla ⏸ / Bitir ✖ butonları |
+| **Sayaç (merkez-üst)** | Rep sayısı | Büyük, okunabilir font. Her rep'te kısa scale-up animasyonu + haptic |
+| **Form skoru (sağ-üst köşe)** | Genel doğruluk | Yuvarlak progress indicator: %85 gibi, renk kodlu |
+| **Talimat balonu (alt)** | Anlık koçluk | Yarı-saydam koyu arka plan üzerine beyaz metin: "Sırtını dik tut!" / "Harika devam et!" — 2-3 saniye görünür, kaybolur |
+| **Güvenlik uyarısı** | Acil uyarılar | Kırmızı banner: "Dizlerini aşırı bükme!" (sadece risk durumunda) |
+
+> [!IMPORTANT]
+> **Debug bilgileri (FPS, latency, input image size) production'da GÖSTERİLMEMELİ.** Bu bilgiler sadece geliştirici modunda aktif olacak bir `debugMode` flag'i ile kontrol edilmeli.
+
+---
+
+### Adım 8 — Egzersiz Bitişi & Sonuç Ekranı
+| Öğe | Detay |
+|-----|-------|
+| **Tetikleyici** | Set/süre tamamlandığında veya kullanıcı "Bitir" dediğinde |
+| **Geçiş** | Confetti/kutlama animasyonu (Lottie) |
+| **Sonuç kartı** | ✅ Toplam tekrar, ⏱ Geçen süre, 📊 Ortalama form skoru, 🏆 En iyi form skoru |
+| **Form raporu** | Pasta grafik: "Doğru form: %72, Düzeltilebilir: %20, Hatalı: %8" |
+| **İyileştirme notu** | "Bir sonraki sefer dizlerini biraz daha bük" — kişiselleştirilmiş öneri |
+| **CTA'lar** | "Tekrar Yap" · "Başka Egzersiz" · "Ana Ekrana Dön" |
+| **Paylaşım** | İsteğe bağlı: Sonuç kartını sosyal medyada paylaş |
+
+---
+
+## 📍 BÖLÜM 2 — Ekran İskeletleri (Wireframe Mantığı)
+
+### Ekran 1: Egzersiz Kataloğu
+```
+┌──────────────────────────────────┐
+│  ← Geri    AI Fitness Koçu    ⚙ │
+├──────────────────────────────────┤
+│  🔍 Egzersiz Ara...              │
+│  [Kolay] [Orta] [Zor] [Tümü]    │
+├──────────────────────────────────┤
+│  ⭐ Sana Önerilen                │
+│  ┌──────────┐ ┌──────────┐      │
+│  │ 🏋 Squat │ │💪 Biceps │      │
+│  │ Orta·5dk │ │ Kolay·3dk│      │
+│  └──────────┘ └──────────┘      │
+├──────────────────────────────────┤
+│  📂 Boyun & Omuz                 │
+│  ┌──────────┐ ┌──────────┐      │
+│  │ Boyun    │ │ 🔒Omuz   │      │
+│  │ Eğme     │ │ Yakında  │      │
+│  └──────────┘ └──────────┘      │
+└──────────────────────────────────┘
+```
+
+### Ekran 2: Egzersiz Detay
+```
+┌──────────────────────────────────┐
+│  ← Geri              Favorile ♡ │
+├──────────────────────────────────┤
+│       ┌─────────────────┐       │
+│       │  🎬 Animasyonlu  │       │
+│       │  Form Demo       │       │
+│       └─────────────────┘       │
+│                                  │
+│  Squat                           │
+│  ⏱ 5 dk  · 💪 Orta  · 🔥 45cal │
+│                                  │
+│  📋 Nasıl Yapılır:               │
+│  1. Ayaklar omuz genişliğinde    │
+│  2. Sırt düz, göğüs dik         │
+│  3. Diz açısı 90° olacak şekil  │
+│                                  │
+│  📐 Telefonu yere, 2m uzağa koy │
+│                                  │
+│  ┌──────────────────────────┐   │
+│  │   🚀 EGZERSİZE BAŞLA    │   │
+│  └──────────────────────────┘   │
+└──────────────────────────────────┘
+```
+
+### Ekran 3: Telefon Konumlandırma
+```
+┌──────────────────────────────────┐
+│         Telefonunu Yerleştir     │
+├──────────────────────────────────┤
+│                                  │
+│    ┌─────── Kamera Feed ──────┐ │
+│    │                          │ │
+│    │    ╭─────────────╮       │ │
+│    │    │  Silüet      │       │ │
+│    │    │  (Hizalan)   │       │ │
+│    │    ╰─────────────╯       │ │
+│    │                          │ │
+│    └──────────────────────────┘ │
+│                                  │
+│  ✅ "Harika! Seni net görüyorum" │
+│     veya                         │
+│  ⚠️ "Biraz daha geriye çekil"    │
+│                                  │
+│  ┌──────────────────────────┐   │
+│  │       ✋ HAZIRIM          │   │
+│  └──────────────────────────┘   │
+└──────────────────────────────────┘
+```
+
+### Ekran 4: Aktif Egzersiz
+```
+┌──────────────────────────────────┐
+│ Squat  02:34     ⏸  ✖           │
+├──────────────────────────────────┤
+│ ┌─────── Kamera + İskelet ────┐ │
+│ │                       ╭──╮  │ │
+│ │   🟢──🟢              │85│  │ │
+│ │   │    │              │% │  │ │
+│ │   🟢    🟢             ╰──╯  │ │
+│ │   │    │                    │ │
+│ │   🟡    🟡 ← sarı=dikkat    │ │
+│ │   │    │                    │ │
+│ │   🟢    🟢                   │ │
+│ │                              │ │
+│ └──────────────────────────────┘ │
+│         ┌─────────┐             │
+│         │  12     │ ← Rep       │
+│         └─────────┘             │
+│                                  │
+│ ┌──────────────────────────────┐│
+│ │ 💬 "Harika! Sırtın dümdüz!" ││
+│ └──────────────────────────────┘│
+└──────────────────────────────────┘
+```
+
+### Ekran 5: Sonuç Özeti
+```
+┌──────────────────────────────────┐
+│          🎉 Tebrikler!           │
+├──────────────────────────────────┤
+│                                  │
+│     ┌──────────────────────┐    │
+│     │   📊 Performansın     │    │
+│     │                      │    │
+│     │   Tekrar:    12      │    │
+│     │   Süre:      5:23    │    │
+│     │   Form:      %85     │    │
+│     │   En İyi:    %92     │    │
+│     └──────────────────────┘    │
+│                                  │
+│     ┌──────────────────────┐    │
+│     │  📈 Form Dağılımı     │    │
+│     │  ██████░░ %72 Doğru  │    │
+│     │  ███░░░░ %20 Orta    │    │
+│     │  █░░░░░░ %8  Hatalı  │    │
+│     └──────────────────────┘    │
+│                                  │
+│  💡 "Dizlerini biraz daha bük"  │
+│                                  │
+│ [Tekrar Yap] [Başka Egz.] [🏠]  │
+└──────────────────────────────────┘
+```
+
+---
+
+## 📍 BÖLÜM 3 — Poz Algılama Teknolojisini Geliştirme Yol Haritası
+
+### Mevcut Durum Analizi
+
+| Özellik | Durum | Not |
+|---------|-------|-----|
+| ML Kit Pose Detection | ✅ Çalışıyor | Native Android, LIVE_STREAM modu |
+| EMA Smoothing | ✅ Uygulandı | İskelet titremesini azaltıyor |
+| İskelet Overlay | ✅ Çalışıyor | Tüm 33 landmark çiziliyor |
+| Form Analizi | ⚠️ Temel | Açı hesaplama var ama doğruluk düşük (%30 gösteriyor) |
+| Rep Sayacı | ⚠️ Var | Classification tabanlı, iyileştirme gerekli |
+| Geri Bildirim | ⚠️ Temel | Metin var ama zamanlama/UX zayıf |
+
+### Geliştirme Fazları
+
+#### Faz 1 — Temel Altyapı Düzeltme (1-2 Hafta)
+
+1. **Debug UI'ını temizle**: FPS, latency, input image size gibi bilgileri `debugMode` flag'ine bağla. Production build'de gizle
+2. **Form analiz panelini yeniden tasarla**: Mevcut yarı-saydam overlay çok kalabalık. Sadece skor + anlık talimat yeterli
+3. **Confidence filtering'i düzelt**: `minConfidence = 0.65` altındaki landmark'ları filtrele (zaten kodda var ama UI'a yansımıyor)
+4. **İskelet renk kodlaması**: Güven skoruna göre yeşil/sarı/kırmızı renk geçişi
+
+#### Faz 2 — Akıllı Koçluk Motoru (2-3 Hafta)
+
+1. **State Machine iyileştirmesi**: `ExercisePhase` geçişlerini daha sağlam yap. Mevcut `waiting → down → up → complete` döngüsünde false positive'ler var
+2. **Açı toleransı kalibrasyonu**: Her egzersiz için biomechanics referanslarına göre açı aralıklarını ince-ayar yap
+3. **Temporal validasyon**: Tek frame bazlı karar yerine, 5-frame pencere ortalaması ile karar ver (zaten `LandmarkSmoother` var, bunu validasyon katmanına da uygula)
+4. **Z-ekseni derinlik kontrolü**: Sadece 2D açı değil, landmark'ların z-koordinatını da kullanarak derinlik doğrulaması yap (vücut döndüğünde yanılsamayı engeller)
+
+#### Faz 3 — Zengin Geri Bildirim Sistemi (1-2 Hafta)
+
+1. **Sesli koçluk**: TTS (Text-to-Speech) ile anlık sözlü geri bildirim: "Harika!", "Dizlerini biraz daha bük"
+2. **Haptic feedback protokolü**: Doğru rep = kısa titreşim(150ms), Yanlış form = çift titreşim(100ms-pause-100ms)
+3. **Görsel feedback**: Hatalı eklemin etrafında kırmızı pulse animasyonu (dikkat çekmek için)
+4. **Motivasyon sistemi**: Art arda 3 doğru rep → "Mükemmel seri!" mesajı + özel animasyon
+
+#### Faz 4 — Egzersiz Kütüphanesi Genişletme (Sürekli)
+
+| Öncelik | Egzersiz | Validator Durumu |
+|---------|----------|------------------|
+| ✅ Hazır | Boyun Eğme | `NeckMovementValidator` |
+| ✅ Hazır | Squat | `SquatValidator` |
+| ✅ Hazır | Biceps Curl | `BicepsCurlValidator` |
+| 🔜 Sıradaki | Push-up | Yeni validator gerekli |
+| 🔜 Sıradaki | Plank (süre bazlı) | Yeni validator gerekli |
+| 🔜 Sıradaki | Lunge | Yeni validator gerekli |
+| 📅 Gelecek | Shoulder Press | Yeni validator gerekli |
+| 📅 Gelecek | Jumping Jack | Yeni validator gerekli |
+
+#### Faz 5 — iOS Desteği (2-3 Hafta)
+
+- Native iOS tarafında aynı ML Kit / Vision framework entegrasyonu
+- Platform channel'lar zaten tanımlı, native tarafı implement etmek gerekiyor
+
+### Teknik İyileştirme Detayları
+
+#### Smoothing Pipeline (Mevcut → Hedef)
+
+```
+MEVCUT:
+  Kamera Frame → ML Kit → Raw Landmarks → EMA Smoothing → Çizim
+
+HEDEF:
+  Kamera Frame → ML Kit → Raw Landmarks
+    → Confidence Filter (< 0.65 → drop)
+    → EMA Smoothing (window=5)
+    → Outlier Rejection (önceki frame'den %30+ sapma → ignore)
+    → Z-depth Validation
+    → Açı Hesaplama (Isolate'de)
+    → State Machine Evaluation
+    → UI Update + Feedback
+```
+
+---
+
+## 📍 BÖLÜM 4 — Edge Case'ler ve Çözümleri
+
+### 4.1 — Kamera İzni Reddedildi
+
+| Durum | UX Yanıtı |
+|-------|-----------|
+| **İlk ret** | Nazik açıklama: "Kameranı kullanmadan formunu analiz edemeyiz. Görüntülerin tamamen cihazında kalır." + "Tekrar Sor" butonu |
+| **Kalıcı ret ("Bir daha sorma")** | "Ayarlar'dan kamera iznini açabilirsin" + Ayarlara yönlendirme butonu + "İzinsiz devam et (kamerasız mod)" alternatifi |
+| **Kamerasız mod alternatifi** | Sadece süre bazlı egzersiz (form analizi olmadan) — kullanıcıyı kaybetme |
+
+### 4.2 — Yetersiz Işık
+
+| Durum | UX Yanıtı |
+|-------|-----------|
+| **Algılama** | Kamera feed'inin ortalama parlaklık değerini ölç (native tarafta) |
+| **Uyarı** | Ekranın üstünde sarı banner: "☀️ Ortam biraz karanlık. Daha iyi sonuç için ışığı artır." |
+| **Kritik karanlık** | "Seni net göremiyoruz. Lütfen daha aydınlık bir alana geç." + Egzersiz otomatik duraklatılır |
+| **Akıllı özellik** | Telefon flaşını açma önerisi (ön kamera kullanılıyorsa ekran parlaklığını artır) |
+
+### 4.3 — Kullanıcı Kadrajdan Çıktı
+
+| Durum | UX Yanıtı |
+|-------|-----------|
+| **Kısmi çıkış (bacaklar görünmüyor)** | "📐 Biraz daha geriye çekil, ayaklarını da görelim" — sarı uyarı, egzersiz devam eder ama skor hesaplanmaz |
+| **Tamamen çıkış** | Egzersiz otomatik duraklar + "Tekrar kadrajına gir" mesajı + 10sn geri sayım (sonra oturum sonlandırılır) |
+| **Tekrar girdi** | "Harika, devam edelim!" + 3-2-1 mini geri sayım + egzersiz kaldığı yerden devam eder |
+| **Akıllı özellik** | Kadrajdan çıkmadan ÖNCE kenar uyarısı: kullanıcı kadrajın %85'ine yaklaştığında hafif sarı çerçeve |
+
+### 4.4 — Yanlış Açı / Yandan Bakış
+
+| Durum | UX Yanıtı |
+|-------|-----------|
+| **Algılama** | Sol ve sağ landmark'ların z-farkı aşırıysa → kamera açısı uygun değil |
+| **Uyarı** | "📐 Telefonu karşına, tam cepheden yerleştir" + animasyonlu rehber |
+| **Tolerans** | Hafif açı farkları kabul edilir (±15°), ciddi açı farkında egzersiz duraklatılır |
+
+### 4.5 — Düşük FPS / Performans Sorunu
+
+| Durum | UX Yanıtı |
+|-------|-----------|
+| **FPS < 10** | Arka planda kamera çözünürlüğünü düşür (720p → 480p) |
+| **Devam ederse** | "Daha iyi performans için arka plandaki uygulamaları kapat" önerisi |
+| **Son çare** | İskelet çizim kalitesini düşür (her 2. frame'de çiz), hesaplama frekansını azalt |
+
+### 4.6 — Egzersiz Sırasında Telefon Çağrısı / Bildirim
+
+| Durum | UX Yanıtı |
+|-------|-----------|
+| **Uygulama arka plana geçti** | Otomatik durakla, mevcut ilerlemeyi kaydet |
+| **Geri dönüldü** | "Egzersizin duraklatıldı. Devam etmek ister misin?" + Devam / Bitir seçeneği |
+| **3 dakikadan fazla bekleme** | Oturumu otomatik sonlandır, o ana kadarki sonuçları göster |
+
+### 4.7 — Birden Fazla Kişi Kadrajda
+
+| Durum | UX Yanıtı |
+|-------|-----------|
+| **Algılama** | ML Kit birden fazla pose döndüğünde |
+| **Uyarı** | "Kadrajda birden fazla kişi var. Lütfen yalnız ol veya arkadaşın kadraj dışına çıksın." |
+| **Davranış** | En yüksek confidence'a sahip pozu kullan, diğerlerini yok say |
+
+---
+
+## 📍 BÖLÜM 5 — Onboarding: İlk Kullanım Deneyimi
+
+### Neden Önemli?
+Kamera ile egzersiz yapmak çoğu kullanıcı için **yeni ve garip** bir deneyim. İlk izlenim başarısız olursa kullanıcı bir daha denemez. Onboarding'in amacı:
+- Güven oluşturmak ("bu güvenli, verilerim gizli")
+- Beklenti ayarlamak ("ne yapacağım, nasıl çalışıyor")
+- Heyecan yaratmak ("vay be, bu harika!")
+
+### Onboarding Akışı (3-4 Ekran, Swipe ile Geçiş)
+
+#### Ekran 1 — "AI Koçunla Tanış" 🤖
+```
+┌──────────────────────────────────┐
+│                                  │
+│     ┌─────────────────────┐     │
+│     │  🎬 Animasyon:       │     │
+│     │  Kullanıcı egzersiz  │     │
+│     │  yaparken iskelet     │     │
+│     │  çizgileri beliriyor  │     │
+│     └─────────────────────┘     │
+│                                  │
+│  "Kameranı kullanarak egzersiz   │
+│   formunu analiz ediyoruz"       │
+│                                  │
+│  "Yanlış hareketlerde seni       │
+│   anında uyarıyoruz"             │
+│                                  │
+│          ● ○ ○ ○                 │
+│  ┌──────────────────────────┐   │
+│  │        İLERİ →            │   │
+│  └──────────────────────────┘   │
+└──────────────────────────────────┘
+```
+
+#### Ekran 2 — "Gizlilik Sözümüz" 🔒
+```
+┌──────────────────────────────────┐
+│                                  │
+│     🔒                           │
+│                                  │
+│  "Kamera görüntülerin SADECE     │
+│   cihazında işlenir"             │
+│                                  │
+│  ✅ Sunucuya video gönderilmez   │
+│  ✅ Yüz tanıma yapılmaz          │
+│  ✅ Sadece vücut noktaları       │
+│     analiz edilir                 │
+│                                  │
+│          ○ ● ○ ○                 │
+│  ┌──────────────────────────┐   │
+│  │        İLERİ →            │   │
+│  └──────────────────────────┘   │
+└──────────────────────────────────┘
+```
+
+#### Ekran 3 — "Nasıl Çalışır?" 📐
+```
+┌──────────────────────────────────┐
+│                                  │
+│     ┌─────────────────────┐     │
+│     │  🎬 Animasyon:       │     │
+│     │  Telefonu yere koy   │     │
+│     │  ve geri çekil       │     │
+│     └─────────────────────┘     │
+│                                  │
+│  1️⃣ Egzersizini seç             │
+│  2️⃣ Telefonunu konumlandır      │
+│  3️⃣ Kadrajına gir               │
+│  4️⃣ AI koçun seni yönlendirsin! │
+│                                  │
+│          ○ ○ ● ○                 │
+│  ┌──────────────────────────┐   │
+│  │        İLERİ →            │   │
+│  └──────────────────────────┘   │
+└──────────────────────────────────┘
+```
+
+#### Ekran 4 — "Hadi Deneyelim!" 🎯
+```
+┌──────────────────────────────────┐
+│                                  │
+│     🎯                           │
+│                                  │
+│  "İlk deneme seans 30 saniye.    │
+│   Sadece kadrajına gir ve bir    │
+│   kaç hareket yap!"              │
+│                                  │
+│  Biz senin vücut noktalarını     │
+│  algılayalım ve sana            │
+│  gösterelim.                     │
+│                                  │
+│          ○ ○ ○ ●                 │
+│  ┌──────────────────────────┐   │
+│  │   🚀 İLK EGZERSİZİMİ YAP │   │
+│  └──────────────────────────┘   │
+│                                  │
+│       "Sonra yapacağım" →        │
+└──────────────────────────────────┘
+```
+
+### Onboarding Detayları
+
+| Özellik | Detay |
+|---------|-------|
+| **Ne zaman gösterilir?** | Sadece ilk kez AI Fitness'a girişte. `SharedPreferences` ile `onboarding_seen` flag'i tutulur |
+| **Atlama seçeneği** | Sağ üstte "Atla" butonu her ekranda mevcut (zorlama yok) |
+| **İlk deneme seansı** | 30 saniyelik basit bir "serbest hareket" seansı — kullanıcı iskelet çizgilerini kendi üzerinde görsün, poz algılamanın gerçekliğini hissetsin |
+| **Tekrar erişim** | Ayarlar > "AI Fitness Rehberi" ile tekrar izlenebilir |
+
+---
+
+## 📍 BÖLÜM 6 — Product-Ready Yol Haritası (Büyük Resim)
+
+### Milestone bazlı ilerleme planı:
+
+```mermaid
+gantt
+    title AI Fitness Koçu — Product-Ready Yol Haritası
+    dateFormat  YYYY-MM-DD
+    section Faz 1 - Temel
+    Debug UI Temizliği         :a1, 2026-03-06, 3d
+    Form Analiz UI Yenileme    :a2, after a1, 4d
+    Confidence Filtering       :a3, after a1, 3d
+    İskelet Renk Kodlama      :a4, after a3, 2d
+    section Faz 2 - Akış
+    Egzersiz Kataloğu Ekranı  :b1, after a4, 5d
+    Egzersiz Detay Ekranı     :b2, after b1, 3d
+    Konumlandırma Rehberi      :b3, after b2, 4d
+    Geri Sayım Ekranı         :b4, after b3, 2d
+    section Faz 3 - Koçluk
+    State Machine İyileştirme :c1, after b4, 5d
+    Sesli Geri Bildirim (TTS) :c2, after c1, 3d
+    Haptic Feedback           :c3, after c1, 2d
+    Motivasyon Sistemi        :c4, after c2, 3d
+    section Faz 4 - Polish
+    Onboarding Akışı          :d1, after c4, 4d
+    Edge Case Handling        :d2, after c4, 5d
+    Sonuç Ekranı              :d3, after d2, 3d
+    section Faz 5 - Yayın
+    Beta Testi                :e1, after d3, 7d
+    Bug Fix & Polish          :e2, after e1, 5d
+    Production Release        :milestone, after e2, 0d
+```
+
+### Öncelik Sıralaması
+
+| # | İş Kalemi | Öncelik | Neden? |
+|---|-----------|---------|--------|
+| 1 | Debug UI temizliği & production flag | 🔴 Kritik | Kullanıcı ham debug bilgisi görmemeli |
+| 2 | Form analiz panelini sadeleştir | 🔴 Kritik | Mevcut panel çok kalabalık ve okunaksız |
+| 3 | Egzersiz seçim akışı (katalog + detay) | 🟠 Yüksek | Kullanıcının giriş noktası, şu an yok |
+| 4 | Telefon konumlandırma rehberi | 🟠 Yüksek | Doğru kullanım için zorunlu |
+| 5 | Edge case handling (kadraj dışı, karanlık) | 🟠 Yüksek | Kötü deneyimi önler |
+| 6 | Sonuç/özet ekranı iyileştirme | 🟡 Orta | Mevcut var ama yetersiz |
+| 7 | Sesli geri bildirim | 🟡 Orta | Kullanıcı telefona bakamaz, sesli rehberlik önemli |
+| 8 | Onboarding | 🟡 Orta | İlk izlenim için gerekli ama core flow hazır olmalı önce |
+| 9 | iOS desteği | 🔵 Düşük | Önce Android mükemmel olsun |
+| 10 | Yeni egzersiz ekleme | 🔵 Düşük | Mevcut 3 egzersiz yeterli başlangıç |
+
+---
+
+> [!TIP]
+> **Altın kural:** Kullanıcı egzersiz yaparken telefona bakamaz. Bu yüzden **görsel geri bildirim + sesli geri bildirim + haptic titreşim** üçlüsü birlikte çalışmalı. Sadece ekranda metin göstermek yeterli değil.

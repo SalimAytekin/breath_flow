@@ -8,14 +8,11 @@
     <LinearLayout
         android:id="@+id/top_status_bar"
         android:layout_width="match_parent"
-        android:layout_height="110dp"
+        android:layout_height="80dp"
         android:layout_alignParentTop="true"
         android:background="#90000000"
         android:orientation="horizontal"
-        android:paddingTop="32dp"
-        android:paddingBottom="12dp"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
+        android:padding="12dp"
         android:gravity="center_vertical">
 
         <!-- Egzersiz Bilgileri -->
@@ -31,14 +28,14 @@
                 android:layout_height="wrap_content"
                 android:text="Boyun Döndürme Egzersizi"
                 android:textColor="@android:color/white"
-                android:textSize="20sp"
+                android:textSize="18sp"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="6dp">
+                android:layout_marginTop="4dp">
 
                 <TextView
                     android:id="@+id/tv_timer"
@@ -46,7 +43,7 @@
                     android:layout_height="wrap_content"
                     android:text="00:00"
                     android:textColor="#4CAF50"
-                    android:textSize="16sp"
+                    android:textSize="14sp"
                     android:textStyle="bold"
                     android:layout_marginEnd="16dp" />
 
@@ -68,8 +65,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center"
-            android:layout_marginEnd="20dp">
+            android:gravity="center">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -85,34 +81,24 @@
                 android:layout_height="wrap_content"
                 android:text="0"
                 android:textColor="@android:color/white"
-                android:textSize="28sp"
+                android:textSize="24sp"
                 android:textStyle="bold" />
 
         </LinearLayout>
 
         <!-- Durdur Butonu -->
-        <ImageButton
+        <Button
             android:id="@+id/btn_stop_coaching"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:src="@android:drawable/ic_media_pause"
-            android:scaleType="centerInside"
-            android:backgroundTint="#888888"
-            android:elevation="4dp" />
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="DURDUR"
+            android:textSize="12sp"
+            android:minHeight="40dp"
+            android:padding="8dp"
+            android:layout_marginStart="16dp"
+            android:backgroundTint="#F44336" />
 
     </LinearLayout>
-
-    <!-- Merkez İlerleme Çemberi (Progress Arc) -->
-    <ProgressBar
-        android:id="@+id/progress_arc"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="240dp"
-        android:layout_height="240dp"
-        android:layout_centerInParent="true"
-        android:progressDrawable="@drawable/circular_progress_drawable"
-        android:max="100"
-        android:progress="0"
-        android:rotation="-90" />
 
     <!-- Sağ Panel - Detaylı Bilgiler -->
     <LinearLayout
@@ -345,26 +331,23 @@
     <LinearLayout
         android:id="@+id/bottom_feedback_panel"
         android:layout_width="match_parent"
-        android:layout_height="220dp"
+        android:layout_height="150dp"
         android:layout_alignParentBottom="true"
         android:background="#90000000"
         android:orientation="horizontal"
-        android:paddingTop="32dp"
-        android:paddingBottom="16dp"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:gravity="top|start">
+        android:padding="16dp"
+        android:gravity="center_vertical">
 
         <!-- Emoji/Icon -->
         <TextView
             android:id="@+id/tv_feedback_emoji"
-            android:layout_width="72dp"
-            android:layout_height="72dp"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
             android:text="🔄"
-            android:textSize="40sp"
+            android:textSize="32sp"
             android:gravity="center"
             android:background="#44FFFFFF"
-            android:layout_marginEnd="20dp" />
+            android:layout_marginEnd="16dp" />
 
         <!-- Feedback Mesajı -->
         <LinearLayout
@@ -379,9 +362,9 @@
                 android:layout_height="wrap_content"
                 android:text="Başlayın"
                 android:textColor="#4CAF50"
-                android:textSize="22sp"
+                android:textSize="18sp"
                 android:textStyle="bold"
-                android:layout_marginBottom="6dp" />
+                android:layout_marginBottom="4dp" />
 
             <TextView
                 android:id="@+id/tv_feedback_message"
@@ -389,8 +372,7 @@
                 android:layout_height="wrap_content"
                 android:text="Boyunuzu yavaşça sağa ve sola döndürün"
                 android:textColor="@android:color/white"
-                android:textSize="18sp"
-                android:textStyle="normal"
+                android:textSize="15sp"
                 android:maxLines="4"
                 android:lineSpacingMultiplier="1.2"
                 android:ellipsize="end"
