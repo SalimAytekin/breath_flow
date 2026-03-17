@@ -161,8 +161,8 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
         feedbackTextStack.spacing = 4
         feedbackTextStack.translatesAutoresizingMaskIntoConstraints = false
         
-        bottomPanel.addSubview(feedbackEmojiLabel)
-        bottomPanel.addSubview(feedbackTextStack)
+        bottomBarContentView.addSubview(feedbackEmojiLabel)
+        bottomBarContentView.addSubview(feedbackTextStack)
         
         NSLayoutConstraint.activate([
             bottomPanel.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -170,14 +170,14 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
             bottomPanel.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             bottomPanel.heightAnchor.constraint(equalToConstant: 150),
             
-            feedbackEmojiLabel.leadingAnchor.constraint(equalTo: bottomPanel.leadingAnchor, constant: 16),
-            feedbackEmojiLabel.centerYAnchor.constraint(equalTo: bottomPanel.centerYAnchor),
+            feedbackEmojiLabel.leadingAnchor.constraint(equalTo: bottomBarContentView.leadingAnchor, constant: 16),
+            feedbackEmojiLabel.centerYAnchor.constraint(equalTo: bottomBarContentView.centerYAnchor),
             feedbackEmojiLabel.widthAnchor.constraint(equalToConstant: 60),
             feedbackEmojiLabel.heightAnchor.constraint(equalToConstant: 60),
             
             feedbackTextStack.leadingAnchor.constraint(equalTo: feedbackEmojiLabel.trailingAnchor, constant: 16),
-            feedbackTextStack.trailingAnchor.constraint(equalTo: bottomPanel.trailingAnchor, constant: -16),
-            feedbackTextStack.centerYAnchor.constraint(equalTo: bottomPanel.centerYAnchor),
+            feedbackTextStack.trailingAnchor.constraint(equalTo: bottomBarContentView.trailingAnchor, constant: -16),
+            feedbackTextStack.centerYAnchor.constraint(equalTo: bottomBarContentView.centerYAnchor),
         ])
         
 

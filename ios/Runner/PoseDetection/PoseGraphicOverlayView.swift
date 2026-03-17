@@ -13,10 +13,10 @@ class PoseGraphicOverlayView: UIView {
     private static let strokeWidth: CGFloat = 4.0
     
     // ═══════════════════════════════════════════
-    // EMA Smoothing parametreleri (Android ile aynı)
+    // EMA Smoothing parametreleri
     // ═══════════════════════════════════════════
-    private static let emaAlpha: CGFloat = 0.35
-    private static let deadZonePx: CGFloat = 2.0
+    private static let emaAlpha: CGFloat = 0.15 // Titremeyi (jitter) azaltmak için düşürüldü
+    private static let deadZonePx: CGFloat = 4.0 // Küçük oynamaları yoksaymak için artırıldı
     
     // Smoothed pozisyonlar — frame'ler arasında tutuluyor
     private var smoothedPositions: [String: [CGFloat]] = [:]
@@ -215,7 +215,7 @@ class PoseGraphicOverlayView: UIView {
     // MARK: - Drawing Helpers
     
     /// Minimum güvenilirlik eşiği — bu değerin altındaki landmark'lar çizilmez
-    private static let minDrawConfidence: Float = 0.5
+    private static let minDrawConfidence: Float = 0.75 // Hayali el/kol (ghost limbs) çizimini engellemek için artırıldı
     
     private func drawSmoothedPoint(context: CGContext, landmark: PoseLandmark, color: UIColor) {
         // Düşük güvenilirlikli landmark'ları çizme (hayalet uzuv önleme)
