@@ -175,67 +175,40 @@ class ExerciseConfig {
   // 🏋️ Hazır Egzersiz Konfigürasyonları
   // ─────────────────────────────────────────
 
-  /// Biceps Curl — Sağ Kol
-  static ExerciseConfig bicepsCurlRight() => ExerciseConfig(
-        type: ExerciseType.bicepsCurl,
-        displayName: 'Biceps Curl (Sağ)',
-        description: 'Sağ kol biceps curl hareketi. Dirsek sabit, kontrollü hareket.',
-        eccentricThreshold: 140.0,
-        concentricThreshold: 50.0,
-        completionThreshold: 140.0,
-        minRangeOfMotion: 60.0,
+  /// Omuz Germe (Shoulder Stretch)
+  static ExerciseConfig shoulderStretch() => ExerciseConfig(
+        type: ExerciseType.shoulderStretch,
+        displayName: 'Omuz Germe',
+        description: 'Kollarınızı sırayla yukarı kaldırarak omuz kaslarını gerin ve mobilize edin. Her pozisyonda 3 saniye tutun.',
+        eccentricThreshold: 0,
+        concentricThreshold: 0,
+        completionThreshold: 0,
+        minRangeOfMotion: 0,
         primaryLandmarks: [
           PoseLandmarkIndex.rightShoulder,
           PoseLandmarkIndex.rightElbow,
           PoseLandmarkIndex.rightWrist,
         ],
         secondaryLandmarks: [
-          PoseLandmarkIndex.rightHip,
-        ],
-        difficulty: DifficultyLevel.easy,
-        estimatedDuration: const Duration(minutes: 3),
-        estimatedCalories: 25,
-        iconData: Icons.fitness_center,
-        gradientColors: const [Color(0xFFC4956A), Color(0xFFD4A574)],
-        targetMuscle: 'Biceps',
-        phonePosition: PhonePosition.table,
-        instructions: [
-          'Ayakta dur, sağ elinde ağırlık tut',
-          'Dirseğini vücuduna yapıştır, sabit tut',
-          'Ağırlığı omzuna doğru kontrollü kaldır',
-          'Yavaşça aşağıya indir, kolunu tamamen düzleştir',
-        ],
-      );
-
-  /// Biceps Curl — Sol Kol
-  static ExerciseConfig bicepsCurlLeft() => ExerciseConfig(
-        type: ExerciseType.bicepsCurl,
-        displayName: 'Biceps Curl (Sol)',
-        description: 'Sol kol biceps curl hareketi. Dirsek sabit, kontrollü hareket.',
-        eccentricThreshold: 140.0,
-        concentricThreshold: 50.0,
-        completionThreshold: 140.0,
-        minRangeOfMotion: 60.0,
-        primaryLandmarks: [
           PoseLandmarkIndex.leftShoulder,
           PoseLandmarkIndex.leftElbow,
           PoseLandmarkIndex.leftWrist,
-        ],
-        secondaryLandmarks: [
+          PoseLandmarkIndex.rightHip,
           PoseLandmarkIndex.leftHip,
         ],
+        targetReps: 5,
         difficulty: DifficultyLevel.easy,
-        estimatedDuration: const Duration(minutes: 3),
-        estimatedCalories: 25,
-        iconData: Icons.fitness_center,
+        estimatedDuration: const Duration(minutes: 4),
+        estimatedCalories: 20,
+        iconData: Icons.accessibility_new,
         gradientColors: const [Color(0xFFC4956A), Color(0xFFD4A574)],
-        targetMuscle: 'Biceps',
+        targetMuscle: 'Omuz & Sırt',
         phonePosition: PhonePosition.table,
         instructions: [
-          'Ayakta dur, sol elinde ağırlık tut',
-          'Dirseğini vücuduna yapıştır, sabit tut',
-          'Ağırlığı omzuna doğru kontrollü kaldır',
-          'Yavaşça aşağıya indir, kolunu tamamen düzleştir',
+          'Ayakta dur, kollarını yanına indir',
+          'Sağ kolunu yavaşça yukarı kaldır',
+          'Kolun hedef açıya gelince 3 saniye tut',
+          'Yavaşça indir, sonra sol kolla tekrarla',
         ],
       );
 
@@ -243,7 +216,7 @@ class ExerciseConfig {
   static ExerciseConfig squat() => ExerciseConfig(
         type: ExerciseType.squat,
         displayName: 'Squat',
-        description: 'Diz bükme hareketi. Sırt düz, diz ayak ucunu geçmemeli.',
+        description: 'Kalça-diz-ayak bileği açısını analiz ederek doğru squat formu sağlar. Diz hizası ve sırt düzlüğü kontrol edilir.',
         eccentricThreshold: 140.0,
         concentricThreshold: 90.0,
         completionThreshold: 160.0,
@@ -258,18 +231,19 @@ class ExerciseConfig {
           PoseLandmarkIndex.leftKnee,
           PoseLandmarkIndex.leftAnkle,
         ],
+        targetReps: 8,
         difficulty: DifficultyLevel.medium,
         estimatedDuration: const Duration(minutes: 5),
         estimatedCalories: 45,
-        iconData: Icons.accessibility_new,
+        iconData: Icons.fitness_center,
         gradientColors: const [Color(0xFF8BA5C4), Color(0xFF7B95B4)],
         targetMuscle: 'Bacak & Kalça',
         phonePosition: PhonePosition.floor,
         instructions: [
-          'Ayaklar omuz genişliğinde açık dur',
-          'Sırtını düz tut, göğsünü dik tut',
-          'Kalçanı geriye iterek çömel',
-          'Diz açın 90° olacak şekilde in, sonra kalk',
+          'Telefonu yere koy, tam vücudun görünsün',
+          'Ayaklar omuz genişliğinde, sırt düz',
+          'Kalçanı geriye iterek yavaşça çömel',
+          'Alt noktada 1 saniye tut, sonra kalk',
         ],
       );
 
@@ -374,7 +348,7 @@ class ExerciseConfig {
   static List<ExerciseConfig> allExercises() => [
         neckMovement(),
         squat(),
-        bicepsCurlRight(),
+        shoulderStretch(),
         pushUpLocked(),
         lungeLocked(),
         shoulderPressLocked(),

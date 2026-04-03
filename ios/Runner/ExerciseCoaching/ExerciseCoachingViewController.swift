@@ -353,16 +353,7 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
                 self.feedbackTitleLabel.textColor = .white
                 self.bottomPanel.backgroundColor = UIColor.clear // Nötr
             }
-        }
-    }kEmojiLabel.text = "🏋️"
-                self.feedbackTitleLabel.text = "Koç Diyor"
-                self.feedbackTitleLabel.textColor = UIColor(red: 0.13, green: 0.59, blue: 0.95, alpha: 1)
-            } else {
-                self.feedbackEmojiLabel.text = "🔄"
-                self.feedbackTitleLabel.text = "Devam"
-                self.feedbackTitleLabel.textColor = .white
-            }
-        }
+    }
     }
     
     // MARK: - Actions

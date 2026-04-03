@@ -177,6 +177,10 @@ class ExerciseCoachProcessor: NSObject {
             return "🎯 \(exerciseName) başlıyor!\n🤲 Elinizle başınızı yana eğin\n⏱️ 20-30 saniye tutun"
         case "neck_rotation_mobilization":
             return "🎯 \(exerciseName) başlıyor!\n🔄 Başınızı yavaşça sağa-sola çevirin\n🔄 Sonra sağa-sola yana eğin"
+        case "squat":
+            return "🎯 \(exerciseName) başlıyor!\n🦵 Telefonu yere koyun, tam vücut görünsün\n⬇️ 8 tekrar squat yapacağız!"
+        case "shoulder_stretch", "shoulderstretch":
+            return "🎯 \(exerciseName) başlıyor!\n💪 Kollarınızı sırayla kaldıracaksınız\n⏱️ Her pozisyonda 3 saniye tutun"
         default:
             return "🎯 \(exerciseName) başlıyor!\n📱 Kameraya bakın, hazır olduğunuzda başlayacağız\n▶️ Koçunuz hazır!"
         }

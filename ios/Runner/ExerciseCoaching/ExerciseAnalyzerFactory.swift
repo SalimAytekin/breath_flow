@@ -11,6 +11,10 @@ class ExerciseAnalyzerFactory {
         switch exerciseId.lowercased() {
         case "neck_side_bend", "neck_lateral_flexion", "neckmovement":
             return NeckSideBendAnalyzer()
+        case "squat":
+            return SquatAnalyzer()
+        case "shoulder_stretch", "shoulderstretch":
+            return ShoulderStretchAnalyzer()
         default:
             return GenericExerciseAnalyzer(exerciseName: exerciseId, exerciseType: exerciseId, rules: nil, feedbackRules: nil)
         }
@@ -24,5 +28,9 @@ class ExerciseAnalyzerFactory {
     }
     
     /// Desteklenen egzersiz ID'leri
-    static let supportedExerciseIds = ["neck_side_bend", "neck_lateral_flexion", "neckmovement"]
+    static let supportedExerciseIds = [
+        "neck_side_bend", "neck_lateral_flexion", "neckmovement",
+        "squat",
+        "shoulder_stretch", "shoulderstretch"
+    ]
 }

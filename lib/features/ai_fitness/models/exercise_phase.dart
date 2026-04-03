@@ -21,6 +21,7 @@ enum ExerciseType {
   pushUp,
   shoulderPress,
   neckMovement,
+  shoulderStretch,
 }
 
 /// Bir tekrarın sonucu
