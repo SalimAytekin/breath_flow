@@ -23,6 +23,7 @@ class PoseGraphicOverlayView: UIView {
     
     // Mevcut poz verisi
     private var currentPose: Pose?
+    var currentExerciseId: String?
     
     // Görüntü boyutları (koordinat dönüşümü için)
     private var imageWidth: CGFloat = 1.0
@@ -150,16 +151,78 @@ class PoseGraphicOverlayView: UIView {
         // Glow (Neon) Efekti Ekle
         context.setShadow(offset: .zero, blur: CGFloat(10.0 + (currentAccuracy * 15.0)), color: shadowColor)
         
-        // Çizilecek noktaları al
-        let nose = pose.landmark(ofType: .nose)
-        let leftShoulder = pose.landmark(ofType: .leftShoulder)
-        let rightShoulder = pose.landmark(ofType: .rightShoulder)
+        let exerciseId = currentExerciseId?.lowercased() ?? ""
         
-        // Sade UI vizyonu: Sadece burun noktası ve omuz hizası
-        drawSmoothedPoint(context: context, landmark: nose, color: dynamicColor)
-        
-        // Omuz çizgisini yarı saydam çiz
-        drawSmoothedLine(context: context, from: leftShoulder, to: rightShoulder, color: dynamicColor.withAlphaComponent(0.5))
+        switch exerciseId {
+        case "neck_side_bend", "neck_lateral_flexion", "neckmovement":
+            let nose = pose.landmark(ofType: .nose)
+            let leftShoulder = pose.landmark(ofType: .leftShoulder)
+            let rightShoulder = pose.landmark(ofType: .rightShoulder)
+            let leftEar = pose.landmark(ofType: .leftEar)
+            let rightEar = pose.landmark(ofType: .rightEar)
+            
+            drawSmoothedPoint(context: context, landmark: nose, color: dynamicColor)
+            drawSmoothedPoint(context: context, landmark: leftEar, color: dynamicColor)
+            drawSmoothedPoint(context: context, landmark: rightEar, color: dynamicColor)
+            drawSmoothedLine(context: context, from: leftShoulder, to: rightShoulder, color: dynamicColor.withAlphaComponent(0.5))
+            
+        case "squat":
+            let leftHip = pose.landmark(ofType: .leftHip)
+            let rightHip = pose.landmark(ofType: .rightHip)
+            let leftKnee = pose.landmark(ofType: .leftKnee)
+            let rightKnee = pose.landmark(ofType: .rightKnee)
+            let leftAnkle = pose.landmark(ofType: .leftAnkle)
+            let rightAnkle = pose.landmark(ofType: .rightAnkle)
+            
+            // Bel çizgisi
+            drawSmoothedLine(context: context, from: leftHip, to: rightHip, color: dynamicColor.withAlphaComponent(0.5))
+            // Sol Bacak
+            drawSmoothedLine(context: context, from: leftHip, to: leftKnee, color: dynamicColor)
+            drawSmoothedLine(context: context, from: leftKnee, to: leftAnkle, color: dynamicColor)
+            // Sağ Bacak
+            drawSmoothedLine(context: context, from: rightHip, to: rightKnee, color: dynamicColor)
+            drawSmoothedLine(context: context, from: rightKnee, to: rightAnkle, color: dynamicColor)
+            
+            // Eklemler
+            drawSmoothedPoint(context: context, landmark: leftHip, color: dynamicColor)
+            drawSmoothedPoint(context: context, landmark: rightHip, color: dynamicColor)
+            drawSmoothedPoint(context: context, landmark: leftKnee, color: dynamicColor)
+            drawSmoothedPoint(context: context, landmark: rightKnee, color: dynamicColor)
+            
+        case "shoulder_stretch", "shoulderstretch":
+            let leftShoulder = pose.landmark(ofType: .leftShoulder)
+            let rightShoulder = pose.landmark(ofType: .rightShoulder)
+            let leftElbow = pose.landmark(ofType: .leftElbow)
+            let rightElbow = pose.landmark(ofType: .rightElbow)
+            let leftWrist = pose.landmark(ofType: .leftWrist)
+            let rightWrist = pose.landmark(ofType: .rightWrist)
+            let leftHip = pose.landmark(ofType: .leftHip)
+            let rightHip = pose.landmark(ofType: .rightHip)
+            
+            // Kollar
+            drawSmoothedLine(context: context, from: leftShoulder, to: leftElbow, color: dynamicColor)
+            drawSmoothedLine(context: context, from: leftElbow, to: leftWrist, color: dynamicColor)
+            drawSmoothedLine(context: context, from: rightShoulder, to: rightElbow, color: dynamicColor)
+            drawSmoothedLine(context: context, from: rightElbow, to: rightWrist, color: dynamicColor)
+            
+            // Gövde bağlantısı
+            drawSmoothedLine(context: context, from: leftShoulder, to: rightShoulder, color: dynamicColor.withAlphaComponent(0.5))
+            drawSmoothedLine(context: context, from: leftShoulder, to: leftHip, color: dynamicColor.withAlphaComponent(0.3))
+            drawSmoothedLine(context: context, from: rightShoulder, to: rightHip, color: dynamicColor.withAlphaComponent(0.3))
+            
+            // Eklemler
+            drawSmoothedPoint(context: context, landmark: leftWrist, color: dynamicColor)
+            drawSmoothedPoint(context: context, landmark: rightWrist, color: dynamicColor)
+            drawSmoothedPoint(context: context, landmark: leftElbow, color: dynamicColor)
+            drawSmoothedPoint(context: context, landmark: rightElbow, color: dynamicColor)
+            
+        default:
+            let nose = pose.landmark(ofType: .nose)
+            let leftShoulder = pose.landmark(ofType: .leftShoulder)
+            let rightShoulder = pose.landmark(ofType: .rightShoulder)
+            drawSmoothedPoint(context: context, landmark: nose, color: dynamicColor)
+            drawSmoothedLine(context: context, from: leftShoulder, to: rightShoulder, color: dynamicColor.withAlphaComponent(0.5))
+        }
     }
     
     // MARK: - Drawing Helpers

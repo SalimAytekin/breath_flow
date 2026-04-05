@@ -237,6 +237,11 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
         PoseDetectorToExerciseAdapter.shared.setExerciseCoachProcessor(processor)
         PoseDetectorToExerciseAdapter.shared.setEnabled(true)
         
+        // Overlay'e gönder
+        if let exerciseId = data["id"] as? String {
+            poseOverlay.currentExerciseId = exerciseId
+        }
+        
         // Egzersizi başlat
         processor.startExercise(data)
     }

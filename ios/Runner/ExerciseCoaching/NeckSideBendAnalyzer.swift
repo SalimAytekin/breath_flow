@@ -22,11 +22,11 @@ class NeckSideBendAnalyzer: ExerciseAnalyzer {
     // ═══════════════════════════════════════════
     // Açı ve Hız Eşikleri
     // ═══════════════════════════════════════════
-    private static let centerThreshold: Double = 8.0
-    private static let minTiltAngle: Double = 10.0 // Önceki 12.0 idi. Azaltıldı, daha erken tepki verecek.
-    private static let goodTiltAngle: Double = 16.0 // Önceki 20.0 idi. "İyi gidiyorsun" mesajı daha rahat çıkacak.
-    private static let targetTiltAngle: Double = 22.0 // Önceki 30.0 idi. "Tamam tut!" açısı insani seviyeye indirildi.
-    private static let maxSafeAngle: Double = 40.0 // Önceki 45.0 idi. Güvenli bölge daraltıldı.
+    private static let centerThreshold: Double = 6.0
+    private static let minTiltAngle: Double = 8.0 // Önceki 10.0 idi.
+    private static let goodTiltAngle: Double = 12.0 // Önceki 16.0 idi.
+    private static let targetTiltAngle: Double = 16.0 // Önceki 22.0 idi. Kulak omuza değmeden rahatça tutabilmek için düşürüldü.
+    private static let maxSafeAngle: Double = 35.0 // Önceki 40.0 idi. Güvenli bölge daraltıldı.
     
     // Hız Kontrolü (Derece / Saniye)
     private static let maxAllowedSpeed: Double = 15.0 

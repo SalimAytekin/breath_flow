@@ -1,5 +1,6 @@
 import Foundation
 import MLKitPoseDetection
+import MLKitVision
 
 /// Squat (Diz Bükme) Egzersizi Analizörü.
 /// Kalça-Diz-Ayak bileği açısını kullanarak tam biyomekanik analiz yapar.
@@ -289,7 +290,7 @@ class SquatAnalyzer: ExerciseAnalyzer {
     
     /// Üç nokta arasındaki açıyı hesapla (derece).
     /// a-b-c açısı, b merkez noktadır.
-    private func calculateAngle(a: Vision3DPoint, b: Vision3DPoint, c: Vision3DPoint) -> Double {
+    private func calculateAngle(a: VisionPoint, b: VisionPoint, c: VisionPoint) -> Double {
         let ba = CGPoint(x: CGFloat(a.x - b.x), y: CGFloat(a.y - b.y))
         let bc = CGPoint(x: CGFloat(c.x - b.x), y: CGFloat(c.y - b.y))
         
@@ -304,8 +305,8 @@ class SquatAnalyzer: ExerciseAnalyzer {
     }
     
     /// Diz valgus (içe çökme) kontrolü
-    private func checkKneeValgus(leftKnee: Vision3DPoint, rightKnee: Vision3DPoint,
-                                  leftAnkle: Vision3DPoint, rightAnkle: Vision3DPoint) -> Bool {
+    private func checkKneeValgus(leftKnee: VisionPoint, rightKnee: VisionPoint,
+                                  leftAnkle: VisionPoint, rightAnkle: VisionPoint) -> Bool {
         let kneeWidth = abs(Double(rightKnee.x - leftKnee.x))
         let ankleWidth = abs(Double(rightAnkle.x - leftAnkle.x))
         
@@ -327,7 +328,7 @@ class SquatAnalyzer: ExerciseAnalyzer {
     }
     
     /// İki noktanın ortası
-    private func midpoint(_ a: Vision3DPoint, _ b: Vision3DPoint) -> CGPoint {
+    private func midpoint(_ a: VisionPoint, _ b: VisionPoint) -> CGPoint {
         return CGPoint(x: CGFloat(a.x + b.x) / 2.0, y: CGFloat(a.y + b.y) / 2.0)
     }
     

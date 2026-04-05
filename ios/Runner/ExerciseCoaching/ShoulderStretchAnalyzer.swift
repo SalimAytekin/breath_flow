@@ -1,5 +1,6 @@
 import Foundation
 import MLKitPoseDetection
+import MLKitVision
 
 /// Omuz Germe (Shoulder Stretch) Egzersizi Analizörü.
 /// Kol-gövde açısını (wrist-shoulder-hip) kullanarak omuz mobilizasyonu analizi yapar.
@@ -297,8 +298,8 @@ class ShoulderStretchAnalyzer: ExerciseAnalyzer {
     // ═══════════════════════════════════════════
     
     /// Kol-gövde açısı: Wrist/Elbow → Shoulder → Hip
-    private func calculateArmAngle(wrist: Vision3DPoint, elbow: Vision3DPoint, 
-                                    shoulder: Vision3DPoint, hip: Vision3DPoint) -> Double {
+    private func calculateArmAngle(wrist: VisionPoint, elbow: VisionPoint, 
+                                    shoulder: VisionPoint, hip: VisionPoint) -> Double {
         // Shoulder-Hip vektörü (gövde)
         let bodyVec = CGPoint(x: CGFloat(hip.x - shoulder.x), y: CGFloat(hip.y - shoulder.y))
         // Shoulder-Wrist vektörü (kol)
