@@ -36,6 +36,8 @@ class ShoulderStretchAnalyzer: ExerciseAnalyzer {
     // Hız Kontrolü
     private static let maxAllowedSpeed: Double = 60.0       // Derece/saniye
     private static let speedWarningCooldownMs: Int64 = 2500
+    private static let backLeanThreshold: Double = 20.0     // Sırt / postür eğilme limiti
+    
     
     // Zamanlayıcılar
     private static let holdDurationMs: Int64 = 1500         // 1.5 saniye tutma
@@ -129,22 +131,34 @@ class ShoulderStretchAnalyzer: ExerciseAnalyzer {
         lastArmAngle = currentAngle
         lastTimestamp = now
         
-        let debugInfo: [String: Any] = [
-            "armAngle": String(format: "%.1f°", currentAngle),
+        let backLean = calculateBackLean(
+            shoulder: midpoint(rightShoulder.position, leftShoulder.position),
+            hip: midpoint(rightHip.position, leftHip.position)
+        )
+        
+        let debugInfo: [String: Any]? = [
+            "rightArmAngle": String(format: "%.1f°", calculateArmAngle(wrist: rightWrist.position, elbow: rightElbow.position, shoulder: rightShoulder.position, hip: rightHip.position)),
+            "leftArmAngle": String(format: "%.1f°", calculateArmAngle(wrist: leftWrist.position, elbow: leftElbow.position, shoulder: leftShoulder.position, hip: leftHip.position)),
             "speed": String(format: "%.1f°/sn", currentSpeed),
             "state": String(describing: currentState),
-            "repCount": "\(repCount)/\(targetReps)"
+            "backLean": String(format: "%.1f°", backLean)
         ]
         
-        return processState(armAngle: currentAngle, currentSpeed: currentSpeed, 
-                          now: now, debugInfo: debugInfo)
+        return processState(armAngle: currentAngle, currentSpeed: currentSpeed, backLean: backLean, now: now, debugInfo: debugInfo)
     }
     
     // ═══════════════════════════════════════════
     // State Machine
     // ═══════════════════════════════════════════
-    private func processState(armAngle: Double, currentSpeed: Double, 
+    private func processState(armAngle: Double, currentSpeed: Double, backLean: Double,
                             now: Int64, debugInfo: [String: Any]?) -> AnalysisResult {
+        
+        // Postür (Diklik) Kontrolü
+        let isHoldingOrRaising = (currentState == .raisingRight || currentState == .holdingRight ||
+                                  currentState == .raisingLeft || currentState == .holdingLeft)
+        if isHoldingOrRaising && backLean > ShoulderStretchAnalyzer.backLeanThreshold {
+            return AnalysisResult(accuracy: 0.35, feedback: "⚠️ Gövdeniz eğriliyor!\n📏 Sırtınızı tamamen dik tutun\nOmuzdan güç alın.", debugInfo: debugInfo)
+        }
         
         // Global Hız Kontrolü (sadece omuzu germe/kaldırma fazını kontrol eder, indirme aşamasında serbest)
         let isMoving = (currentState == .raisingRight || currentState == .raisingLeft)
@@ -247,7 +261,7 @@ class ShoulderStretchAnalyzer: ExerciseAnalyzer {
             return AnalysisResult(accuracy: 0.5, feedback: "😌 Kollarınızı rahat bırakın...\nMola veriyorsunuz.", debugInfo: debugInfo)
             
         case .repComplete:
-            return AnalysisResult(accuracy: 1.0, feedback: "🏆 Egzersiz tamamlandı!\n👏 \(targetReps) tekrar başarıyla yapıldı!\n💪 Omuzlarınız teşekkür ediyor!", isRepetitionComplete: true, debugInfo: debugInfo)
+            return AnalysisResult(accuracy: 1.0, feedback: "🏆 Egzersiz tamamlandı!\n👏 \(targetReps) tekrar başarıyla yapıldı!\n💪 Omuzlarınız teşekkür ediyor!", isRepetitionComplete: false, debugInfo: debugInfo)
         }
     }
     
@@ -342,6 +356,19 @@ class ShoulderStretchAnalyzer: ExerciseAnalyzer {
         
         let cosAngle = max(-1.0, min(1.0, dotProduct / (magBody * magArm)))
         return acos(cosAngle) * 180.0 / .pi
+    }
+    
+    /// Sırt eğim açısı hesapla
+    private func calculateBackLean(shoulder: CGPoint, hip: CGPoint) -> Double {
+        let dx = Double(shoulder.x - hip.x)
+        let dy = Double(shoulder.y - hip.y)
+        guard abs(dy) > 0 else { return 0 }
+        return abs(atan2(dx, -dy)) * 180.0 / .pi
+    }
+    
+    /// İki noktanın ortası
+    private func midpoint(_ a: VisionPoint, _ b: VisionPoint) -> CGPoint {
+        return CGPoint(x: CGFloat(a.x + b.x) / 2.0, y: CGFloat(a.y + b.y) / 2.0)
     }
     
     func reset() {

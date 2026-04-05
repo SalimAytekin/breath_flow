@@ -37,6 +37,10 @@ class CoachingVoiceService {
         _isSpeaking = false;
       });
 
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        await _tts.setVoice({"name": "Yelda", "locale": "tr-TR"});
+      }
+
       _isInitialized = true;
       if (kDebugMode) debugPrint('🎙️ TTS initialized (tr-TR)');
     } catch (e) {
@@ -139,9 +143,12 @@ class CoachingVoiceService {
     _isSpeaking = true;
 
     try {
+      // Emojileri temizle ki Siri "Gülümseyen yüz" diye okumasın
+      final cleanText = text.replaceAll(RegExp(r'[^\p{L}\p{N}\s\.\,\!\?\:\;]', unicode: true), '');
+      
       // Önceki konuşmayı durdur (priority ise)
       if (priority) await _tts.stop();
-      await _tts.speak(text);
+      await _tts.speak(cleanText);
     } catch (e) {
       _isSpeaking = false;
       if (kDebugMode) debugPrint('⚠️ TTS speak error: $e');

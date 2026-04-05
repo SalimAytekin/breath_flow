@@ -75,14 +75,12 @@ class SquatAnalyzer: ExerciseAnalyzer {
         let leftShoulder = pose.landmark(ofType: .leftShoulder)
         
         let lowerBodyConfidence = min(
-            min(rightHip.inFrameLikelihood, rightKnee.inFrameLikelihood),
-            min(rightAnkle.inFrameLikelihood, leftHip.inFrameLikelihood)
+            max(rightHip.inFrameLikelihood, leftHip.inFrameLikelihood),
+            min(max(rightKnee.inFrameLikelihood, leftKnee.inFrameLikelihood),
+                max(rightAnkle.inFrameLikelihood, leftAnkle.inFrameLikelihood))
         )
         
-        let extraConfidence = min(
-            min(leftKnee.inFrameLikelihood, leftAnkle.inFrameLikelihood),
-            min(rightShoulder.inFrameLikelihood, leftShoulder.inFrameLikelihood)
-        )
+        let extraConfidence = max(rightShoulder.inFrameLikelihood, leftShoulder.inFrameLikelihood)
         
         let minConfidence = min(lowerBodyConfidence, extraConfidence)
         
@@ -98,13 +96,19 @@ class SquatAnalyzer: ExerciseAnalyzer {
         // ═══════════════════════════════════════════
         // Açı Hesaplama — İki bacağın ortalaması
         // ═══════════════════════════════════════════
-        let rightKneeAngle = calculateAngle(
-            a: rightHip.position, b: rightKnee.position, c: rightAnkle.position
-        )
-        let leftKneeAngle = calculateAngle(
-            a: leftHip.position, b: leftKnee.position, c: leftAnkle.position
-        )
-        let rawKneeAngle = (rightKneeAngle + leftKneeAngle) / 2.0
+        let rightLegConfidence = rightHip.inFrameLikelihood + rightKnee.inFrameLikelihood + rightAnkle.inFrameLikelihood
+        let leftLegConfidence = leftHip.inFrameLikelihood + leftKnee.inFrameLikelihood + leftAnkle.inFrameLikelihood
+        
+        let rawKneeAngle: Double
+        if rightLegConfidence > leftLegConfidence {
+            rawKneeAngle = calculateAngle(
+                a: rightHip.position, b: rightKnee.position, c: rightAnkle.position
+            )
+        } else {
+            rawKneeAngle = calculateAngle(
+                a: leftHip.position, b: leftKnee.position, c: leftAnkle.position
+            )
+        }
         
         // EMA Smoothing
         smoothedKneeAngle = SquatAnalyzer.smoothingFactor * rawKneeAngle + (1 - SquatAnalyzer.smoothingFactor) * smoothedKneeAngle
@@ -182,7 +186,7 @@ class SquatAnalyzer: ExerciseAnalyzer {
         case .waitingForPerson:
             readyStartTime = 0
             currentState = .ready
-            return AnalysisResult(accuracy: 0.3, feedback: "👤 Sizi görüyorum!\n📏 Ayakta düz durun, hazırlanın.\n🎯 Hedef: \(targetReps) tekrar squat", debugInfo: debugInfo)
+            return AnalysisResult(accuracy: 0.3, feedback: "👤 Sizi görüyorum!\n🦵 Ayakta düz durun ve\nKAMERAYA YAN DÖNÜN.\n🎯 Hedef: \(targetReps) squat", debugInfo: debugInfo)
             
         case .ready:
             if kneeAngle >= SquatAnalyzer.standingAngle - 10 {
@@ -292,7 +296,7 @@ class SquatAnalyzer: ExerciseAnalyzer {
             return AnalysisResult(accuracy: 0.7, feedback: "🧍 Harika! \(remaining) saniye dinlenin...\n📏 Pozisyonu koruyun.", debugInfo: debugInfo)
             
         case .repComplete:
-            return AnalysisResult(accuracy: 1.0, feedback: "🏆 Egzersiz tamamlandı!\n👏 \(targetReps) squat başarıyla yapıldı!\n💪 Harika performans!", isRepetitionComplete: true, debugInfo: debugInfo)
+            return AnalysisResult(accuracy: 1.0, feedback: "🏆 Egzersiz tamamlandı!\n👏 \(targetReps) squat başarıyla yapıldı!\n💪 Harika performans!", isRepetitionComplete: false, debugInfo: debugInfo)
         }
     }
     

@@ -236,7 +236,7 @@ class NeckSideBendAnalyzer: ExerciseAnalyzer {
             return AnalysisResult(accuracy: 0.6, feedback: "↩️ Yavaşça merkeze dönün\n📏 Başınızı düz hale getirin", debugInfo: debugInfo)
             
         case .repComplete:
-            return AnalysisResult(accuracy: 1.0, feedback: "🏆 Egzersiz tamamlandı!\n👏 \(targetReps) tekrar başarıyla yapıldı!", isRepetitionComplete: true, debugInfo: debugInfo)
+            return AnalysisResult(accuracy: 1.0, feedback: "🏆 Egzersiz tamamlandı!\n👏 \(targetReps) tekrar başarıyla yapıldı!", isRepetitionComplete: false, debugInfo: debugInfo)
         }
     }
     
