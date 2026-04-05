@@ -26,8 +26,11 @@ class ExerciseCoachProcessor: NSObject {
     private let poseStabilizer = PoseStabilizer()
     private let feedbackManager = CoachingFeedbackManager()
     
-    // Debug Callback (Sadece iOS UI'si için, Flutter'a gitmez)
+    // Native UI Callbacks (Sadece iOS UI'si için, Flutter'a gitmez)
     var onDebugInfoUpdated: (([String: Any]) -> Void)?
+    var onFeedbackUpdated: ((String) -> Void)?
+    var onAccuracyUpdated: ((Double) -> Void)?
+    var onRepetitionUpdated: ((Int) -> Void)?
     
     // FPS optimizasyonu
     private var lastProcessTime: Int64 = 0
@@ -204,16 +207,19 @@ class ExerciseCoachProcessor: NSObject {
     }
     
     private func sendAccuracy(_ accuracy: Double) {
+        onAccuracyUpdated?(accuracy)
         guard eventSink != nil else { return }
         sendEvent(type: "accuracy", data: ["value": accuracy])
     }
     
     private func sendRepetitionCount(_ count: Int) {
+        onRepetitionUpdated?(count)
         guard eventSink != nil else { return }
         sendEvent(type: "repetition", data: ["count": count])
     }
     
     private func sendFeedbackEvent(_ message: String) {
+        onFeedbackUpdated?(message)
         guard eventSink != nil else { return }
         let data: [String: Any] = [
             "message": message,

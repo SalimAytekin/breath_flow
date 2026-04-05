@@ -123,7 +123,7 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
         let repTitle = UILabel()
         repTitle.text = "TEKRAR"
         repTitle.textColor = UIColor(red: 1, green: 0.76, blue: 0.03, alpha: 1)
-        repTitle.font = .boldSystemFont(ofSize: 12)
+        repTitle.font = .boldSystemFont(ofSize: 10)
         repStack.addArrangedSubview(repTitle)
         
         repCountLabel.text = "0"
@@ -151,7 +151,7 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
             topBar.topAnchor.constraint(equalTo: view.topAnchor),
             topBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             topBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            topBar.heightAnchor.constraint(equalToConstant: 110),
+            topBar.heightAnchor.constraint(equalToConstant: 120),
             
             exerciseNameLabel.leadingAnchor.constraint(equalTo: topBarContentView.leadingAnchor, constant: 20),
             exerciseNameLabel.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 10),
@@ -160,10 +160,10 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
             timerLabel.topAnchor.constraint(equalTo: exerciseNameLabel.bottomAnchor, constant: 6),
             
             // HUD Constraints
-            hudProgressView.trailingAnchor.constraint(equalTo: stopButton.leadingAnchor, constant: -20),
-            hudProgressView.centerYAnchor.constraint(equalTo: safeArea.topAnchor, constant: 25),
-            hudProgressView.widthAnchor.constraint(equalToConstant: 64),
-            hudProgressView.heightAnchor.constraint(equalToConstant: 64),
+            hudProgressView.trailingAnchor.constraint(equalTo: stopButton.leadingAnchor, constant: -16),
+            hudProgressView.centerYAnchor.constraint(equalTo: safeArea.topAnchor, constant: 35),
+            hudProgressView.widthAnchor.constraint(equalToConstant: 80),
+            hudProgressView.heightAnchor.constraint(equalToConstant: 80),
             
             // Rep Stack in HUD
             repStack.centerXAnchor.constraint(equalTo: hudProgressView.centerXAnchor),
@@ -246,6 +246,16 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
         
         // UI güncelle
         exerciseNameLabel.text = data["name"] as? String ?? "Egzersiz"
+        
+        processor.onFeedbackUpdated = { [weak self] message in
+            self?.updateFeedback(message)
+        }
+        processor.onAccuracyUpdated = { [weak self] accuracy in
+            self?.updateAccuracy(accuracy)
+        }
+        processor.onRepetitionUpdated = { [weak self] count in
+            self?.updateRepetitionCount(count)
+        }
         
         // Adapter'ı bağla
         PoseDetectorToExerciseAdapter.shared.setExerciseCoachProcessor(processor)
