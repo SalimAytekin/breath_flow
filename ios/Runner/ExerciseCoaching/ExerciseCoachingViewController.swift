@@ -21,7 +21,8 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
     private let feedbackTitleLabel = UILabel()
     private let feedbackMessageLabel = UILabel()
     
-    // Progress Arc (Açı Barı)
+    // HUD Progress Arc (Sayacın etrafı)
+    private let hudProgressView = UIView()
     private let progressLayer = CAShapeLayer()
     private let progressTrackLayer = CAShapeLayer()
     
@@ -41,7 +42,7 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupCoachingOverlay()
-        setupProgressArc()
+        // Progress arc artık setupCoachingOverlay içinde HUD olarak kurgulanıyor
         initializeExerciseCoaching()
     }
     
@@ -64,37 +65,31 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
     
     // MARK: - Coaching Setup
     
-    private func setupProgressArc() {
-        let arcCenter = CGPoint(x: view.bounds.midX, y: view.bounds.midY)
-        let radius: CGFloat = 120
-        let startAngle = CGFloat.pi * 3 / 4
-        let endAngle = CGFloat.pi * 1 / 4
-        
-        let circularPath = UIBezierPath(arcCenter: arcCenter, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: true)
-        
-        // Arka plan çizgisi (Track)
-        progressTrackLayer.path = circularPath.cgPath
+    private func setupProgressHUD(in containerPath: UIBezierPath, bounds: CGRect) {
+        progressTrackLayer.path = containerPath.cgPath
         progressTrackLayer.fillColor = UIColor.clear.cgColor
         progressTrackLayer.strokeColor = UIColor.white.withAlphaComponent(0.15).cgColor
-        progressTrackLayer.lineWidth = 15
+        progressTrackLayer.lineWidth = 6
         progressTrackLayer.lineCap = .round
-        view.layer.addSublayer(progressTrackLayer)
+        hudProgressView.layer.addSublayer(progressTrackLayer)
         
-        // İlerleme çizgisi (Progress)
-        progressLayer.path = circularPath.cgPath
+        progressLayer.path = containerPath.cgPath
         progressLayer.fillColor = UIColor.clear.cgColor
-        progressLayer.strokeColor = UIColor.white.cgColor // Nötr renk (değişecek)
-        progressLayer.lineWidth = 15
+        progressLayer.strokeColor = UIColor.green.cgColor
+        progressLayer.lineWidth = 6
         progressLayer.lineCap = .round
         progressLayer.strokeEnd = 0
         
-        // Neon / Glow effect
         progressLayer.shadowColor = UIColor.green.cgColor
         progressLayer.shadowOffset = .zero
         progressLayer.shadowOpacity = 0.0
-        progressLayer.shadowRadius = 15.0
+        progressLayer.shadowRadius = 8.0
         
-        view.layer.addSublayer(progressLayer)
+        hudProgressView.layer.addSublayer(progressLayer)
+        
+        // Merkezleme için (Layout pass sonrası doğru yere oturur)
+        progressTrackLayer.position = CGPoint(x: bounds.midX, y: bounds.midY)
+        progressLayer.position = CGPoint(x: bounds.midX, y: bounds.midY)
     }
     
     private func setupCoachingOverlay() {
@@ -147,6 +142,11 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
         stopButton.translatesAutoresizingMaskIntoConstraints = false
         topBarContentView.addSubview(stopButton)
         
+        // HUD Progress View for Rep Stack
+        hudProgressView.translatesAutoresizingMaskIntoConstraints = false
+        topBarContentView.addSubview(hudProgressView)
+        hudProgressView.addSubview(repStack)
+        
         NSLayoutConstraint.activate([
             topBar.topAnchor.constraint(equalTo: view.topAnchor),
             topBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -159,14 +159,28 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
             timerLabel.leadingAnchor.constraint(equalTo: topBarContentView.leadingAnchor, constant: 20),
             timerLabel.topAnchor.constraint(equalTo: exerciseNameLabel.bottomAnchor, constant: 6),
             
-            repStack.trailingAnchor.constraint(equalTo: stopButton.leadingAnchor, constant: -20),
-            repStack.centerYAnchor.constraint(equalTo: safeArea.topAnchor, constant: 25),
+            // HUD Constraints
+            hudProgressView.trailingAnchor.constraint(equalTo: stopButton.leadingAnchor, constant: -20),
+            hudProgressView.centerYAnchor.constraint(equalTo: safeArea.topAnchor, constant: 25),
+            hudProgressView.widthAnchor.constraint(equalToConstant: 64),
+            hudProgressView.heightAnchor.constraint(equalToConstant: 64),
+            
+            // Rep Stack in HUD
+            repStack.centerXAnchor.constraint(equalTo: hudProgressView.centerXAnchor),
+            repStack.centerYAnchor.constraint(equalTo: hudProgressView.centerYAnchor),
             
             stopButton.trailingAnchor.constraint(equalTo: topBarContentView.trailingAnchor, constant: -20),
             stopButton.centerYAnchor.constraint(equalTo: safeArea.topAnchor, constant: 25),
             stopButton.widthAnchor.constraint(equalToConstant: 44),
             stopButton.heightAnchor.constraint(equalToConstant: 44),
         ])
+        
+        // Draw HUD circle inside hudProgressView bounds
+        hudProgressView.layoutIfNeeded()
+        let hudBounds = hudProgressView.bounds
+        let radius = (min(hudBounds.width, hudBounds.height) / 2) - 3 // 3 is half line width
+        let circularPath = UIBezierPath(arcCenter: .zero, radius: radius, startAngle: -CGFloat.pi / 2, endAngle: 1.5 * CGFloat.pi, clockwise: true)
+        setupProgressHUD(in: circularPath, bounds: hudBounds)
         
         // ═══════════════════════════════════════════
         // Bottom Feedback Panel (Glassmorphism)
@@ -191,7 +205,7 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
         feedbackTitleLabel.textColor = UIColor(red: 0.3, green: 0.69, blue: 0.31, alpha: 1)
         feedbackTitleLabel.font = .boldSystemFont(ofSize: 22)
         
-        feedbackMessageLabel.text = "Koçluk başlatılıyor..."
+        feedbackMessageLabel.text = "Hazırlanıyor...\nKamera karşısına geçin ve pozisyon alın."
         feedbackMessageLabel.textColor = .white
         feedbackMessageLabel.font = .systemFont(ofSize: 18, weight: .medium)
         feedbackMessageLabel.numberOfLines = 4
@@ -273,16 +287,19 @@ class ExerciseCoachingViewController: CameraPreviewViewController {
     }
     
     func updateAccuracy(_ accuracy: Double) {
+        // Doğruluğu overlay view'a (iskelet rengi) aktar
+        poseOverlay.updateAccuracy(accuracy)
+        
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             if accuracy > self.bestAccuracy { self.bestAccuracy = accuracy }
             self.totalAccuracy += accuracy
             self.accuracyCount += 1
             
-            // Progress Arc Animasyonu
+            // Progress Arc Animasyonu (HUD etrafında)
             self.progressLayer.strokeEnd = CGFloat(accuracy)
             
-            // Dinamik Renk ve Parlama
+            // Dinamik Renk ve Parlama (İskeletle uyumlu)
             let greenVal = CGFloat(max(0.0, min(1.0, accuracy)))
             let redVal = CGFloat(1.0 - greenVal)
             let blueVal = CGFloat(1.0 - greenVal)

@@ -15,6 +15,7 @@ class SquatAnalyzer: ExerciseAnalyzer {
         case descending
         case holdingBottom
         case ascending
+        case restingStanding
         case repComplete
     }
     
@@ -24,12 +25,12 @@ class SquatAnalyzer: ExerciseAnalyzer {
     private static let standingAngle: Double = 160.0        // Düz duruş
     private static let descentStartAngle: Double = 140.0    // İniş algılama
     private static let goodDepthAngle: Double = 110.0       // İyi derinlik
-    private static let targetDepthAngle: Double = 95.0      // Hedef (paralel squat)
+    private static let targetDepthAngle: Double = 100.0     // Hedef (daha esnek derinlik)
     private static let tooDeepAngle: Double = 70.0          // Çok derin (güvenlik)
     private static let ascentCompleteAngle: Double = 155.0  // Çıkış tamamlandı
     
     // Hız Kontrolü
-    private static let maxAllowedSpeed: Double = 18.0       // Derece/saniye
+    private static let maxAllowedSpeed: Double = 60.0       // Derece/saniye
     private static let speedWarningCooldownMs: Int64 = 2500
     
     // Form Kontrol Eşikleri
@@ -37,8 +38,9 @@ class SquatAnalyzer: ExerciseAnalyzer {
     private static let backLeanThreshold: Double = 35.0     // Sırt eğim limiti (derece)
     
     // Zamanlayıcılar
-    private static let holdDurationMs: Int64 = 1000         // Alt noktada tutma
-    private static let readyDelayMs: Int64 = 2000           // Hazırlanma süresi
+    private static let holdDurationMs: Int64 = 500          // Alt noktada tutma
+    private static let readyDelayMs: Int64 = 1000           // Hazırlanma süresi
+    private static let restingDurationMs: Int64 = 1500      // Tekrarlar arası dinlenme
     
     // ═══════════════════════════════════════════
     // State Değişkenleri
@@ -155,8 +157,8 @@ class SquatAnalyzer: ExerciseAnalyzer {
                             kneeValgus: Bool, backLean: Double, 
                             now: Int64, debugInfo: [String: Any]?) -> AnalysisResult {
         
-        // Global Hız Kontrolü (hareket fazlarında)
-        if currentState == .descending || currentState == .ascending {
+        // Global Hız Kontrolü (sadece aşağı iniş fazında kontrollü olmayı zorla, çıkışta daha serbest)
+        if currentState == .descending {
             if currentSpeed > SquatAnalyzer.maxAllowedSpeed {
                 if (now - lastSpeedWarningTime) > SquatAnalyzer.speedWarningCooldownMs {
                     lastSpeedWarningTime = now
@@ -265,9 +267,10 @@ class SquatAnalyzer: ExerciseAnalyzer {
                     return AnalysisResult(accuracy: 1.0, feedback: "🏆 TEBRİKLER!\n✅ \(targetReps) squat tamamlandı!\n👏 Harika bir iş çıkardınız!", isRepetitionComplete: true, debugInfo: debugInfo)
                 }
                 
-                currentState = .descending
+                currentState = .restingStanding
+                readyStartTime = now
                 deepestAngleInRep = 180.0
-                return AnalysisResult(accuracy: 0.8, feedback: "👏 \(repCount). tekrar tamamlandı!\n\n⬇️ Tekrar ÇÖMELIN\n📊 Kalan: \(targetReps - repCount) tekrar", isRepetitionComplete: true, debugInfo: debugInfo)
+                return AnalysisResult(accuracy: 0.8, feedback: "👏 \(repCount). tekrar tamamlandı!\n\n🧍 Düz durun, dinlenin...", isRepetitionComplete: true, debugInfo: debugInfo)
             }
             
             // Tekrar iniş yaptıysa (doğrulamadan kalkmadan tekrar inmek)
@@ -278,6 +281,15 @@ class SquatAnalyzer: ExerciseAnalyzer {
             
             let progress = (kneeAngle - SquatAnalyzer.targetDepthAngle) / (SquatAnalyzer.ascentCompleteAngle - SquatAnalyzer.targetDepthAngle)
             return AnalysisResult(accuracy: 0.6 + progress * 0.15, feedback: "⬆️ Güzel kalkıyorsunuz!\n💪 Topuklardan itin!\n📐 Tam düz olana kadar kalkın.", debugInfo: debugInfo)
+            
+        case .restingStanding:
+            let elapsed = now - readyStartTime
+            if elapsed > SquatAnalyzer.restingDurationMs {
+                currentState = .descending
+                return AnalysisResult(accuracy: 0.6, feedback: "⬇️ Tekrar ÇÖMELIN\n📊 Kalan: \(targetReps - repCount) tekrar", debugInfo: debugInfo)
+            }
+            let remaining = (SquatAnalyzer.restingDurationMs - elapsed) / 1000 + 1
+            return AnalysisResult(accuracy: 0.7, feedback: "🧍 Harika! \(remaining) saniye dinlenin...\n📏 Pozisyonu koruyun.", debugInfo: debugInfo)
             
         case .repComplete:
             return AnalysisResult(accuracy: 1.0, feedback: "🏆 Egzersiz tamamlandı!\n👏 \(targetReps) squat başarıyla yapıldı!\n💪 Harika performans!", isRepetitionComplete: true, debugInfo: debugInfo)

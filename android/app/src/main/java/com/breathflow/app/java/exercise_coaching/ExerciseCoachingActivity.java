@@ -46,6 +46,7 @@ public class ExerciseCoachingActivity extends CameraXLivePreviewActivity {
     private TextView tvAvgAccuracy;
     private TextView tvExerciseInstructions;
     private ProgressBar progressAccuracy;
+    private ProgressBar progressArc;
     private Button btnStopCoaching;
 
     // Performance tracking
@@ -109,6 +110,7 @@ public class ExerciseCoachingActivity extends CameraXLivePreviewActivity {
             tvAvgAccuracy = coachingOverlay.findViewById(R.id.tv_avg_accuracy);
             tvExerciseInstructions = coachingOverlay.findViewById(R.id.tv_exercise_instructions);
             progressAccuracy = coachingOverlay.findViewById(R.id.progress_accuracy);
+            progressArc = coachingOverlay.findViewById(R.id.progress_arc);
             btnStopCoaching = coachingOverlay.findViewById(R.id.btn_stop_coaching);
 
             // Performance tracking başlat

@@ -29,14 +29,14 @@ class NeckSideBendAnalyzer: ExerciseAnalyzer {
     private static let maxSafeAngle: Double = 35.0 // Önceki 40.0 idi. Güvenli bölge daraltıldı.
     
     // Hız Kontrolü (Derece / Saniye)
-    private static let maxAllowedSpeed: Double = 15.0 
+    private static let maxAllowedSpeed: Double = 45.0 
     private static let speedWarningCooldownMs: Int64 = 2000
     
     // ═══════════════════════════════════════════
     // Zamanlayıcılar (Timers)
     // ═══════════════════════════════════════════
-    private static let holdDurationMs: Int64 = 3000
-    private static let readyDelayMs: Int64 = 2000
+    private static let holdDurationMs: Int64 = 1500
+    private static let readyDelayMs: Int64 = 1000
     
     // State Değişkenleri
     private var currentState: State = .waitingForPerson
@@ -118,8 +118,8 @@ class NeckSideBendAnalyzer: ExerciseAnalyzer {
     private func processState(tiltAngle: Double, currentSpeed: Double, confidence: Float, now: Int64, debugInfo: [String: Any]? = nil) -> AnalysisResult {
         let absTilt = abs(tiltAngle)
         
-        // Global Hız Kontrolü (Sadece hareket fazlarında çalışır)
-        if (currentState == .tiltingRight || currentState == .tiltingLeft || currentState == .returningCenter1 || currentState == .returningCenter2) {
+        // Global Hız Kontrolü (Sadece asıl esneme/eğilme fazlarında çalışır, merkeze dönüş serbesttir)
+        if (currentState == .tiltingRight || currentState == .tiltingLeft) {
             if currentSpeed > NeckSideBendAnalyzer.maxAllowedSpeed {
                 if (now - lastSpeedWarningTime) > NeckSideBendAnalyzer.speedWarningCooldownMs {
                     lastSpeedWarningTime = now

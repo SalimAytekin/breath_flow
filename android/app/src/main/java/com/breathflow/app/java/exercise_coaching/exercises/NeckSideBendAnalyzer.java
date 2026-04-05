@@ -12,7 +12,7 @@ import com.google.mlkit.vision.pose.PoseLandmark;
  * - Açıyı sürekli izler ve progresif feedback verir
  * - "Biraz daha eğ... az kaldı... tamam tut! 3... 2... 1... Harika!" gibi
  * - Her iki tarafa da (sağ ve sol) eğme yapar
- * - 3 saniye tutma süresi ile çalışır
+ * - 1.5 saniye tutma süresi ile çalışır
  * 
  * Kullanılan Landmarklar:
  * - LEFT_EAR (7), RIGHT_EAR (8) → Baş eğim açısı
@@ -49,8 +49,8 @@ public class NeckSideBendAnalyzer extends BaseExerciseAnalyzer {
     // ═══════════════════════════════════════════
     // Hold Timer
     // ═══════════════════════════════════════════
-    private static final long HOLD_DURATION_MS = 3000; // 3 saniye tut
-    private static final long READY_DELAY_MS = 2000; // 2 sn düz durma kontrolü
+    private static final long HOLD_DURATION_MS = 1500; // 1.5 saniye tut
+    private static final long READY_DELAY_MS = 1000; // 1 sn düz durma kontrolü
 
     // ═══════════════════════════════════════════
     // State Machine Değişkenleri
@@ -353,7 +353,7 @@ public class NeckSideBendAnalyzer extends BaseExerciseAnalyzer {
         return new AnalysisResult(0.75,
                 "🎯 Mükemmel açı!\n" +
                         "✋ Bu pozisyonda tutun!\n" +
-                        "⏱️ 3 saniye sayacağız...");
+                        "⏱️ 1.5 saniye sayacağız...");
     }
 
     @Override

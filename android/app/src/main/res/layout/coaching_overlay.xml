@@ -63,32 +63,46 @@
 
         </LinearLayout>
 
-        <!-- Tekrar Sayısı -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
+        <!-- Tekrar Sayısı ve HUD Progress Arc -->
+        <RelativeLayout
+            android:layout_width="64dp"
+            android:layout_height="64dp"
             android:layout_marginEnd="20dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="TEKRAR"
-                android:textColor="#FFC107"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+            <ProgressBar
+                android:id="@+id/progress_arc"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:progressDrawable="@drawable/circular_progress_drawable"
+                android:max="100"
+                android:progress="0"
+                android:rotation="-90" />
 
-            <TextView
-                android:id="@+id/tv_repetition_count"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0"
-                android:textColor="@android:color/white"
-                android:textSize="28sp"
-                android:textStyle="bold" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center">
 
-        </LinearLayout>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="TEKRAR"
+                    android:textColor="#FFC107"
+                    android:textSize="9sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_repetition_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textColor="@android:color/white"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </RelativeLayout>
 
         <!-- Durdur Butonu -->
         <ImageButton
@@ -102,17 +116,7 @@
 
     </LinearLayout>
 
-    <!-- Merkez İlerleme Çemberi (Progress Arc) -->
-    <ProgressBar
-        android:id="@+id/progress_arc"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="240dp"
-        android:layout_height="240dp"
-        android:layout_centerInParent="true"
-        android:progressDrawable="@drawable/circular_progress_drawable"
-        android:max="100"
-        android:progress="0"
-        android:rotation="-90" />
+
 
     <!-- Sağ Panel - Detaylı Bilgiler -->
     <LinearLayout
@@ -387,7 +391,7 @@
                 android:id="@+id/tv_feedback_message"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Boyunuzu yavaşça sağa ve sola döndürün"
+                android:text="Hazırlanıyor...\nKamera karşısına geçin ve pozisyon alın."
                 android:textColor="@android:color/white"
                 android:textSize="18sp"
                 android:textStyle="normal"

@@ -19,6 +19,8 @@ class ShoulderStretchAnalyzer: ExerciseAnalyzer {
         case raisingLeft
         case holdingLeft
         case loweringLeft
+        case restingSide
+        case restingBetweenReps
         case repComplete
     }
     
@@ -28,16 +30,17 @@ class ShoulderStretchAnalyzer: ExerciseAnalyzer {
     private static let armDownAngle: Double = 30.0          // Kol aşağıda
     private static let raiseStartAngle: Double = 45.0       // Kaldırma algılama
     private static let goodPositionAngle: Double = 90.0     // İyi pozisyon (yatay)
-    private static let targetAngle: Double = 140.0          // Hedef tam germe
+    private static let targetAngle: Double = 130.0          // Hedef (daha esnek)
     private static let maxSafeAngle: Double = 170.0         // Güvenlik sınırı
     
     // Hız Kontrolü
-    private static let maxAllowedSpeed: Double = 12.0       // Derece/saniye
+    private static let maxAllowedSpeed: Double = 60.0       // Derece/saniye
     private static let speedWarningCooldownMs: Int64 = 2500
     
     // Zamanlayıcılar
-    private static let holdDurationMs: Int64 = 3000         // 3 saniye tutma
-    private static let readyDelayMs: Int64 = 2000           // Hazırlanma süresi
+    private static let holdDurationMs: Int64 = 1500         // 1.5 saniye tutma
+    private static let readyDelayMs: Int64 = 1000           // Hazırlanma süresi
+    private static let restingDurationMs: Int64 = 1500      // Taraflar arası mola
     
     // ═══════════════════════════════════════════
     // State Değişkenleri
@@ -143,9 +146,8 @@ class ShoulderStretchAnalyzer: ExerciseAnalyzer {
     private func processState(armAngle: Double, currentSpeed: Double, 
                             now: Int64, debugInfo: [String: Any]?) -> AnalysisResult {
         
-        // Global Hız Kontrolü (hareket fazlarında)
-        let isMoving = (currentState == .raisingRight || currentState == .raisingLeft ||
-                       currentState == .loweringRight || currentState == .loweringLeft)
+        // Global Hız Kontrolü (sadece omuzu germe/kaldırma fazını kontrol eder, indirme aşamasında serbest)
+        let isMoving = (currentState == .raisingRight || currentState == .raisingLeft)
         if isMoving && currentSpeed > ShoulderStretchAnalyzer.maxAllowedSpeed {
             if (now - lastSpeedWarningTime) > ShoulderStretchAnalyzer.speedWarningCooldownMs {
                 lastSpeedWarningTime = now
@@ -188,12 +190,30 @@ class ShoulderStretchAnalyzer: ExerciseAnalyzer {
             
         case .loweringRight:
             if armAngle <= ShoulderStretchAnalyzer.armDownAngle {
-                currentState = .raisingLeft
+                currentState = .restingSide
+                readyStartTime = now // Mola süresi için kullan
                 smoothedArmAngle = 0 // Reset smoothing for new side
                 lastArmAngle = 0
-                return AnalysisResult(accuracy: 0.6, feedback: "✅ Sağ taraf tamamlandı!\n\n🤚 Şimdi SOL kolunuzu\nyavaşça yukarı kaldırın", debugInfo: debugInfo)
+                return AnalysisResult(accuracy: 0.6, feedback: "✅ Sağ taraf tamamlandı!\n\n😌 Kollarınızı 1 saniye\nrahatlatın.", debugInfo: debugInfo)
             }
             return AnalysisResult(accuracy: 0.6, feedback: "⬇️ Yavaşça kolunuzu indirin.\n📏 Kontrollü hareket edin.", debugInfo: debugInfo)
+            
+        case .restingSide:
+            let elapsed = now - readyStartTime
+            if elapsed > ShoulderStretchAnalyzer.restingDurationMs {
+                // Hangi koldaydık? repCount mantığından ve o anki duruma göre sırası gelen kolu buluruz
+                // loweredRight'ten buraya gelindiyse -> raisingLeft'e gitmeli
+                // loweredLeft'ten buraya gelindiyse -> rep tamam, raisingRight'e gitmeli
+                // Bunun için basit bir toggle kontrolü yapacak özel bir değişkene gerek kalmaması adına,
+                // left lowering sonrası .repComplete'e atıyoruz, right lowering sonrası .restingSide'a atıp oradan .raisingLeft'e atlayacağız.
+                // Ve sol bitince yeni tekrara geçmeden de 1 sn mola verdirelim:
+                
+                // Mola bitti
+                currentState = .raisingLeft
+                return AnalysisResult(accuracy: 0.8, feedback: "✅ Mola tamam!\n\n🤚 Şimdi SOL kolunuzu\nyavaşça kaldırın", debugInfo: debugInfo)
+            }
+            // Molaya devam
+            return AnalysisResult(accuracy: 0.5, feedback: "😌 Kollarınızı rahat bırakın...\nMola veriyorsunuz.", debugInfo: debugInfo)
             
         case .raisingLeft:
             return handleRaising(angle: armAngle, direction: "sol", now: now, debugInfo: debugInfo)
@@ -210,12 +230,21 @@ class ShoulderStretchAnalyzer: ExerciseAnalyzer {
                     return AnalysisResult(accuracy: 1.0, feedback: "🏆 TEBRİKLER!\n✅ \(targetReps) tekrar tamamlandı!\n👏 Harika bir iş çıkardınız!", isRepetitionComplete: true, debugInfo: debugInfo)
                 }
                 
-                currentState = .raisingRight
+                currentState = .restingBetweenReps
+                readyStartTime = now
                 smoothedArmAngle = 0
                 lastArmAngle = 0
-                return AnalysisResult(accuracy: 0.8, feedback: "👏 \(repCount). tekrar tamamlandı!\n\n🤚 Tekrar SAĞ kolunuzu kaldırın\n📊 Kalan: \(targetReps - repCount) tekrar", isRepetitionComplete: true, debugInfo: debugInfo)
+                return AnalysisResult(accuracy: 0.8, feedback: "👏 \(repCount). tekrar tamamlandı!\n\n😌 1 saniye dinlenin...", isRepetitionComplete: true, debugInfo: debugInfo)
             }
             return AnalysisResult(accuracy: 0.6, feedback: "⬇️ Yavaşça kolunuzu indirin.\n📏 Kontrollü hareket edin.", debugInfo: debugInfo)
+            
+        case .restingBetweenReps:
+            let elapsed = now - readyStartTime
+            if elapsed > ShoulderStretchAnalyzer.restingDurationMs {
+                currentState = .raisingRight
+                return AnalysisResult(accuracy: 0.7, feedback: "✅ Mola tamam!\n\n🤚 Tekrar SAĞ kolunuzu kaldırın\n📊 Kalan: \(targetReps - repCount) tekrar", debugInfo: debugInfo)
+            }
+            return AnalysisResult(accuracy: 0.5, feedback: "😌 Kollarınızı rahat bırakın...\nMola veriyorsunuz.", debugInfo: debugInfo)
             
         case .repComplete:
             return AnalysisResult(accuracy: 1.0, feedback: "🏆 Egzersiz tamamlandı!\n👏 \(targetReps) tekrar başarıyla yapıldı!\n💪 Omuzlarınız teşekkür ediyor!", isRepetitionComplete: true, debugInfo: debugInfo)
