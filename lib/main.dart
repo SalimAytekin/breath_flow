@@ -9,6 +9,9 @@ import 'package:breathe_flow/providers/user_preferences_provider.dart';
 import 'package:breathe_flow/providers/exercise_tracking_provider.dart';
 import 'package:breathe_flow/providers/journal_provider.dart';
 import 'package:breathe_flow/providers/auth_provider.dart';
+import 'package:breathe_flow/providers/app_mode_provider.dart';
+import 'package:breathe_flow/features/ai_fitness/providers/user_goal_provider.dart';
+
 import 'package:breathe_flow/screens/onboarding_screen.dart';
 import 'package:breathe_flow/screens/main_navigation_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -136,6 +139,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AppModeProvider()),
         ChangeNotifierProvider(create: (_) => UserPreferencesProvider()),
         ChangeNotifierProxyProvider<UserPreferencesProvider, AudioProvider>(
           create: (context) {
@@ -172,6 +176,9 @@ class MyApp extends StatelessWidget {
         }),
         // 🔐 Auth sistemi aktif
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        // 🏋️ AI Fitness — Kullanıcı Hedef Yönetimi
+        ChangeNotifierProvider(create: (_) => UserGoalProvider()),
+
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

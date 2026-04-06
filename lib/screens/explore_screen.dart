@@ -18,6 +18,8 @@ import 'mood_detail_screen.dart';
 import 'sounds_screen.dart';
 import 'sleep_hub_screen.dart';
 import '../features/ai_fitness/screens/exercise_catalog_screen.dart';
+import '../features/ai_fitness/screens/ai_fitness_explore_view.dart';
+import '../providers/app_mode_provider.dart';
 
 /// 🧭 Keşfet Ekranı — Premium, yetişkin, sıcak tasarım
 /// ChatGPT mockup'ına birebir: 4 büyük mood kartı + 3 küçük kare kart
@@ -28,7 +30,17 @@ class ExploreScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return Scaffold(
+    return Consumer<AppModeProvider>(
+      builder: (context, appMode, _) {
+        if (appMode.isBodyMode) {
+          return const Scaffold(
+            backgroundColor: Colors.transparent,
+            body: GlobalBackground(
+              child: AIFitnessExploreView(),
+            ),
+          );
+        }
+        return Scaffold(
       backgroundColor: Colors.transparent,
       body: GlobalBackground(
         child: SafeArea(
@@ -123,6 +135,8 @@ class ExploreScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+      },
     );
   }
 

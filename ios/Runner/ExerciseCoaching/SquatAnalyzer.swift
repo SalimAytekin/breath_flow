@@ -23,9 +23,9 @@ class SquatAnalyzer: ExerciseAnalyzer {
     // Açı Eşikleri (Derece)
     // ═══════════════════════════════════════════
     private static let standingAngle: Double = 160.0        // Düz duruş
-    private static let descentStartAngle: Double = 140.0    // İniş algılama
-    private static let goodDepthAngle: Double = 110.0       // İyi derinlik
-    private static let targetDepthAngle: Double = 100.0     // Hedef (daha esnek derinlik)
+    private static let descentStartAngle: Double = 145.0    // İniş algılama
+    private static let goodDepthAngle: Double = 125.0       // İyi derinlik (eski 110'du, daha yapılabilir yapıldı)
+    private static let targetDepthAngle: Double = 110.0     // Hedef (daha esnek, yarım squat için)
     private static let tooDeepAngle: Double = 70.0          // Çok derin (güvenlik)
     private static let ascentCompleteAngle: Double = 155.0  // Çıkış tamamlandı
     

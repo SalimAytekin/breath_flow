@@ -143,8 +143,8 @@ class CoachingVoiceService {
     _isSpeaking = true;
 
     try {
-      // Emojileri temizle ki Siri "Gülümseyen yüz" diye okumasın
-      final cleanText = text.replaceAll(RegExp(r'[^\p{L}\p{N}\s\.\,\!\?\:\;]', unicode: true), '');
+      // Emojileri temizle (sadece harf, rakam, boşluk ve temel noktalama işaretlerini bırakır)
+      final cleanText = text.replaceAll(RegExp(r'[^\w\s.,!?:şŞıİçÇöÖüÜğĞ\-]'), '');
       
       // Önceki konuşmayı durdur (priority ise)
       if (priority) await _tts.stop();

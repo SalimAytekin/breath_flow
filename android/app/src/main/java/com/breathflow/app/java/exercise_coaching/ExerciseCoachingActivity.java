@@ -19,6 +19,12 @@ import com.breathflow.app.java.exercise_coaching.PoseDetectorToExerciseAdapter;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Locale;
+
+import android.animation.ObjectAnimator;
+import android.graphics.drawable.Drawable;
 
 import io.flutter.plugin.common.EventChannel;
 
@@ -48,13 +54,19 @@ public class ExerciseCoachingActivity extends CameraXLivePreviewActivity {
     private ProgressBar progressAccuracy;
     private ProgressBar progressArc;
     private Button btnStopCoaching;
+    private View bottomFeedbackPanel;
 
     // Performance tracking
     private long startTime;
     private int frameCount = 0;
     private double totalAccuracy = 0;
     private double bestAccuracy = 0;
+    private double maxAccuracy = 0.0;
     private long lastFpsUpdate = 0;
+    private int repetitionCount = 0;
+    private String currentFeedbackMessage = "";
+    private List<Double> accuracyPoints = new ArrayList<>();
+    private List<Double> allAccuracyPoints = new ArrayList<>();
 
     // Coaching processor
     private ExerciseCoachProcessor exerciseCoachProcessor;
@@ -112,6 +124,7 @@ public class ExerciseCoachingActivity extends CameraXLivePreviewActivity {
             progressAccuracy = coachingOverlay.findViewById(R.id.progress_accuracy);
             progressArc = coachingOverlay.findViewById(R.id.progress_arc);
             btnStopCoaching = coachingOverlay.findViewById(R.id.btn_stop_coaching);
+            bottomFeedbackPanel = coachingOverlay.findViewById(R.id.bottom_feedback_panel);
 
             // Performance tracking başlat
             startTime = System.currentTimeMillis();
@@ -389,6 +402,15 @@ public class ExerciseCoachingActivity extends CameraXLivePreviewActivity {
         }
     }
 
+    private void updateAccuracy(double accuracy) {
+        accuracyPoints.add(accuracy);
+        allAccuracyPoints.add(accuracy);
+        if (accuracyPoints.size() > 30) {
+            accuracyPoints.remove(0);
+        }
+        updateAccuracyPercentage();
+    }
+
     private void updateAccuracyPercentage() {
         if (accuracyPoints.isEmpty()) {
             return;
@@ -507,21 +529,21 @@ public class ExerciseCoachingActivity extends CameraXLivePreviewActivity {
            tvFeedbackTitle.setText("Dikkat!");
            tvFeedbackTitle.setTextColor(Color.WHITE);
            bottomFeedbackPanel.setBackgroundColor(Color.argb(215, 200, 100, 25)); // Turuncu
-       } else if (lowerMsg.contains("eğilin") || lowerMsg.contains("dönün") || lowerMsg.contains("tutun")) {
+       } else if (lowerMsg.contains("egilin") || lowerMsg.contains("dönün") || lowerMsg.contains("tutun")) {
            tvFeedbackEmoji.setText("🏋️");
            tvFeedbackTitle.setText("Koç Diyor");
-           tvFeedbackTitle.setTextColor(Color.parseColor("#2196F3")); // Açık Mavi
-           bottomFeedbackPanel.setBackgroundColor(Color.argb(144, 0, 0, 0)); // Nötr Siyah (%56 alfa)
+           tvFeedbackTitle.setTextColor(Color.parseColor("#2196F3")); // Acik Mavi
+           bottomFeedbackPanel.setBackgroundColor(Color.argb(144, 0, 0, 0)); // Notr Siyah (%56 alfa)
        } else {
            tvFeedbackEmoji.setText("🔄");
            tvFeedbackTitle.setText("Devam");
            tvFeedbackTitle.setTextColor(Color.WHITE);
-           bottomFeedbackPanel.setBackgroundColor(Color.argb(144, 0, 0, 0)); // Nötr Siyah (%56 alfa)
+           bottomFeedbackPanel.setBackgroundColor(Color.argb(144, 0, 0, 0)); // Notr Siyah (%56 alfa)
        }
     }
 
     /**
-     * Timer'ı günceller
+     * Timer'i günceller
      */
     private void updateTimer() {
         if (tvTimer == null)

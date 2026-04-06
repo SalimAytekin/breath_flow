@@ -174,7 +174,7 @@ class ShoulderStretchAnalyzer: ExerciseAnalyzer {
         case .waitingForPerson:
             readyStartTime = 0
             currentState = .ready
-            return AnalysisResult(accuracy: 0.3, feedback: "👤 Sizi görüyorum!\n📏 Kollarınızı yanınıza indirin.\n🎯 Hedef: \(targetReps) tekrar", debugInfo: debugInfo)
+            return AnalysisResult(accuracy: 0.3, feedback: "👤 Sizi görüyorum!\n📏 Kollarınızı yanlara bırakın...\n🎯 Hedef: \(targetReps) tekrar", debugInfo: debugInfo)
             
         case .ready:
             if armAngle <= ShoulderStretchAnalyzer.armDownAngle {

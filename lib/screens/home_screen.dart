@@ -21,6 +21,9 @@ import 'sleep_hub_screen.dart';
 import '../providers/premium_provider.dart';
 import '../widgets/smart_premium_dialog.dart';
 import '../models/premium_trigger.dart';
+import '../features/ai_fitness/screens/ai_fitness_home_view.dart';
+import '../providers/app_mode_provider.dart';
+import '../widgets/app_mode_toggle.dart';
 
 /// 🏠 Professional Home Screen
 /// Warm Night Comfort teması — sıcak, samimi, kişisel
@@ -106,57 +109,84 @@ class _HomeScreenState extends State<HomeScreen> {
       subGreeting = AppStrings.nightSubGreeting;
     }
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // 🌅 GREETING BANNER — arka plan görselli
-          SliverToBoxAdapter(
-            child: _buildGreetingBanner(context, hour, greeting, subGreeting),
-          ),
+    return Consumer<AppModeProvider>(
+      builder: (context, appMode, _) {
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            children: [
+              // Arka plan içerikleri: Beden veya Zihin
+              Positioned.fill(
+                child: appMode.isBodyMode
+                    ? const AIFitnessHomeView()
+                    // Zihin Modu
+                    : CustomScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        slivers: [
+                          // 🌅 GREETING BANNER — arka plan görselli
+                          SliverToBoxAdapter(
+                            child: _buildGreetingBanner(context, hour, greeting, subGreeting),
+                          ),
 
-          // 🌙 UYKU MOOD KİŞİSELLEŞTİRME KARTI
-          if (_lastSleepMood != null)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: AppSpacing.pagePadding.copyWith(top: 12),
-                child: _buildSleepMoodCard(),
+                          // 🌙 UYKU MOOD KİŞİSELLEŞTİRME KARTI
+                          if (_lastSleepMood != null)
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: AppSpacing.pagePadding.copyWith(top: 12),
+                                child: _buildSleepMoodCard(),
+                              ),
+                            ),
+
+                          // ▶ HERO CARD — Hızlı Başla
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: AppSpacing.pagePadding.copyWith(top: AppSpacing.large),
+                              child: _buildHeroCard(context, hour),
+                            ),
+                          ),
+
+                          // 🎧 HEMEN RAHATLA
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: AppSpacing.pagePadding.copyWith(top: 14),
+                              child: _buildInstantRelaxBanner(context, hour),
+                            ),
+                          ),
+
+                          // 🎭 NASIL HİSSEDİYORSUN — Dikey büyük kartlar
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: AppSpacing.pagePadding.copyWith(top: AppSpacing.large),
+                              child: _buildMoodSection(context),
+                            ),
+                          ),
+
+                          // Alt boşluk
+                          SliverToBoxAdapter(
+                            child: SizedBox(height: 120 + MediaQuery.of(context).padding.bottom),
+                          ),
+                        ],
+                      ),
               ),
-            ),
-
-          // ▶ HERO CARD — Hızlı Başla
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: AppSpacing.pagePadding.copyWith(top: AppSpacing.large),
-              child: _buildHeroCard(context, hour),
-            ),
+              
+              // Üst Geçiş Anahtarı (Her zaman görünür ve sabit)
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12.0),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: 200,
+                      child: const AppModeToggle(),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-
-          // 🎧 HEMEN RAHATLA
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: AppSpacing.pagePadding.copyWith(top: 14),
-              child: _buildInstantRelaxBanner(context, hour),
-            ),
-          ),
-
-          // 🎭 NASIL HİSSEDİYORSUN — Dikey büyük kartlar
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: AppSpacing.pagePadding.copyWith(top: AppSpacing.large),
-              child: _buildMoodSection(context),
-            ),
-          ),
-
-
-
-          // Alt boşluk
-          SliverToBoxAdapter(
-            child: SizedBox(height: 120 + MediaQuery.of(context).padding.bottom),
-          ),
-        ],
-      ),
+        );
+      }
     );
   }
 

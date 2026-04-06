@@ -21,6 +21,7 @@ class AppColors {
   static const Color success = Color(0xFF7DB87D);             // Soft yeşil - başarı
   static const Color warning = Color(0xFFD4A574);             // Warm amber - uyarı
   static const Color error = Color(0xFFD98B8B);               // Soft kırmızı - hata
+  static const Color brandOrange = Color(0xFFFF8A00);         // Brand orange
   
   // 🌸 MOOD COLORS - Problem-bazlı
   static const Color relaxation = Color(0xFFD4A574);          // Warm amber (Gerginim)
